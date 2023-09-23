@@ -10,8 +10,10 @@ from dfa import *
 from game import *
 from test_utils import Loader, load_pkl
 
+from curriculum import CurriculumLearner
+from test_utils import TestingParameters, Tester, Saver
 
-def run_experiments(tester, curriculum, saver, num_times, incremental_steps, show_print):
+def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver, num_times, incremental_steps, show_print):
     time_init = time.time()
     tester_original = tester
     curriculum_original = curriculum
@@ -83,7 +85,7 @@ def run_experiments(tester, curriculum, saver, num_times, incremental_steps, sho
     print("Time:", "%0.2f" % ((time.time() - time_init)/60), "mins")
 
 
-def _initialize_policy_bank(sess, learning_params, curriculum, tester, load_tf=True):
+def _initialize_policy_bank(sess, learning_params, curriculum: CurriculumLearner, tester: Tester, load_tf=True):
     task_aux = Game(tester.get_task_params(curriculum.get_current_task()))
     num_actions = len(task_aux.get_actions())
     num_features = task_aux.get_num_features()
@@ -104,7 +106,7 @@ def _initialize_policy_bank(sess, learning_params, curriculum, tester, load_tf=T
     return policy_bank
 
 
-def _run_LPOPL(sess, policy_bank, task_params, tester, curriculum, replay_buffer, show_print):
+def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curriculum: CurriculumLearner, replay_buffer, show_print):
     # Initializing parameters
     learning_params = tester.learning_params
     testing_params = tester.testing_params
