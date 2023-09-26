@@ -6,7 +6,7 @@ from collections import defaultdict
 import tensorflow as tf
 from test_utils import Saver, Loader
 from game import *
-from policy_bank import *
+from tf_policies.policy_bank import *
 
 
 def initialize_policy_bank(sess, task_aux, tester, ltl, f_task):

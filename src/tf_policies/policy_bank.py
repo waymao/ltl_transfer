@@ -1,5 +1,5 @@
 import tensorflow as tf
-from network import get_MLP
+from .network import get_MLP
 
 
 class PolicyBank:

@@ -17,7 +17,7 @@ import networkx as nx
 import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 from lpopl import _initialize_policy_bank, _test_LPOPL
-from policy_bank import *
+from tf_policies.policy_bank import *
 from dfa import *
 from game import *
 from test_utils import Loader, save_pkl, load_pkl, save_json

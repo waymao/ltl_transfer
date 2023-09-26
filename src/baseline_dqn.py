@@ -9,7 +9,7 @@ import tensorflow as tf
 from schedules import LinearSchedule
 from dfa import *
 from game import *
-from network import get_MLP
+from tf_policies.network import get_MLP
 
 
 class BaselineDQN:

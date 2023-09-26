@@ -3,7 +3,7 @@ import random
 import time
 import numpy as np
 import tensorflow as tf
-from policy_bank import *
+from tf_policies.policy_bank import *
 from schedules import LinearSchedule
 from replay_buffer import ReplayBuffer
 from dfa import *

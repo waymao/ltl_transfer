@@ -5,7 +5,7 @@ import tensorflow as tf
 from schedules import LinearSchedule
 from dfa import *
 from game import *
-from policy_bank import PolicyBank
+from tf_policies.policy_bank import PolicyBank
 from replay_buffer import ReplayBuffer
 from tasks import get_option, get_option_night
 from ltl_progression import extract_propositions
