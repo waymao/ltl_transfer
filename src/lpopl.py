@@ -56,7 +56,7 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
         # Load 'policy_bank' if incremental training
         policy_dpath = os.path.join(saver.policy_dpath, "run_%d" % run_id)
         if os.path.exists(policy_dpath) and os.listdir(policy_dpath):
-            loader.load_policy_bank(run_id, sess)
+            loader.load_policy_bank(policy_bank, run_id)
         if show_print:
             print("Policy bank initialization took: %0.2f mins" % ((time.time() - time_init)/60))
 

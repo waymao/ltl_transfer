@@ -208,9 +208,8 @@ class Saver:
         save_pkl(os.path.join(run_dpath, "curriculum.pkl"), curriculum)
 
     def save_policy_bank(self, policy_bank, run_id):
-        tf_saver = tf.train.Saver()
         policy_bank_prefix = os.path.join(self.policy_dpath, f"run_{run_id}", "policy_bank")
-        tf_saver.save(policy_bank.sess, policy_bank_prefix)
+        policy_bank.save_bank(policy_bank_prefix, run_id)
 
     def save_results(self):
         results = {
@@ -279,11 +278,10 @@ class Loader:
     def __init__(self, saver):
         self.saver = saver
 
-    def load_policy_bank(self, run_idx, sess):
+    def load_policy_bank(self, policy_bank, run_idx):
         run_dpath = os.path.join(self.saver.policy_dpath, f"run_{run_idx}")  # where all tf model are saved
         # saver = tf.train.import_meta_graph(run_dpath+"policy_bank.meta")
-        saver = tf.train.Saver()
-        saver.restore(sess, tf.train.latest_checkpoint(run_dpath))
+        policy_bank.load_bank(tf.train.latest_checkpoint(run_dpath))
 
 
 def get_precentiles_str(a):
