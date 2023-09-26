@@ -1,9 +1,9 @@
 import argparse
-# import baseline_dqn
-# import baseline_hrl
+import baseline_dqn
+import baseline_hrl
 import lpopl
-# import transfer
-# import random_transfer
+import transfer
+import random_transfer
 from test_utils import TestingParameters, Tester, Saver
 from curriculum import CurriculumLearner
 
@@ -69,29 +69,29 @@ def run_experiment(alg_name, map_id, prob, tasks_id, dataset_name, train_type, t
     # Setting up the saver
     saver = Saver(alg_name, tester)
 
-    # # Baseline 1 (standard DQN with Michael Littman's approach)
-    # if alg_name == "dqn-l":
-    #     baseline_dqn.run_experiments(tester, curriculum, saver, num_times, show_print)
+    # Baseline 1 (standard DQN with Michael Littman's approach)
+    if alg_name == "dqn-l":
+        baseline_dqn.run_experiments(tester, curriculum, saver, num_times, show_print)
 
-    # # Baseline 2 (Hierarchical RL)
-    # if alg_name == "hrl-e":
-    #     baseline_hrl.run_experiments(tester, curriculum, saver, num_times, show_print, use_dfa=False)
+    # Baseline 2 (Hierarchical RL)
+    if alg_name == "hrl-e":
+        baseline_hrl.run_experiments(tester, curriculum, saver, num_times, show_print, use_dfa=False)
 
-    # # Baseline 3 (Hierarchical RL with LTL constraints)
-    # if alg_name == "hrl-l":
-    #     baseline_hrl.run_experiments(tester, curriculum, saver, num_times, show_print, use_dfa=True)
+    # Baseline 3 (Hierarchical RL with LTL constraints)
+    if alg_name == "hrl-l":
+        baseline_hrl.run_experiments(tester, curriculum, saver, num_times, show_print, use_dfa=True)
 
     # LPOPL
     if alg_name == "lpopl":
         lpopl.run_experiments(tester, curriculum, saver, num_times, incremental_steps, show_print)
 
-    # # Relabel state-centric options learn by LPOPL then zero-shot transfer
-    # if alg_name == "zero_shot_transfer":
-    #     transfer.run_experiments(tester, curriculum, saver, run_id, relabel_method, transfer_num_times)
+    # Relabel state-centric options learn by LPOPL then zero-shot transfer
+    if alg_name == "zero_shot_transfer":
+        transfer.run_experiments(tester, curriculum, saver, run_id, relabel_method, transfer_num_times)
 
-    # # Random policy baseline
-    # if alg_name == "random_transfer":
-    #     random_transfer.run_experiments(tester, curriculum, saver, run_id, relabel_method, transfer_num_times)
+    # Random policy baseline
+    if alg_name == "random_transfer":
+        random_transfer.run_experiments(tester, curriculum, saver, run_id, relabel_method, transfer_num_times)
 
 
 def run_multiple_experiments(alg, prob, tasks_id, dataset_name, train_type, train_size, test_type, total_steps, incremental_steps, run_id, relabel_method, transfer_num_times, edge_matcher, save_dpath):

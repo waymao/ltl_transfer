@@ -5,7 +5,6 @@ import argparse
 import logging
 from collections import defaultdict
 import numpy as np
-import tensorflow as tf
 from game import GameParams, Game
 from dataset_creator import read_train_test_formulas
 import tasks
@@ -281,7 +280,7 @@ class Loader:
     def load_policy_bank(self, policy_bank, run_idx):
         run_dpath = os.path.join(self.saver.policy_dpath, f"run_{run_idx}")  # where all tf model are saved
         # saver = tf.train.import_meta_graph(run_dpath+"policy_bank.meta")
-        policy_bank.load_bank(tf.train.latest_checkpoint(run_dpath))
+        policy_bank.load_bank(run_dpath)
 
 
 def get_precentiles_str(a):
