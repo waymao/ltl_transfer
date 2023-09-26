@@ -2,8 +2,14 @@ import os
 import random
 import time
 import numpy as np
-import tensorflow as tf
-from tf_policies.policy_bank import *
+# import tensorflow as tf
+USE_TF = False
+if USE_TF:
+    from tf_policies.policy_bank import *
+    import tensorflow as tf
+else:
+    from torch_policies.policy_bank import *
+
 from schedules import LinearSchedule
 from replay_buffer import ReplayBuffer
 from dfa import *
@@ -42,7 +48,10 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
 
         # Setting the random seed to 'run_id'
         random.seed(run_id)
-        sess = tf.Session()
+        if USE_TF:
+            sess = tf.Session()
+        else:
+            sess = None
 
         # Reseting default values
         if not curriculum.incremental:
@@ -77,8 +86,9 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
         # Save 'tester' and 'curriculum' for incremental training
         saver.save_train_data(curriculum, run_id)
 
-        tf.reset_default_graph()
-        sess.close()
+        if USE_TF:
+            tf.reset_default_graph()
+            sess.close()
 
     # Showing results
     tester.show_results()
