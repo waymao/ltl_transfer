@@ -181,13 +181,12 @@ class Policy:
     def add_initiation_set_classifier(self, edge, classifier):
         self.edge2classifier[edge] = classifier
     
-    def load_bank(self, policy_bank_prefix, run_idx):
+    def load_bank(self, policy_bank_prefix):
         run_dpath = policy_bank_prefix  # where all tf model are saved
         # saver = tf.train.import_meta_graph(run_dpath+"policy_bank.meta")
         saver = tf.train.Saver()
         saver.restore(self.sess, tf.train.latest_checkpoint(run_dpath))
 
-    def save_bank(self, policy_bank_prefix, run_id):
+    def save_bank(self, policy_bank_prefix):
         tf_saver = tf.train.Saver()
-        policy_bank_prefix = os.path.join(self.policy_dpath, f"run_{run_id}", "policy_bank")
         tf_saver.save(self.sess, policy_bank_prefix)
