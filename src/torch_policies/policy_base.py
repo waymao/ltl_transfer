@@ -10,6 +10,7 @@ class Policy(torch.nn.Module):
             learning_params: LearningParameters,
             device="cpu"
         ):
+        super().__init__()
         raise NotImplementedError()
     
     def forward(self, x):
@@ -29,7 +30,7 @@ class Policy(torch.nn.Module):
             next_q_index_N, 
             next_q_values_CNA
         ):
-        pass
+        return 0
 
     def get_edge_labels(self):
         """

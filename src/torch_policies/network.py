@@ -16,4 +16,4 @@ def get_MLP(
                 layers.append(nn.ReLU(inplace=True))
             last_input = layer_neurons
         layers.append(nn.Linear(last_input, num_actions))
-        return nn.Sequential(layers)
+        return nn.Sequential(*layers)

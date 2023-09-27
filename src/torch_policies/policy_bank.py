@@ -17,7 +17,7 @@ class PolicyBank:
     """
     This class includes a list of policies (a.k.a neural nets) for achieving different LTL goals
     """
-    def __init__(self, num_actions, num_features, learning_params: LearningParameters, policy_type="dqn", device="cpu"):
+    def __init__(self, sess, num_actions, num_features, learning_params: LearningParameters, policy_type="dqn", device="cpu"):
         self.num_actions = num_actions
         self.num_features = num_features
         self.learning_params = learning_params
@@ -34,7 +34,7 @@ class PolicyBank:
 
 
     def _add_constant_policy(self, ltl, value):
-        policy = ConstantPolicy(ltl, value, self.num_features)
+        policy = ConstantPolicy(ltl, value, self.num_actions)
         self._add_policy(ltl, policy)
 
     def _add_policy(self, ltl, policy):
@@ -44,7 +44,7 @@ class PolicyBank:
     def _init_optimizer(self, parameters):
         self.optimizer = torch.optim.Adam(parameters, lr=1e-4)
     
-    def add_LTL_policy(self, ltl, f_task, dfa):
+    def add_LTL_policy(self, ltl, f_task, dfa, load_tf=True):
         """
         Add new LTL policy to the bank
         """
@@ -59,9 +59,9 @@ class PolicyBank:
 
             # add parameters to the optimizer
             if self.optimizer is None:
-                self.optimizer = self._init_optimizer(policy.parameters())
+                self._init_optimizer(policy.parameters())
             else:
-                self.optimizer.add_param_group(policy.parameters())
+                self.optimizer.add_param_group({'params': policy.parameters()})
     
     def replace_policy(self, ltl, f_task, dfa):
         print("replace")
@@ -84,20 +84,27 @@ class PolicyBank:
         # this function is not used for reconnecting the compute graph in the pytorch version since it's dynamic
         pass
 
-    def learn(self, s1, a, s2, r, terminated, next_goal):
+    def learn(self, s1, a, s2, next_goals, r=None, terminated=None):
         """
         given the sampled batch, computes the loss and learns the policy
+        next goals is a list of next goals for each item.
         """
         assert self.optimizer is not None, "Optimizer is not initialized. Please add a policy first."
-        C = self.get_number_LTL_policies()
+        C = len(self.policies)
         N, S = s1.shape
         A = self.num_actions
         s1_NS = torch.tensor(s1, dtype=torch.float32, device=self.device)
         a_N = torch.tensor(a, dtype=torch.int64, device=self.device)
         s2_NS = torch.tensor(s2, dtype=torch.float32, device=self.device)
-        r_N = torch.tensor(r, dtype=torch.float32, device=self.device)
-        terminated_N = torch.tensor(terminated, dtype=torch.bool, device=self.device)
-        next_goal_N = torch.tensor(next_goal, dtype=torch.int64, device=self.device)
+        if r is None:
+            r_N = torch.zeros((N,), dtype=torch.float32, device=self.device)
+        else:
+            r_N = torch.tensor(r, dtype=torch.float32, device=self.device)
+        if terminated is None:
+            terminated_N = torch.zeros((N,), dtype=torch.bool, device=self.device)
+        else:
+            terminated_N = torch.tensor(terminated, dtype=torch.bool, device=self.device)
+        next_goal_NC = torch.tensor(next_goals, dtype=torch.int64, device=self.device)
         
         next_q_values_CNA = torch.zeros((C, N, A))
         for i, policy in enumerate(self.policies):
@@ -105,9 +112,26 @@ class PolicyBank:
         
         self.optimizer.zero_grad()
         loss = 0
-        for policy in self.policies:
-            loss += policy.compute_loss(s1_NS, a_N, s2_NS, r_N, terminated_N, next_goal_N, next_q_values_CNA)
+        for idx, policy in enumerate(self.policies[:-2]): # compute loss for every policy except for true, false
+            loss += policy.compute_loss(s1_NS, a_N, s2_NS, r_N, terminated_N, next_goal_NC[:, idx], next_q_values_CNA)
         loss.backward()
         self.optimizer.step()
+    
+    def get_best_action(self, ltl, s1):
+        return self.policies[self.policy2id[ltl]].get_best_action(s1)
+
+    def update_target_network(self):
+        for i in range(self.get_number_LTL_policies()):
+            self.policies[i+2].update_target_network()
+
+    def get_policy_next_LTL(self, ltl, true_props):
+        return self.policies[self.get_id(ltl)].dfa.progress_LTL(ltl, true_props)
+ 
         
+    def load_bank(self, policy_bank_prefix):
+        # TODO
+        pass
+
+    def save_bank(self, policy_bank_prefix):
+        # TODO
         pass

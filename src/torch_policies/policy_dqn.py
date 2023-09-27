@@ -20,7 +20,7 @@ eps=0.05,
 target_update_freq=10, 
 """
 
-class DQN(Policy):
+class DQN(nn.Module):
     """
     LPOPL variant of Naive DQN
     """
@@ -64,6 +64,9 @@ class DQN(Policy):
         self.training = False # used to distinguish training vs testing
     
     def forward(self, x):
+        return self.target_model(x)
+    
+    def get_best_action(self, x):
         """
         Given x, returns the q value of every action.
         """
@@ -100,16 +103,18 @@ class DQN(Policy):
         next_goal: int64, index of the q value to use next.
         q_values_next_all: float32, computed Q value from all models (including itself)
         """
+        A = self.action_dim
         # q for current state
         q_all_values_NA = self.model(s1_NS) # Q values for all actions
         q_values_N1 = torch.gather(q_all_values_NA, 1, a_N.view(-1, 1)) # selected Q
         
         # q for next state using target model.
-        q_values_next_NA = next_q_values_CNA.gather(0, next_q_index_N)
+        next_q_index_1NA = torch.tile(next_q_index_N[:, None], (1, A)).unsqueeze(0)
+        q_values_next_NA = torch.gather(next_q_values_CNA, 0, next_q_index_1NA).squeeze(0)
         max_q_values_next_N = q_values_next_NA.max(1)[0]
 
         # target and loss
-        q_values_hat_N = r_N + self.gamma * max_q_values_next_N * (1 - terminated_N)
+        q_values_hat_N = r_N + self.gamma * max_q_values_next_N * ~terminated_N
         q_values_N = torch.squeeze(q_values_N1)
         dqn_loss = torch.mean(F.mse_loss(q_values_hat_N, q_values_N))
 
