@@ -34,7 +34,7 @@ class PolicyBank:
 
 
     def _add_constant_policy(self, ltl, value):
-        policy = ConstantPolicy(ltl, value, self.num_actions)
+        policy = ConstantPolicy(ltl, value, self.num_actions, device=self.device)
         self._add_policy(ltl, policy)
 
     def _add_policy(self, ltl, policy):
@@ -51,10 +51,15 @@ class PolicyBank:
         if ltl not in self.policy2id:
             PolicyModule = POLICY_MODULES[self.policy_type]
             # get the network
-            nn_module = get_MLP(self.num_features, self.num_actions, hidden_layers=[64, 64])
+            nn_module = get_MLP(
+                self.num_features, self.num_actions, 
+                hidden_layers=[64, 64], 
+                device=self.device)
             
             # initialize and add the policy module
-            policy = PolicyModule(ltl, f_task, dfa, nn_module, self.num_features, self.num_actions, self.learning_params)
+            policy = PolicyModule(ltl, f_task, dfa, nn_module, 
+                                  self.num_features, self.num_actions, self.learning_params,
+                                  device=self.device)
             self._add_policy(ltl, policy)
 
             # add parameters to the optimizer
@@ -67,8 +72,14 @@ class PolicyBank:
         print("replace")
         # TODO is it needed or maybe we should remove
         PolicyModule = POLICY_MODULES[self.policy_type]
-        nn_module = get_MLP(self.num_features, self.num_actions, hidden_layers=[64, 64])
-        policy = PolicyModule(ltl, f_task, dfa, nn_module, self.num_features, self.num_actions, self.learning_params)
+        nn_module = get_MLP(
+            self.num_features, self.num_actions,
+            hidden_layers=[64, 64], 
+            device=self.device)
+        policy = PolicyModule(
+            ltl, f_task, dfa, nn_module, 
+            self.num_features, self.num_actions, self.learning_params,
+            device=self.device)
         self._add_policy(ltl, policy)
     
     def get_id(self, ltl):
@@ -106,16 +117,20 @@ class PolicyBank:
             terminated_N = torch.tensor(terminated, dtype=torch.bool, device=self.device)
         next_goal_NC = torch.tensor(next_goals, dtype=torch.int64, device=self.device)
         
-        next_q_values_CNA = torch.zeros((C, N, A))
+        next_q_values_CNA = torch.zeros((C, N, A), device=self.device)
         for i, policy in enumerate(self.policies):
             next_q_values_CNA[i, :, :] = policy.forward(s2_NS)
         
         self.optimizer.zero_grad()
-        loss = 0
-        for idx, policy in enumerate(self.policies[:-2]): # compute loss for every policy except for true, false
-            loss += policy.compute_loss(s1_NS, a_N, s2_NS, r_N, terminated_N, next_goal_NC[:, idx], next_q_values_CNA)
+        loss = torch.tensor(0, dtype=torch.float32, device=self.device)
+        for idx, policy in enumerate(self.policies[2:]): # compute loss for every policy except for true, false
+            loss += policy.compute_loss(
+                s1_NS, a_N, s2_NS, r_N, terminated_N, 
+                next_goal_NC[:, idx], 
+                next_q_values_CNA)
         loss.backward()
         self.optimizer.step()
+        return loss.cpu().item()
     
     def get_best_action(self, ltl, s1):
         return self.policies[self.policy2id[ltl]].get_best_action(s1)
@@ -126,7 +141,7 @@ class PolicyBank:
 
     def get_policy_next_LTL(self, ltl, true_props):
         return self.policies[self.get_id(ltl)].dfa.progress_LTL(ltl, true_props)
- 
+
         
     def load_bank(self, policy_bank_prefix):
         # TODO

@@ -162,10 +162,13 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
         replay_buffer.add(s1, a.value, s2, next_goals)
 
         # Learning
-        if curriculum.get_current_step() > learning_params.learning_starts and curriculum.get_current_step() % learning_params.train_freq == 0:
+        step = curriculum.get_current_step()
+        if step > learning_params.learning_starts and step % learning_params.train_freq == 0:
             # Minimize the error in Bellman's equation on a batch sampled from replay buffer.
             S1, A, S2, Goal = replay_buffer.sample(learning_params.batch_size)
-            policy_bank.learn(S1, A, S2, Goal)
+            loss = policy_bank.learn(S1, A, S2, Goal)
+            if step % learning_params.target_network_update_freq == 0:
+                print("step", step, "; loss", loss)
 
         # Updating the target network
         if curriculum.get_current_step() > learning_params.learning_starts and curriculum.get_current_step() % learning_params.target_network_update_freq == 0:
