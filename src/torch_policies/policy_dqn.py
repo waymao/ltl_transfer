@@ -92,7 +92,7 @@ class DQN(nn.Module):
             r_N, 
             terminated_N, 
             next_q_index_N, 
-            next_q_values_CNA
+            max_q_values_CN
         ):
         """
         Compute the loss of the model.
@@ -109,14 +109,12 @@ class DQN(nn.Module):
         q_values_N1 = torch.gather(q_all_values_NA, 1, a_N.view(-1, 1)) # selected Q
         
         # q for next state using target model.
-        next_q_index_1NA = torch.tile(next_q_index_N[:, None], (1, A)).unsqueeze(0)
-        q_values_next_NA = torch.gather(next_q_values_CNA, 0, next_q_index_1NA).squeeze(0)
-        max_q_values_next_N = q_values_next_NA.max(1)[0]
+        max_q_values_next_N = torch.gather(max_q_values_CN, 0, next_q_index_N.view(1, -1)).squeeze(0)
 
         # target and loss
         q_values_hat_N = r_N + self.gamma * max_q_values_next_N * ~terminated_N
         q_values_N = torch.squeeze(q_values_N1)
-        dqn_loss = torch.mean(F.mse_loss(q_values_hat_N, q_values_N))
+        dqn_loss = F.mse_loss(q_values_N, q_values_hat_N, reduction="mean")
 
         return dqn_loss
 

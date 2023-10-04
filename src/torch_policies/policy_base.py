@@ -28,7 +28,7 @@ class Policy(torch.nn.Module):
             r_N, 
             terminated_N, 
             next_q_index_N, 
-            next_q_values_CNA
+            max_q_values_CN
         ):
         return 0
 
