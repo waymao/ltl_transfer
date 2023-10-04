@@ -1,4 +1,5 @@
 from typing import Mapping, List
+import os
 import torch
 from torch import nn
 
@@ -54,7 +55,7 @@ class PolicyBank:
             # get the network
             nn_module = get_MLP(
                 self.num_features, self.num_actions, 
-                hidden_layers=[64, 64], 
+                hidden_layers=[64], 
                 device=self.device)
             
             # initialize and add the policy module
@@ -131,7 +132,7 @@ class PolicyBank:
                 next_q_values_CNA)
         loss.backward()
         self.optimizer.step()
-        return loss.cpu().item()
+        return loss
     
     def get_best_action(self, ltl, s1):
         return self.policies[self.policy2id[ltl]].get_best_action(s1)
@@ -145,9 +146,25 @@ class PolicyBank:
 
         
     def load_bank(self, policy_bank_prefix):
-        # TODO
-        pass
+        checkpoint_path = os.path.join(policy_bank_prefix, "policy_bank.pth")
+        checkpoint = torch.load(checkpoint_path)
+        for ltl, policy_id in self.policy2id.items():
+            policy: nn.Module = self.policies[policy_id]
+            policy.load_state_dict(checkpoint['policies'][ltl])
+        self.optimizer.load_state_dict(checkpoint['optim'])
+        print("loaded policy bank from", checkpoint_path)
+
 
     def save_bank(self, policy_bank_prefix):
         # TODO
-        pass
+        save = {}
+        policies_dict = {}
+        for ltl, policy_id in self.policy2id.items():
+            policy: nn.Module = self.policies[policy_id]
+            state_dict = policy.state_dict()
+            policies_dict[ltl] = state_dict
+        save['policies'] = policies_dict
+        save['optim'] = self.optimizer.state_dict()
+        checkpoint_path = os.path.join(policy_bank_prefix, "policy_bank.pth")
+        torch.save(save, checkpoint_path)
+        print("Saved bank to", checkpoint_path)
