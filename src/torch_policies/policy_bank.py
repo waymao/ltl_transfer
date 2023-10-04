@@ -22,6 +22,8 @@ class PolicyBank:
         self.num_features = num_features
         self.learning_params = learning_params
 
+        self.device = device
+
         self.policies: List[Policy] = []
         self.policy2id: Mapping[str, int] = {}
 
@@ -29,7 +31,6 @@ class PolicyBank:
         self._add_constant_policy("True", 1/learning_params.gamma)  # this ensures that reaching 'True' gives reward of 1
         self.policy_type = policy_type
 
-        self.device = device
         self.optimizer: torch.optim.Optimizer = None
 
 

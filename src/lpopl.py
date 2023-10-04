@@ -19,7 +19,7 @@ from test_utils import Loader, load_pkl
 from curriculum import CurriculumLearner
 from test_utils import TestingParameters, Tester, Saver
 
-def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver, num_times, incremental_steps, show_print):
+def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver, num_times, incremental_steps, show_print, device="cpu"):
     time_init = time.time()
     tester_original = tester
     curriculum_original = curriculum
@@ -61,7 +61,7 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
         replay_buffer = ReplayBuffer(learning_params.buffer_size)
 
         # Initializing policies per each subtask
-        policy_bank = _initialize_policy_bank(sess, learning_params, curriculum, tester)
+        policy_bank = _initialize_policy_bank(sess, learning_params, curriculum, tester, device=device)
         # Load 'policy_bank' if incremental training
         policy_dpath = os.path.join(saver.policy_dpath, "run_%d" % run_id)
         if os.path.exists(policy_dpath) and os.listdir(policy_dpath):
@@ -95,11 +95,11 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
     print("Time:", "%0.2f" % ((time.time() - time_init)/60), "mins")
 
 
-def _initialize_policy_bank(sess, learning_params, curriculum: CurriculumLearner, tester: Tester, load_tf=True):
+def _initialize_policy_bank(sess, learning_params, curriculum: CurriculumLearner, tester: Tester, load_tf=True, device="cpu"):
     task_aux = Game(tester.get_task_params(curriculum.get_current_task()))
     num_actions = len(task_aux.get_actions())
     num_features = task_aux.get_num_features()
-    policy_bank = PolicyBank(sess, num_actions, num_features, learning_params)
+    policy_bank = PolicyBank(sess, num_actions, num_features, learning_params, device=device)
     for idx, f_task in enumerate(tester.get_LTL_tasks()[:tester.train_size]):  # only load first 'train_size' policies
         # start_time = time.time()
         dfa = DFA(f_task)
