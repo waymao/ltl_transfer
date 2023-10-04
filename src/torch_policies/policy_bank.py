@@ -66,9 +66,9 @@ class PolicyBank:
 
             # add parameters to the optimizer
             if self.optimizer is None:
-                self._init_optimizer(policy.parameters())
+                self._init_optimizer(policy.model.parameters())
             else:
-                self.optimizer.add_param_group({'params': policy.parameters()})
+                self.optimizer.add_param_group({'params': policy.model.parameters()})
     
     def replace_policy(self, ltl, f_task, dfa):
         print("replace")
