@@ -44,7 +44,7 @@ class PolicyBank:
         self.policies.append(policy)
     
     def _init_optimizer(self, parameters):
-        self.optimizer = torch.optim.Adam(parameters, lr=1e-4)
+        self.optimizer = torch.optim.Adam(parameters, lr=self.learning_params.lr)
     
     def add_LTL_policy(self, ltl, f_task, dfa, load_tf=True):
         """
@@ -55,7 +55,7 @@ class PolicyBank:
             # get the network
             nn_module = get_MLP(
                 self.num_features, self.num_actions, 
-                hidden_layers=[64], 
+                hidden_layers=[64, 64], 
                 device=self.device)
             
             # initialize and add the policy module
@@ -66,9 +66,9 @@ class PolicyBank:
 
             # add parameters to the optimizer
             if self.optimizer is None:
-                self._init_optimizer(policy.parameters())
+                self._init_optimizer(policy.model.parameters())
             else:
-                self.optimizer.add_param_group({'params': policy.parameters()})
+                self.optimizer.add_param_group({'params': policy.model.parameters()})
     
     def replace_policy(self, ltl, f_task, dfa):
         print("replace")
@@ -117,18 +117,21 @@ class PolicyBank:
             terminated_N = torch.zeros((N,), dtype=torch.bool, device=self.device)
         else:
             terminated_N = torch.tensor(terminated, dtype=torch.bool, device=self.device)
+        # N * (C-2)
         next_goal_NC = torch.tensor(next_goals, dtype=torch.int64, device=self.device)
         
-        next_q_values_CNA = torch.zeros((C, N, A), device=self.device)
+        # C * N
+        max_q_values_CN = torch.zeros((C, N), device=self.device, requires_grad=False)
         for i, policy in enumerate(self.policies):
-            next_q_values_CNA[i, :, :] = policy.forward(s2_NS)
+            curr_q_values_NA = policy.forward(s2_NS)
+            max_q_values_CN[i, :] = curr_q_values_NA.max(axis=1)[0]
         
         loss = 0
         for idx, policy in enumerate(self.policies[2:]): # compute loss for every policy except for true, false
             loss_policy = policy.learn(
                 s1_NS, a_N, s2_NS, r_N, terminated_N, 
                 next_goal_NC[:, idx], 
-                next_q_values_CNA)
+                max_q_values_CN)
             with torch.no_grad():
                 loss += loss_policy
         return loss
