@@ -7,7 +7,7 @@ class PolicyBank:
     """
     This class includes a list of policies (a.k.a neural nets) for achieving different LTL goals
     """
-    def __init__(self, sess, num_actions, num_features, learning_params):
+    def __init__(self, sess, num_actions, num_features, learning_params, device=None):
         self.sess = sess
         self.num_actions = num_actions
         self.num_features = num_features

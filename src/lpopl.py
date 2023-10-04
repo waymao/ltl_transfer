@@ -3,7 +3,8 @@ import random
 import time
 import numpy as np
 # import tensorflow as tf
-USE_TF = False
+
+USE_TF = os.environ.get("USE_TF") or False
 if USE_TF:
     from tf_policies.policy_bank import *
     import tensorflow as tf
@@ -168,7 +169,7 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
             S1, A, S2, Goal = replay_buffer.sample(learning_params.batch_size)
             loss = policy_bank.learn(S1, A, S2, Goal)
             if step % learning_params.target_network_update_freq == 0:
-                print("step", step, "; loss", loss)
+                print("step", step, "; loss", loss.cpu().item())
 
         # Updating the target network
         if curriculum.get_current_step() > learning_params.learning_starts and curriculum.get_current_step() % learning_params.target_network_update_freq == 0:
