@@ -62,6 +62,7 @@ class DQN(nn.Module):
         self.action_dim = action_dim
         self.t = -1
         self.training = False # used to distinguish training vs testing
+        self.optim = torch.optim.Adam(self.model.parameters(), lr=learning_params.lr)
     
     def forward(self, x):
         return self.target_model(x)
@@ -109,9 +110,10 @@ class DQN(nn.Module):
         q_values_N1 = torch.gather(q_all_values_NA, 1, a_N.view(-1, 1)) # selected Q
         
         # q for next state using target model.
-        next_q_index_1NA = torch.tile(next_q_index_N[:, None], (1, A)).unsqueeze(0)
-        q_values_next_NA = torch.gather(next_q_values_CNA, 0, next_q_index_1NA).squeeze(0)
-        max_q_values_next_N = q_values_next_NA.max(1)[0]
+        with torch.no_grad():
+            next_q_index_1NA = torch.tile(next_q_index_N[:, None], (1, A)).unsqueeze(0)
+            q_values_next_NA = torch.gather(next_q_values_CNA, 0, next_q_index_1NA).squeeze(0)
+            max_q_values_next_N = q_values_next_NA.max(1)[0]
 
         # target and loss
         q_values_hat_N = r_N + self.gamma * max_q_values_next_N * ~terminated_N
@@ -119,6 +121,25 @@ class DQN(nn.Module):
         dqn_loss = torch.mean(F.mse_loss(q_values_hat_N, q_values_N))
 
         return dqn_loss
+
+    def learn(
+            self, 
+            s1_NS, 
+            a_N, 
+            s2_NS, 
+            r_N, 
+            terminated_N, 
+            next_q_index_N, 
+            next_q_values_CNA
+        ):
+        """
+        train using dqn loss
+        """
+        self.optim.zero_grad()
+        loss = self.compute_loss(s1_NS, a_N, s2_NS, r_N, terminated_N, next_q_index_N, next_q_values_CNA)
+        loss.backward()
+        self.optim.step()
+        return loss
 
 
     def get_edge_labels(self):

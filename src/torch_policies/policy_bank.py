@@ -123,15 +123,14 @@ class PolicyBank:
         for i, policy in enumerate(self.policies):
             next_q_values_CNA[i, :, :] = policy.forward(s2_NS)
         
-        self.optimizer.zero_grad()
-        loss = torch.tensor(0, dtype=torch.float32, device=self.device)
+        loss = 0
         for idx, policy in enumerate(self.policies[2:]): # compute loss for every policy except for true, false
-            loss += policy.compute_loss(
+            loss_policy = policy.learn(
                 s1_NS, a_N, s2_NS, r_N, terminated_N, 
                 next_goal_NC[:, idx], 
                 next_q_values_CNA)
-        loss.backward()
-        self.optimizer.step()
+            with torch.no_grad():
+                loss += loss_policy
         return loss
     
     def get_best_action(self, ltl, s1):
@@ -150,8 +149,8 @@ class PolicyBank:
         checkpoint = torch.load(checkpoint_path)
         for ltl, policy_id in self.policy2id.items():
             policy: nn.Module = self.policies[policy_id]
-            policy.load_state_dict(checkpoint['policies'][ltl])
-        self.optimizer.load_state_dict(checkpoint['optim'])
+            policy.load_state_dict(checkpoint['policies'][ltl][0])
+            policy.optim.load_state_dict(checkpoint['policies'][ltl][1])
         print("loaded policy bank from", checkpoint_path)
 
 
@@ -161,10 +160,8 @@ class PolicyBank:
         policies_dict = {}
         for ltl, policy_id in self.policy2id.items():
             policy: nn.Module = self.policies[policy_id]
-            state_dict = policy.state_dict()
-            policies_dict[ltl] = state_dict
+            policies_dict[ltl] = (policy.state_dict(), policy.optim.state_dict())
         save['policies'] = policies_dict
-        save['optim'] = self.optimizer.state_dict()
         checkpoint_path = os.path.join(policy_bank_prefix, "policy_bank.pth")
         torch.save(save, checkpoint_path)
         print("Saved bank to", checkpoint_path)
