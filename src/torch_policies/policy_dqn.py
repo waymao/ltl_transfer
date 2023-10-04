@@ -67,15 +67,19 @@ class DQN(nn.Module):
     def forward(self, x):
         return self.target_model(x)
     
-    def get_best_action(self, x):
+    def get_best_action(self, x, exploration=False):
         """
         Given x, returns the q value of every action.
         """
+        if type(x) != torch.Tensor:
+            x = torch.Tensor(x).to(self.device)
+        if not exploration:
+            return self.target_model(x).argmax().item()
+        
+        # add exploration
         if self.training:
             # increment the time step used by the epsilon scheduler
             self.t += 1
-        if type(x) != torch.Tensor:
-            x = torch.Tensor(x)
         if np.random.random() < self.eps_scheduler.value(self.t):
             return np.random.randint(0, self.action_dim)
         else:
