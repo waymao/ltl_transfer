@@ -120,7 +120,8 @@ class DQN(nn.Module):
         # target and loss
         q_values_hat_N = r_N + self.gamma * max_q_values_next_N * ~terminated_N
         q_values_N = torch.squeeze(q_values_N1)
-        dqn_loss = F.mse_loss(q_values_N, q_values_hat_N, reduction="mean")
+        # dqn_loss = F.mse_loss(q_values_N, q_values_hat_N, reduction="mean")
+        dqn_loss = 0.5 * torch.sum(torch.square(q_values_hat_N - q_values_N))
 
         return dqn_loss
 
