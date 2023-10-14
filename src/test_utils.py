@@ -208,7 +208,7 @@ class Saver:
 
     def save_policy_bank(self, policy_bank, run_id):
         policy_bank_prefix = os.path.join(self.policy_dpath, f"run_{run_id}", "policy_bank")
-        policy_bank.save_bank(policy_bank_prefix, run_id)
+        policy_bank.save_bank(policy_bank_prefix)
 
     def save_results(self):
         results = {
@@ -278,7 +278,7 @@ class Loader:
         self.saver = saver
 
     def load_policy_bank(self, policy_bank, run_idx):
-        run_dpath = os.path.join(self.saver.policy_dpath, f"run_{run_idx}")  # where all tf model are saved
+        run_dpath = os.path.join(self.saver.policy_dpath, f"run_{run_idx}", "policy_bank")  # where all pytorch model are saved
         # saver = tf.train.import_meta_graph(run_dpath+"policy_bank.meta")
         policy_bank.load_bank(run_dpath)
 

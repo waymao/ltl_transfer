@@ -1,4 +1,4 @@
-from typing import Mapping, List
+from typing import Mapping, List, Union
 import os
 import torch
 from torch import nn
@@ -152,8 +152,9 @@ class PolicyBank:
         checkpoint_path = os.path.join(policy_bank_prefix, "policy_bank.pth")
         checkpoint = torch.load(checkpoint_path)
         for ltl, policy_id in self.policy2id.items():
-            policy: nn.Module = self.policies[policy_id]
-            policy.load_state_dict(checkpoint['policies'][ltl])
+            if ltl in checkpoint['policies']:
+                policy: nn.Module = self.policies[policy_id]
+                policy.load_state_dict(checkpoint['policies'][ltl])
         self.optimizer.load_state_dict(checkpoint['optim'])
         print("loaded policy bank from", checkpoint_path)
 
@@ -163,11 +164,15 @@ class PolicyBank:
         save = {}
         policies_dict = {}
         for ltl, policy_id in self.policy2id.items():
-            policy: nn.Module = self.policies[policy_id]
-            state_dict = policy.state_dict()
-            policies_dict[ltl] = state_dict
+            policy: Union[nn.Module, ConstantPolicy] = self.policies[policy_id]
+            if type(policy) != ConstantPolicy:
+                # only save non-constant policy
+                state_dict = policy.state_dict()
+                policies_dict[ltl] = state_dict
         save['policies'] = policies_dict
         save['optim'] = self.optimizer.state_dict()
         checkpoint_path = os.path.join(policy_bank_prefix, "policy_bank.pth")
+        if not os.path.exists(policy_bank_prefix):
+            os.makedirs(policy_bank_prefix)
         torch.save(save, checkpoint_path)
         print("Saved bank to", checkpoint_path)
