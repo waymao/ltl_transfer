@@ -104,7 +104,7 @@ def _initialize_policy_bank(sess, learning_params, curriculum: CurriculumLearner
     task_aux = Game(tester.get_task_params(curriculum.get_current_task()))
     num_actions = len(task_aux.get_actions())
     num_features = task_aux.get_num_features()
-    policy_bank = PolicyBank(sess, num_actions, num_features, learning_params, device=device)
+    policy_bank = PolicyBank(sess, num_actions, num_features, learning_params, policy_type="ppo", device=device)
     for idx, f_task in enumerate(tester.get_LTL_tasks()[:tester.train_size]):  # only load first 'train_size' policies
         # start_time = time.time()
         dfa = DFA(f_task)
@@ -121,7 +121,7 @@ def _initialize_policy_bank(sess, learning_params, curriculum: CurriculumLearner
     return policy_bank
 
 
-def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curriculum: CurriculumLearner, replay_buffer, show_print):
+def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curriculum: CurriculumLearner, replay_buffer: ReplayBuffer, show_print):
     # Initializing parameters
     learning_params = tester.learning_params
     testing_params = tester.testing_params
@@ -133,7 +133,6 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
     # Initializing parameters
     num_features = task.get_num_features()
     num_steps = learning_params.max_timesteps_per_task
-    exploration = LinearSchedule(schedule_timesteps=int(learning_params.exploration_fraction * num_steps), initial_p=1.0, final_p=learning_params.exploration_final_eps)
     training_reward = 0
 
     # Starting interaction with the environment
@@ -144,8 +143,7 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
         s1 = task.get_features()
 
         # Choosing an action to perform
-        if random.random() < exploration.value(t): a = random.choice(actions)
-        else: a = Actions(policy_bank.get_best_action(ltl_goal, s1.reshape((1, num_features))))
+        a = Actions(policy_bank.get_best_action(ltl_goal, s1.reshape((1, num_features))))
         # updating the curriculum
         curriculum.add_step()
 
@@ -168,18 +166,13 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
 
         # Learning
         step = curriculum.get_current_step()
-        if step > learning_params.learning_starts and step % learning_params.train_freq == 0:
+        if step % learning_params.batch_size == 0:
             # Minimize the error in Bellman's equation on a batch sampled from replay buffer.
-            S1, A, S2, Goal = replay_buffer.sample(learning_params.batch_size)
+            S1, A, S2, Goal = replay_buffer.sample(learning_params.batch_size, random=False)
             policy_bank.learn(S1, A, S2, Goal)
             if step % learning_params.target_network_update_freq == 0:
                 # print("step", step, "; loss", loss.cpu().item())
                 pass
-
-        # Updating the target network
-        if curriculum.get_current_step() > learning_params.learning_starts and curriculum.get_current_step() % learning_params.target_network_update_freq == 0:
-            # Update target network periodically.
-            policy_bank.update_target_network()
 
         # Printing
         if show_print and (curriculum.get_current_step()+1) % learning_params.print_freq == 0:

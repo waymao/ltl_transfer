@@ -32,6 +32,7 @@ class DQN(nn.Module):
             state_dim, 
             action_dim, 
             learning_params: LearningParameters,
+            logger,
             device="cpu"
         ):
         super().__init__()
@@ -66,6 +67,10 @@ class DQN(nn.Module):
     
     def forward(self, x):
         return self.target_model(x)
+    
+    def get_v(self, x):
+        curr_q_values_NA = self.model.forward(x)
+        return curr_q_values_NA.max(axis=1)[0]
     
     def get_best_action(self, x, exploration=False):
         """

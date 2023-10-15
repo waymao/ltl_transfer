@@ -14,6 +14,11 @@ class Policy(torch.nn.Module):
         raise NotImplementedError()
     
     def forward(self, x):
+        # get action
+        pass
+
+    def get_v(self, x):
+        # get value function for state
         pass
     
     def update_target_network(self) -> None:

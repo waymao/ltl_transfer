@@ -6,6 +6,7 @@ def get_MLP(
         num_actions: int, 
         hidden_layers: List[int],
         use_relu=True,
+        final_layer_softmax=False,
         device="cpu"
     ):
         layers = []
@@ -17,4 +18,6 @@ def get_MLP(
                 layers.append(nn.ReLU(inplace=True))
             last_input = layer_neurons
         layers.append(nn.Linear(last_input, num_actions))
+        if final_layer_softmax:
+             layers.append(nn.Softmax(-1))
         return nn.Sequential(*layers).to(device)

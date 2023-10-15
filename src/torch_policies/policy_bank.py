@@ -5,14 +5,18 @@ from torch import nn
 
 from .learning_params import LearningParameters
 from .policy_dqn import DQN
+from .policy_ppo import PPO
 from .policy_base import Policy
 from .policy_constant import ConstantPolicy
+from .rl_logger import RLLogger
 from .network import get_MLP
 
 POLICY_MODULES: Mapping[str, Policy] = {
-    "dqn": DQN
+    "dqn": DQN,
+    "ppo": PPO
 }
 
+HIDDEN_LAYER_SIZE = [64, 64]
 
 class PolicyBank:
     """
@@ -30,9 +34,9 @@ class PolicyBank:
 
         self._add_constant_policy("False", 0.0)
         self._add_constant_policy("True", 1/learning_params.gamma)  # this ensures that reaching 'True' gives reward of 1
-        self.policy_type = policy_type
+        self.rl_algo = policy_type
 
-        self.optimizer: torch.optim.Optimizer = None
+        self.logger = RLLogger() # TODO maybe use it to log metrics
 
 
     def _add_constant_policy(self, ltl, value):
@@ -42,41 +46,46 @@ class PolicyBank:
     def _add_policy(self, ltl, policy):
         self.policy2id[ltl] = len(self.policies)
         self.policies.append(policy)
-    
-    def _init_optimizer(self, parameters):
-        self.optimizer = torch.optim.Adam(parameters, lr=self.learning_params.lr)
-    
+
     def add_LTL_policy(self, ltl, f_task, dfa, load_tf=True):
         """
         Add new LTL policy to the bank
         """
         if ltl not in self.policy2id:
-            PolicyModule = POLICY_MODULES[self.policy_type]
-            # get the network
-            nn_module = get_MLP(
-                self.num_features, self.num_actions, 
-                hidden_layers=[64, 64], 
-                device=self.device)
-            
-            # initialize and add the policy module
-            policy = PolicyModule(ltl, f_task, dfa, nn_module, 
-                                  self.num_features, self.num_actions, self.learning_params,
-                                  device=self.device)
+            PolicyModule = POLICY_MODULES[self.rl_algo]
+            if self.rl_algo == "ppo":
+                critic_module = get_MLP(
+                    self.num_features, 1, 
+                    hidden_layers=HIDDEN_LAYER_SIZE, 
+                    device=self.device)
+                actor_module = get_MLP(
+                    self.num_features, self.num_actions, 
+                    hidden_layers=HIDDEN_LAYER_SIZE, 
+                    final_layer_softmax=True,
+                    device=self.device)
+                policy = PPO(ltl, f_task, dfa, actor_module, critic_module,
+                            self.learning_params, self.logger,
+                            device=self.device)
+            else:    
+                nn_module = get_MLP(
+                    self.num_features, self.num_actions, 
+                    hidden_layers=HIDDEN_LAYER_SIZE, 
+                    device=self.device)
+                    
+                # initialize and add the policy module
+                policy = PolicyModule(ltl, f_task, dfa, nn_module, 
+                                    self.num_features, self.num_actions, self.learning_params,
+                                    self.logger,
+                                    device=self.device)
             self._add_policy(ltl, policy)
-
-            # add parameters to the optimizer
-            if self.optimizer is None:
-                self._init_optimizer(policy.model.parameters())
-            else:
-                self.optimizer.add_param_group({'params': policy.model.parameters()})
     
     def replace_policy(self, ltl, f_task, dfa):
         print("replace")
         # TODO is it needed or maybe we should remove
-        PolicyModule = POLICY_MODULES[self.policy_type]
+        PolicyModule = POLICY_MODULES[self.rl_algo]
         nn_module = get_MLP(
             self.num_features, self.num_actions,
-            hidden_layers=[64, 64], 
+            hidden_layers=HIDDEN_LAYER_SIZE, 
             device=self.device)
         policy = PolicyModule(
             ltl, f_task, dfa, nn_module, 
@@ -102,7 +111,6 @@ class PolicyBank:
         given the sampled batch, computes the loss and learns the policy
         next goals is a list of next goals for each item.
         """
-        assert self.optimizer is not None, "Optimizer is not initialized. Please add a policy first."
         C = len(self.policies)
         N, S = s1.shape
         A = self.num_actions
@@ -123,18 +131,13 @@ class PolicyBank:
         # C * N
         max_q_values_CN = torch.zeros((C, N), device=self.device, requires_grad=False)
         for i, policy in enumerate(self.policies):
-            curr_q_values_NA = policy.forward(s2_NS)
-            max_q_values_CN[i, :] = curr_q_values_NA.max(axis=1)[0]
-        
-        loss = 0
+            max_q_values_CN[i, :] = policy.get_v(s2_NS)
+
         for idx, policy in enumerate(self.policies[2:]): # compute loss for every policy except for true, false
-            loss_policy = policy.learn(
+            policy.learn(
                 s1_NS, a_N, s2_NS, r_N, terminated_N, 
                 next_goal_NC[:, idx], 
                 max_q_values_CN)
-            with torch.no_grad():
-                loss += loss_policy
-        return loss
     
     def get_best_action(self, ltl, s1):
         return self.policies[self.policy2id[ltl]].get_best_action(s1)

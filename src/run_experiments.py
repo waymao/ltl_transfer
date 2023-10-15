@@ -2,6 +2,7 @@ import argparse
 # import baseline_dqn
 # import baseline_hrl
 import lpopl
+import lpopl_ppo
 # import transfer
 # import random_transfer
 from test_utils import TestingParameters, Tester, Saver
@@ -88,6 +89,8 @@ def run_experiment(
     # LPOPL
     if alg_name == "lpopl":
         lpopl.run_experiments(tester, curriculum, saver, num_times, incremental_steps, show_print, device=device)
+    if alg_name == "lpopl_ppo":
+        lpopl_ppo.run_experiments(tester, curriculum, saver, num_times, incremental_steps, show_print, device=device)
 
     # # Relabel state-centric options learn by LPOPL then zero-shot transfer
     # if alg_name == "zero_shot_transfer":
@@ -125,7 +128,7 @@ if __name__ == "__main__":
     # EXAMPLE: python run_experiments.py --algo=zero_shot_transfer --train_type=no_orders --train_size=50 --test_type=soft --map=0 --prob=0.8 --run_id=0 --relabel_method=cluster --transfer_num_times=1
 
     # Getting params
-    algos = ["dqn-l", "hrl-e", "hrl-l", "lpopl", "zero_shot_transfer", "random_transfer"]
+    algos = ["dqn-l", "hrl-e", "hrl-l", "lpopl", "lpopl_ppo", "zero_shot_transfer", "random_transfer"]
     train_types = [
         "sequence",
         "interleaving",

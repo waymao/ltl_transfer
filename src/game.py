@@ -196,7 +196,7 @@ class Game:
         if self.consider_night:
             ret.append(self._steps_before_dark())
 
-        return np.array(ret, dtype=np.float64)
+        return np.array(ret, dtype=np.float32)
 
     # def _manhattan_distance(self, obj):
     #     """
