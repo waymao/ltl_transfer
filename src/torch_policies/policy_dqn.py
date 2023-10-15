@@ -62,6 +62,7 @@ class DQN(nn.Module):
         self.action_dim = action_dim
         self.t = -1
         self.training = False # used to distinguish training vs testing
+        self.optim = torch.optim.Adam(self.model.parameters(), lr=learning_params.lr)
     
     def forward(self, x):
         return self.target_model(x)
@@ -123,6 +124,25 @@ class DQN(nn.Module):
         dqn_loss = 0.5 * torch.sum(torch.square(q_values_hat_N - q_values_N))
 
         return dqn_loss
+
+    def learn(
+            self, 
+            s1_NS, 
+            a_N, 
+            s2_NS, 
+            r_N, 
+            terminated_N, 
+            next_q_index_N, 
+            next_q_values_CNA
+        ):
+        """
+        train using dqn loss
+        """
+        self.optim.zero_grad()
+        loss = self.compute_loss(s1_NS, a_N, s2_NS, r_N, terminated_N, next_q_index_N, next_q_values_CNA)
+        loss.backward()
+        self.optim.step()
+        return loss
 
 
     def get_edge_labels(self):
