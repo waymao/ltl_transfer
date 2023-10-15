@@ -12,7 +12,7 @@ else:
     from torch_policies.policy_bank import *
 
 from schedules import LinearSchedule
-from replay_buffer import ReplayBuffer
+from utils.replay_buffer import ReplayBuffer
 from dfa import *
 from game import *
 from test_utils import Loader, load_pkl
