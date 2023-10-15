@@ -40,7 +40,7 @@ class ReplayBuffer(object):
             Goal.append(np.array(next_goal, copy=False))
         return np.array(S1), np.array(A), np.array(S2), np.array(Goal)
 
-    def sample(self, batch_size, random=True):
+    def sample(self, batch_size, random_samples=True):
         """Sample a batch of experiences.
 
         Parameters
@@ -62,7 +62,7 @@ class ReplayBuffer(object):
             done_mask[i] = 1 if executing act_batch[i] resulted in
             the end of an episode and 0 otherwise.
         """
-        if random:
+        if random_samples:
             idxes = [random.randint(0, len(self._storage) - 1) for _ in range(batch_size)]
         else:
             idxes = range(len(self._storage) - batch_size, len(self._storage))
