@@ -72,14 +72,18 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
 
         # Running the tasks
         num_tasks = 0
-        while not curriculum.stop_learning():
-            task = curriculum.get_next_task()
-            if show_print:
-                print("Current step:", curriculum.get_current_step(), "from", curriculum.total_steps)
-                print("%d Current task: %d, %s" % (num_tasks, curriculum.current_task, str(task)))
-            task_params = tester.get_task_params(task)
-            _run_LPOPL(sess, policy_bank, task_params, tester, curriculum, replay_buffer, show_print)
-            num_tasks += 1
+        try:
+            while not curriculum.stop_learning():
+                task = curriculum.get_next_task()
+                if show_print:
+                    print("Current step:", curriculum.get_current_step(), "from", curriculum.total_steps)
+                    print("%d Current task: %d, %s" % (num_tasks, curriculum.current_task, str(task)))
+                task_params = tester.get_task_params(task)
+                _run_LPOPL(sess, policy_bank, task_params, tester, curriculum, replay_buffer, show_print)
+                num_tasks += 1
+        except KeyboardInterrupt:
+            # gracefully save everything when interrupted
+            pass
         # Save 'policy_bank' for incremental training and transfer
         saver.save_policy_bank(policy_bank, run_id)
         # Backing up the results
