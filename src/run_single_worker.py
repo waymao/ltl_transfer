@@ -3,10 +3,9 @@ import time
 import dill
 import argparse
 from collections import defaultdict
-import tensorflow as tf
 from test_utils import Saver, Loader
 from game import *
-from tf_policies.policy_bank import *
+from torch_policies.policy_bank import *
 
 
 def initialize_policy_bank(sess, task_aux, tester, ltl, f_task):
@@ -20,7 +19,7 @@ def initialize_policy_bank(sess, task_aux, tester, ltl, f_task):
     #     for ltl in dfa.ltl2state:
     #         # this method already checks that the policy is not in the bank and it is not 'True' or 'False'
     #         policy_bank.add_LTL_policy(ltl, f_task, dfa)
-    policy_bank.reconnect()  # -> creating the connections between the neural nets
+    # policy_bank.reconnect()  # -> creating the connections between the neural nets
 
     # print("\n", policy_bank.get_number_LTL_policies(), "sub-tasks were extracted!\n")
     return policy_bank
@@ -53,11 +52,7 @@ def single_worker_rollouts(alg_name, classifier_dpath, run_id, ltl_id, state_id,
     # create task_aux
     task_aux = Game(tester.get_task_params(tester.get_LTL_tasks()[0]))
 
-    # ensure that tensorflow threads are restricted to a single core
-    config = tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=1, allow_soft_placement=True)
-    tf.reset_default_graph()
-
-    with tf.Session(config=config) as sess:
+    with None as sess:
         # load policy_bank
         # start_time = time.time()
         policy_bank = initialize_policy_bank(sess, task_aux, tester, ltl, f_task)

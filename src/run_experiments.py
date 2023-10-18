@@ -3,7 +3,7 @@ import argparse
 # import baseline_hrl
 import lpopl
 import lpopl_ppo
-# import transfer
+import transfer
 # import random_transfer
 from test_utils import TestingParameters, Tester, Saver
 from curriculum import CurriculumLearner
@@ -93,8 +93,8 @@ def run_experiment(
         lpopl_ppo.run_experiments(tester, curriculum, saver, num_times, incremental_steps, show_print, device=device)
 
     # # Relabel state-centric options learn by LPOPL then zero-shot transfer
-    # if alg_name == "zero_shot_transfer":
-    #     transfer.run_experiments(tester, curriculum, saver, run_id, relabel_method, transfer_num_times)
+    if alg_name == "zero_shot_transfer":
+        transfer.run_experiments(tester, curriculum, saver, run_id, relabel_method, transfer_num_times)
 
     # # Random policy baseline
     # if alg_name == "random_transfer":

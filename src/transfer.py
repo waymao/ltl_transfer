@@ -14,10 +14,8 @@ from multiprocessing import Pool
 import numpy as np
 import sympy
 import networkx as nx
-import tensorflow as tf
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 from lpopl import _initialize_policy_bank, _test_LPOPL
-from tf_policies.policy_bank import *
+from torch_policies.policy_bank import *
 from dfa import *
 from game import *
 from test_utils import Loader, save_pkl, load_pkl, save_json
@@ -34,7 +32,7 @@ def run_experiments(tester, curriculum, saver, run_id, relabel_method, num_times
     learning_params = tester.learning_params
 
     random.seed(run_id)
-    sess = tf.Session()
+    sess = None
 
     # Reseting default values
     curriculum.restart()
@@ -75,9 +73,6 @@ def run_experiments(tester, curriculum, saver, run_id, relabel_method, num_times
     if relabel_method == 'local':
         policy2edge2loc2prob = construct_initiation_set_classifiers(saver.classifier_dpath, policy_bank, tester.train_size)
         zero_shot_transfer(tester, loader, policy_bank, run_id, sess, policy2edge2loc2prob, num_times, curriculum.num_steps)
-
-    tf.reset_default_graph()
-    sess.close()
 
     # Log transfer results
     # tester.log_results("Transfer took: %0.2f mins\n" % ((time.time() - time_init)/60))
@@ -321,9 +316,7 @@ def zero_shot_transfer_cluster(tester, loader, saver, run_id, num_times, num_ste
 def zero_shot_transfer_single_task(transfer_task, ltl_idx, num_times, num_steps, run_id, learning_params, curriculum, tester, loader, saver):
     print('Starting single worker transfer to task: %s' % str(transfer_task))
     logfilename = os.path.join(tester.transfer_results_dpath, f'test_ltl_{ltl_idx}.pkl')
-    config = tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=1, allow_soft_placement=True)
-    tf.reset_default_graph()
-    with tf.Session(config=config) as sess:
+    with None as sess:
         # Load the policy bank without loading the policies
         policy_bank = _initialize_policy_bank(sess, learning_params, curriculum, tester, load_tf=False)
         policy2edge2loc2prob = construct_initiation_set_classifiers(saver.classifier_dpath, policy_bank, tester.train_size)
@@ -378,10 +371,6 @@ def zero_shot_transfer_single_task(transfer_task, ltl_idx, num_times, num_steps,
                     # Find best edge to target based on rollout success probability from current location
                     best_policy, best_self_edge, best_out_edge = sorted(node2option2prob[cur_node].items(), key=lambda kv: kv[1])[-1][0]
                     # Overwrite empty policy by policy with tf model then load its weights when need to execute it
-                    policy = policy_bank.policies[policy_bank.policy2id[best_policy]]
-                    if not policy.load_tf:
-                        policy_bank.replace_policy(policy.ltl, policy.f_task, policy.dfa)
-                        loader.load_policy_bank(run_id, sess)
                     # Execute the selected option
                     _, option_reward, option_traj = execute_option(tester, task, policy_bank, best_policy, best_out_edge, policy2edge2loc2prob[best_policy], num_steps)
                     run_traj.append(option_traj)
