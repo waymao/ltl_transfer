@@ -1,5 +1,6 @@
 from typing import Mapping, List, Union
 import os
+import numpy as np
 import torch
 from torch import nn
 
@@ -72,7 +73,7 @@ class PolicyBank:
             elif self.rl_algo == "dsac":
                 actor_module = DiscreteSoftActor(
                     self.num_features, self.num_actions,
-                    hidden=[512],
+                    hidden=[64, 64],
                     device=self.device
                 )
                 critic_module = get_MLP(
@@ -94,8 +95,11 @@ class PolicyBank:
                     pi=actor_module,
                     auto_alpha=False,
                     alpha=0.05,
+                    # target_entropy=-0.89 * np.log(1 / self.num_actions),
+                    target_entropy=-1,
                     state_dim=self.num_features,
                     action_dim=self.num_actions,
+                    start_steps=100
                 )
             else:    
                 nn_module = get_MLP(
@@ -192,7 +196,6 @@ class PolicyBank:
 
         
     def load_bank(self, policy_bank_prefix):
-        return
         checkpoint_path = os.path.join(policy_bank_prefix, "policy_bank.pth")
         checkpoint = torch.load(checkpoint_path)
         for ltl, policy_id in self.policy2id.items():
@@ -204,7 +207,6 @@ class PolicyBank:
 
 
     def save_bank(self, policy_bank_prefix):
-        return
         # TODO
         save = {}
         policies_dict = {}

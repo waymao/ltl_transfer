@@ -24,15 +24,15 @@ class DiscreteSAC(nn.Module):
             pi: nn.Module,
             state_dim, 
             action_dim, 
-            lr_q=1e-4, 
-            lr_pi=1e-4, 
+            lr_q=1e-2, 
+            lr_pi=1e-3, 
             lr_alpha=1e-2,
             gamma=0.99, 
             alpha=0.01, # trade off coeff
-            policy_update_freq=1, # policy network update frequency
+            policy_update_freq=5, # policy network update frequency
             target_update_freq=10, # target network update frequency
             tau=0.005, # soft update ratio
-            start_steps=10, # initial exploration phase, per spinning up
+            start_steps=1000, # initial exploration phase, per spinning up
             target_entropy=None,
             auto_alpha=True,
             device="cpu"
@@ -83,7 +83,7 @@ class DiscreteSAC(nn.Module):
     def forward(self, x):
         if self.step <= self.start_steps:
             self.step += 1
-            return torch.floor(torch.rand(1) * self.action_dim).int()[0].item()
+            return int(np.floor(np.random.rand() * self.action_dim))
         else:
             return self.pi.get_action(x)[0][0].item()
     
@@ -139,34 +139,36 @@ class DiscreteSAC(nn.Module):
         self.q_optim.zero_grad()
         q_loss1.backward()
         q_loss2.backward()
-        # print("q loss", q_loss1.item())
+        # print("    q1 loss", q_loss1.item())
+        # print("    q2 loss", q_loss2.item())
         self.q_optim.step()
 
         # pi loss
         if self.update_count % self.policy_update_freq == 0:
-            _, log_pi_NA, action_probs_NA = self.pi.get_action(s1_NS)
-            with torch.no_grad():
-                q1_NA = self.q1(s1_NS)
-                q2_NA = self.q2(s1_NS)
-                min_q_NA = torch.min(q1_NA, q2_NA)
-            pi_loss = -torch.mean((min_q_NA - alpha * log_pi_NA) * action_probs_NA)
-            self.pi_optim.zero_grad()
-            pi_loss.backward()
-            self.pi_optim.step()
-            # print("pi loss", pi_loss)
-            
-            if self.auto_alpha:
-                alpha_loss = torch.mean(
-                    (-log_pi_NA - self.target_entropy)).detach() * torch.exp(self.log_alpha)
-                self.alpha_optim.zero_grad()
-                alpha_loss.backward()
-                self.alpha_optim.step()
+            for _ in range(self.policy_update_freq):
+                _, log_pi_NA, action_probs_NA = self.pi.get_action(s1_NS)
+                with torch.no_grad():
+                    q1_NA = self.q1(s1_NS)
+                    q2_NA = self.q2(s1_NS)
+                    min_q_NA = torch.min(q1_NA, q2_NA)
+                pi_loss = -torch.mean((min_q_NA - alpha * log_pi_NA) * action_probs_NA)
+                self.pi_optim.zero_grad()
+                pi_loss.backward()
+                self.pi_optim.step()
+                
+                if self.auto_alpha and self.step >= self.start_steps:
+                    alpha_loss = torch.mean(
+                        (-log_pi_NA - self.target_entropy)).detach() * torch.exp(self.log_alpha)
+                    self.alpha_optim.zero_grad()
+                    alpha_loss.backward()
+                    self.alpha_optim.step()
+            # print("    pi loss", pi_loss)
             # print("alpha_loss", alpha_loss)
 
-        # update target network if necessary
-        # handled by policy bank already
-        # if self.update_count % self.target_update_freq == 0:
-        #     self.sync_weight()
+            # update target network if necessary
+            # handled by policy bank already
+            # if self.update_count % self.target_update_freq == 0:
+            #     self.sync_weight()
     
     def get_edge_labels(self):
         """
