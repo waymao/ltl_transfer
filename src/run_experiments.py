@@ -12,7 +12,7 @@ from curriculum import CurriculumLearner
 class LearningParameters:
     def __init__(self, lr=0.0001, max_timesteps_per_task=50000, buffer_size=25000,
                 print_freq=1000, exploration_fraction=0.1, exploration_final_eps=0.02,
-                train_freq=1, batch_size=32, learning_starts=1000, gamma=0.9,
+                train_freq=1, batch_size=32, learning_starts=1000, gamma=0.99,
                 target_network_update_freq=100):
         """Parameters
         -------
@@ -89,6 +89,8 @@ def run_experiment(
     # LPOPL
     if alg_name == "lpopl":
         lpopl.run_experiments(tester, curriculum, saver, num_times, incremental_steps, show_print, device=device)
+    if alg_name == "lpopl_dsac":
+        lpopl.run_experiments(tester, curriculum, saver, num_times, incremental_steps, show_print, rl_algo="dsac", device=device)
     if alg_name == "lpopl_ppo":
         lpopl_ppo.run_experiments(tester, curriculum, saver, num_times, incremental_steps, show_print, device=device)
 
@@ -128,7 +130,7 @@ if __name__ == "__main__":
     # EXAMPLE: python run_experiments.py --algo=zero_shot_transfer --train_type=no_orders --train_size=50 --test_type=soft --map=0 --prob=0.8 --run_id=0 --relabel_method=cluster --transfer_num_times=1
 
     # Getting params
-    algos = ["dqn-l", "hrl-e", "hrl-l", "lpopl", "lpopl_ppo", "zero_shot_transfer", "random_transfer"]
+    algos = ["dqn-l", "hrl-e", "hrl-l", "lpopl", "lpopl_ppo", "lpopl_dsac", "zero_shot_transfer", "random_transfer"]
     train_types = [
         "sequence",
         "interleaving",

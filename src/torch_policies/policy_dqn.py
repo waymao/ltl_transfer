@@ -147,6 +147,22 @@ class DQN(nn.Module):
         loss.backward()
         self.optim.step()
         return loss
+    
+    def get_save_state_dict(self):
+        """
+        custom func to get the state dict including the optim
+        """
+        return {
+            "state": self.state_dict(),
+            "optim": self.optim.state_dict(),
+        }
+    
+    def restore_from_state_dict(self, state_dict):
+        """
+        custom func to restore the state dict including the optim
+        """
+        self.load_state_dict(state_dict["state"])
+        self.optim.load_state_dict(state_dict["optim"])
 
 
     def get_edge_labels(self):

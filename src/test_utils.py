@@ -53,6 +53,8 @@ class Tester:
             self.map = f"{save_dpath}/experiments/maps/map_{map_id}.txt"
             self.consider_night = False
             if train_type == "sequence":
+                self.experiment = f"{train_type}/map_{map_id}"
+                self.experiment_train = f"{train_type}/map_{map_id}"
                 self.tasks = tasks.get_sequence_of_subtasks()
             elif train_type == "interleaving":
                 self.tasks = tasks.get_interleaving_subtasks()

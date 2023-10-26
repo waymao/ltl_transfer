@@ -20,7 +20,7 @@ from test_utils import Loader, load_pkl
 from curriculum import CurriculumLearner
 from test_utils import TestingParameters, Tester, Saver
 
-def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver, num_times, incremental_steps, show_print, device="cpu"):
+def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver, num_times, incremental_steps, show_print, rl_algo="dqn", device="cpu"):
     time_init = time.time()
     tester_original = tester
     curriculum_original = curriculum
@@ -62,7 +62,7 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
         replay_buffer = ReplayBuffer(learning_params.buffer_size)
 
         # Initializing policies per each subtask
-        policy_bank = _initialize_policy_bank(sess, learning_params, curriculum, tester, device=device)
+        policy_bank = _initialize_policy_bank(sess, learning_params, curriculum, tester, rl_algo=rl_algo, device=device)
         # Load 'policy_bank' if incremental training
         policy_dpath = os.path.join(saver.policy_dpath, "run_%d" % run_id)
         if os.path.exists(policy_dpath) and os.listdir(policy_dpath):
@@ -81,12 +81,12 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
                 task_params = tester.get_task_params(task)
                 _run_LPOPL(sess, policy_bank, task_params, tester, curriculum, replay_buffer, show_print)
                 num_tasks += 1
-                # Save 'policy_bank' for incremental training and transfer
-                saver.save_policy_bank(policy_bank, run_id)
-                # Backing up the results
-                saver.save_results()
-                # Save 'tester' and 'curriculum' for incremental training
-                saver.save_train_data(curriculum, run_id)
+                # # Save 'policy_bank' for incremental training and transfer
+                # saver.save_policy_bank(policy_bank, run_id)
+                # # Backing up the results
+                # saver.save_results()
+                # # Save 'tester' and 'curriculum' for incremental training
+                # saver.save_train_data(curriculum, run_id)
         except KeyboardInterrupt:
             # gracefully print everything when interrupted
             pass
@@ -100,11 +100,11 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
     print("Time:", "%0.2f" % ((time.time() - time_init)/60), "mins")
 
 
-def _initialize_policy_bank(sess, learning_params, curriculum: CurriculumLearner, tester: Tester, load_tf=True, device="cpu"):
+def _initialize_policy_bank(sess, learning_params, curriculum: CurriculumLearner, tester: Tester, load_tf=True, rl_algo="dqn", device="cpu"):
     task_aux = Game(tester.get_task_params(curriculum.get_current_task()))
     num_actions = len(task_aux.get_actions())
     num_features = task_aux.get_num_features()
-    policy_bank = PolicyBank(sess, num_actions, num_features, learning_params, device=device)
+    policy_bank = PolicyBank(sess, num_actions, num_features, learning_params, policy_type=rl_algo, device=device)
     for idx, f_task in enumerate(tester.get_LTL_tasks()[:tester.train_size]):  # only load first 'train_size' policies
         # start_time = time.time()
         dfa = DFA(f_task)
@@ -144,8 +144,11 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
         s1 = task.get_features()
 
         # Choosing an action to perform
-        if random.random() < exploration.value(t): a = random.choice(actions)
-        else: a = Actions(policy_bank.get_best_action(ltl_goal, s1.reshape((1, num_features))))
+        if policy_bank.rl_algo == "dqn":
+            if random.random() < exploration.value(t): a = random.choice(actions)
+            else: a = Actions(policy_bank.get_best_action(ltl_goal, s1.reshape((1, num_features))))
+        else:
+            a = Actions(policy_bank.get_best_action(ltl_goal, s1.reshape((1, num_features))))
         # updating the curriculum
         curriculum.add_step()
 

@@ -6,6 +6,8 @@ from torch import nn
 from .learning_params import LearningParameters
 from .policy_dqn import DQN
 from .policy_ppo import PPO
+from .policy_dsac import DiscreteSAC
+from .policy_dsac_actor import DiscreteSoftActor
 from .policy_base import Policy
 from .policy_constant import ConstantPolicy
 from .rl_logger import RLLogger
@@ -13,7 +15,8 @@ from .network import get_MLP
 
 POLICY_MODULES: Mapping[str, Policy] = {
     "dqn": DQN,
-    "ppo": PPO
+    "ppo": PPO,
+    "dsac": DiscreteSAC
 }
 
 HIDDEN_LAYER_SIZE = [64, 64]
@@ -66,6 +69,34 @@ class PolicyBank:
                 policy = PPO(ltl, f_task, dfa, actor_module, critic_module,
                             self.learning_params, self.logger,
                             device=self.device)
+            elif self.rl_algo == "dsac":
+                actor_module = DiscreteSoftActor(
+                    self.num_features, self.num_actions,
+                    hidden=[512],
+                    device=self.device
+                )
+                critic_module = get_MLP(
+                    num_features=self.num_features,
+                    num_actions=self.num_actions,
+                    hidden_layers=[64, 64]
+                )
+                critic2_module = get_MLP(
+                    num_features=self.num_features,
+                    num_actions=self.num_actions,
+                    hidden_layers=[64, 64]
+                )
+                policy = DiscreteSAC(
+                    ltl,
+                    f_task, # full task
+                    dfa,
+                    q1=critic_module,
+                    q2=critic2_module,
+                    pi=actor_module,
+                    auto_alpha=False,
+                    alpha=0.05,
+                    state_dim=self.num_features,
+                    action_dim=self.num_actions,
+                )
             else:    
                 nn_module = get_MLP(
                     self.num_features, self.num_actions, 
@@ -129,15 +160,25 @@ class PolicyBank:
         next_goal_NC = torch.tensor(next_goals, dtype=torch.int64, device=self.device)
         
         # C * N
-        max_q_values_CN = torch.zeros((C, N), device=self.device, requires_grad=False)
+        # compute target
+        q_targets_CN = torch.zeros((C, N), device=self.device, requires_grad=False)
         for i, policy in enumerate(self.policies):
-            max_q_values_CN[i, :] = policy.get_v(s2_NS)
-
-        for idx, policy in enumerate(self.policies[2:]): # compute loss for every policy except for true, false
+            if type(policy) == DiscreteSAC:
+                q_targets_CN[i, :] = policy.calc_q_target(s2_NS, r_N, terminated_N)
+            else:
+                q_targets_CN[i, :] = policy.get_v(s2_NS)
+        
+        # learn every policy except for true, false
+        for i, policy in enumerate(self.policies[2:]): 
             policy.learn(
                 s1_NS, a_N, s2_NS, r_N, terminated_N, 
-                next_goal_NC[:, idx], 
-                max_q_values_CN)
+                next_goal_NC[:, i], 
+                q_targets_CN)
+            # update v after this learning process
+            if type(policy) == DiscreteSAC:
+                q_targets_CN[i + 2, :] = policy.calc_q_target(s2_NS, r_N, terminated_N)
+            else:
+                q_targets_CN[i + 2, :] = policy.get_v(s2_NS)
     
     def get_best_action(self, ltl, s1):
         return self.policies[self.policy2id[ltl]].get_best_action(s1)
@@ -151,6 +192,7 @@ class PolicyBank:
 
         
     def load_bank(self, policy_bank_prefix):
+        return
         checkpoint_path = os.path.join(policy_bank_prefix, "policy_bank.pth")
         checkpoint = torch.load(checkpoint_path)
         for ltl, policy_id in self.policy2id.items():
@@ -162,6 +204,7 @@ class PolicyBank:
 
 
     def save_bank(self, policy_bank_prefix):
+        return
         # TODO
         save = {}
         policies_dict = {}
