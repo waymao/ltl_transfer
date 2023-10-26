@@ -93,10 +93,11 @@ class PolicyBank:
                     q1=critic_module,
                     q2=critic2_module,
                     pi=actor_module,
-                    auto_alpha=False,
+                    # auto_alpha=False,
+                    lr_alpha=8e-4,
                     alpha=0.05,
                     # target_entropy=-0.89 * np.log(1 / self.num_actions),
-                    target_entropy=-1,
+                    target_entropy=-.3,
                     state_dim=self.num_features,
                     action_dim=self.num_actions,
                     start_steps=100
@@ -141,7 +142,7 @@ class PolicyBank:
         # this function is not used for reconnecting the compute graph in the pytorch version since it's dynamic
         pass
 
-    def learn(self, s1, a, s2, next_goals, r=None, terminated=None):
+    def learn(self, s1, a, s2, next_goals, r=None, terminated=None, active_policy=None):
         """
         given the sampled batch, computes the loss and learns the policy
         next goals is a list of next goals for each item.
@@ -174,10 +175,11 @@ class PolicyBank:
         
         # learn every policy except for true, false
         for i, policy in enumerate(self.policies[2:]): 
+            is_active = (i == active_policy)
             policy.learn(
                 s1_NS, a_N, s2_NS, r_N, terminated_N, 
                 next_goal_NC[:, i], 
-                q_targets_CN)
+                q_targets_CN, is_active=is_active)
             # update v after this learning process
             if type(policy) == DiscreteSAC:
                 q_targets_CN[i + 2, :] = policy.calc_q_target(s2_NS, r_N, terminated_N)

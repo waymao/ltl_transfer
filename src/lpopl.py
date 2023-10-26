@@ -174,7 +174,7 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
         if step > learning_params.learning_starts and step % learning_params.train_freq == 0:
             # Minimize the error in Bellman's equation on a batch sampled from replay buffer.
             S1, A, S2, Goal = replay_buffer.sample(learning_params.batch_size)
-            policy_bank.learn(S1, A, S2, Goal)
+            policy_bank.learn(S1, A, S2, Goal, active_policy=curriculum.current_task)
             if step % learning_params.target_network_update_freq == 0:
                 # print("step", step, "; loss", loss.cpu().item())
                 pass

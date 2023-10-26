@@ -137,7 +137,8 @@ class DQN(nn.Module):
             r_N, 
             terminated_N, 
             next_q_index_N, 
-            next_q_values_CNA
+            next_q_values_CNA,
+            is_active
         ):
         """
         train using dqn loss

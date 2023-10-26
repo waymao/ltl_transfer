@@ -25,7 +25,7 @@ class DiscreteSAC(nn.Module):
             state_dim, 
             action_dim, 
             lr_q=1e-2, 
-            lr_pi=1e-3, 
+            lr_pi=5e-4, 
             lr_alpha=1e-2,
             gamma=0.99, 
             alpha=0.01, # trade off coeff
@@ -105,6 +105,7 @@ class DiscreteSAC(nn.Module):
         _, log_prob_NA, prob_NA = self.pi.get_action(s2_NS)
         q1_next_NA = self.q1_target(s2_NS)
         q2_next_NA = self.q2_target(s2_NS)
+        # print(torch.min(q1_next_NA, q2_next_NA).mean(), alpha * log_prob_NA.mean())
         q_min_next_NA = torch.min(q1_next_NA, q2_next_NA) - alpha * log_prob_NA
         q_next_weighed_N = (prob_NA * q_min_next_NA).sum(dim=1)
         y_N = r_N + self.gamma * ~ter_N * q_next_weighed_N
@@ -118,7 +119,8 @@ class DiscreteSAC(nn.Module):
             r_N,
             ter_N,
             next_y_id_N,
-            next_y_vals_CN
+            next_y_vals_CN,
+            is_active=False
         ):
         self.update_count += 1
         alpha = torch.exp(self.log_alpha).detach()
@@ -156,12 +158,15 @@ class DiscreteSAC(nn.Module):
                 pi_loss.backward()
                 self.pi_optim.step()
                 
-                if self.auto_alpha and self.step >= self.start_steps:
+                entropy = torch.mean(-log_pi_NA).detach()
+                # print("entropy:", entropy.item(), "; alpha:", self.log_alpha.exp().item())
+                if self.auto_alpha and is_active and self.step >= self.start_steps:
                     alpha_loss = torch.mean(
                         (-log_pi_NA - self.target_entropy)).detach() * torch.exp(self.log_alpha)
                     self.alpha_optim.zero_grad()
                     alpha_loss.backward()
                     self.alpha_optim.step()
+                    # print(np.exp(self.log_alpha.item()))
             # print("    pi loss", pi_loss)
             # print("alpha_loss", alpha_loss)
 
