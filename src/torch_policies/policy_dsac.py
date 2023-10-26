@@ -24,7 +24,7 @@ class DiscreteSAC(nn.Module):
             pi: nn.Module,
             state_dim, 
             action_dim, 
-            lr_q=1e-2, 
+            lr_q=1e-3, 
             lr_pi=5e-4, 
             lr_alpha=1e-2,
             gamma=0.99, 

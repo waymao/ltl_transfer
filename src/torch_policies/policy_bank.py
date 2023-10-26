@@ -94,13 +94,13 @@ class PolicyBank:
                     q2=critic2_module,
                     pi=actor_module,
                     # auto_alpha=False,
-                    lr_alpha=8e-4,
+                    lr_alpha=1e-4,
                     alpha=0.05,
                     # target_entropy=-0.89 * np.log(1 / self.num_actions),
                     target_entropy=-.3,
                     state_dim=self.num_features,
                     action_dim=self.num_actions,
-                    start_steps=100
+                    start_steps=1000
                 )
             else:    
                 nn_module = get_MLP(
