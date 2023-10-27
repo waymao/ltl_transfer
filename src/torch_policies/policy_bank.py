@@ -3,6 +3,7 @@ import os
 import numpy as np
 import torch
 from torch import nn
+from joblib import Parallel, delayed
 
 from .learning_params import LearningParameters
 from .policy_dqn import DQN
@@ -94,7 +95,7 @@ class PolicyBank:
                     q2=critic2_module,
                     pi=actor_module,
                     auto_alpha=False,
-                    lr_q=1e-3, 
+                    lr_q=1e-4, 
                     lr_pi=1e-4, 
                     lr_alpha=1e-2,
                     alpha=0.05,
@@ -171,24 +172,33 @@ class PolicyBank:
         # C * N
         # compute target
         q_targets_CN = torch.zeros((C, N), device=self.device, requires_grad=False)
-        for i, policy in enumerate(self.policies):
-            if type(policy) == DiscreteSAC:
-                q_targets_CN[i, :] = policy.calc_q_target(s2_NS, r_N, terminated_N)
-            else:
-                q_targets_CN[i, :] = policy.get_v(s2_NS)
         
-        # learn every policy except for true, false
-        for i, policy in enumerate(self.policies[2:]): 
-            is_active = (i == active_policy)
-            policy.learn(
+        
+        def compute_q_target(policy):
+            if type(policy) == DiscreteSAC:
+                return policy.calc_q_target(s2_NS, r_N, terminated_N)
+            else:
+                return policy.get_v(s2_NS)
+            
+        with Parallel(n_jobs=-2) as parallel:
+            q_targets_list = parallel(delayed(compute_q_target)(policy)
+                                        for policy in self.policies)
+            q_targets_CN = torch.stack(q_targets_list, dim=0)
+
+            learn_func = lambda i, policy: policy.learn(
                 s1_NS, a_N, s2_NS, r_N, terminated_N, 
                 next_goal_NC[:, i], 
-                q_targets_CN, is_active=is_active)
-            # update v after this learning process
-            if type(policy) == DiscreteSAC:
-                q_targets_CN[i + 2, :] = policy.calc_q_target(s2_NS, r_N, terminated_N)
-            else:
-                q_targets_CN[i + 2, :] = policy.get_v(s2_NS)
+                q_targets_CN, is_active=(i == active_policy))
+            learn_result = parallel(delayed(learn_func)(i, policy)
+                                    for i, policy in enumerate(self.policies[2:]))
+        
+        # # learn every policy except for true, false
+        # for i, policy in enumerate(self.policies[2:]): 
+        #     is_active = (i == active_policy)
+        #     policy.learn(
+        #         s1_NS, a_N, s2_NS, r_N, terminated_N, 
+        #         next_goal_NC[:, i], 
+        #         q_targets_CN, is_active=is_active)
     
     def get_best_action(self, ltl, s1):
         return self.policies[self.policy2id[ltl]].get_best_action(s1)
