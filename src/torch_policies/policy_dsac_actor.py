@@ -17,7 +17,7 @@ class DiscreteSoftActor(nn.Module):
         ):
         super().__init__()
         self.device = device
-        self.pi = get_MLP(state_dim, action_dim, hidden, use_relu=True)
+        self.pi = get_MLP(state_dim, action_dim, hidden, use_relu=True, device=device)
 
     def forward(self, x):
         return self.pi(x)

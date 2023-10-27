@@ -103,7 +103,8 @@ class PolicyBank:
                     target_entropy=-.3,
                     state_dim=self.num_features,
                     action_dim=self.num_actions,
-                    start_steps=2000
+                    start_steps=2000,
+                    device=self.device
                 )
             else:    
                 nn_module = get_MLP(
