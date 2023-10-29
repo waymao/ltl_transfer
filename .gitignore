@@ -9,3 +9,4 @@ bash_scripts/run_lpopl_singlejob_*
 .idea/
 *.out
 *.err
+options/

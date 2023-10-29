@@ -1,8 +1,9 @@
 class LearningParameters:
-    def __init__(self, lr=0.0001, max_timesteps_per_task=50000, buffer_size=25000,
+    def __init__(self, lr=0.0001, max_timesteps_per_task=100000, buffer_size=100000,
                 print_freq=1000, exploration_fraction=0.1, exploration_final_eps=0.02,
-                train_freq=1, batch_size=32, learning_starts=1000, gamma=0.9,
-                target_network_update_freq=100):
+                train_freq=1, batch_size=64, learning_starts=5000, gamma=0.99,
+                target_network_update_freq=4,
+                pi_lr=1e-4):
         """Parameters
         -------
         lr: float
@@ -41,3 +42,4 @@ class LearningParameters:
         self.learning_starts = learning_starts
         self.gamma = gamma
         self.target_network_update_freq = target_network_update_freq
+        self.pi_lr = pi_lr
