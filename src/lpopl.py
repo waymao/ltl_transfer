@@ -19,6 +19,7 @@ from test_utils import Loader, load_pkl
 
 from curriculum import CurriculumLearner
 from test_utils import TestingParameters, Tester, Saver
+from torch.profiler import profile, record_function, ProfilerActivity
 
 def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver, num_times, incremental_steps, show_print, rl_algo="dqn", device="cpu"):
     time_init = time.time()
@@ -174,6 +175,13 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
         if step > learning_params.learning_starts and step % learning_params.train_freq == 0:
             # Minimize the error in Bellman's equation on a batch sampled from replay buffer.
             S1, A, S2, Goal = replay_buffer.sample(learning_params.batch_size)
+
+            # with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True, profile_memory=True, ) as prof:
+            # with profile(activities=[ProfilerActivity.CPU]) as prof:
+            #     policy_bank.learn(S1, A, S2, Goal, active_policy=curriculum.current_task)
+            # # prof.export_chrome_trace("profile_trace.json")
+            # print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=20))
+
             policy_bank.learn(S1, A, S2, Goal, active_policy=curriculum.current_task)
             if step % learning_params.target_network_update_freq == 0:
                 # print("step", step, "; loss", loss.cpu().item())
