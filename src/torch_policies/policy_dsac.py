@@ -11,6 +11,7 @@ from torch.nn import functional as F
 import numpy as np
 from copy import deepcopy
 
+
 class DiscreteSAC(nn.Module):
     """
     Naive DQN
@@ -158,7 +159,7 @@ class DiscreteSAC(nn.Module):
                 pi_loss.backward()
                 self.pi_optim.step()
                 
-                entropy = torch.mean(-log_pi_NA).detach()
+                # entropy = torch.mean(-log_pi_NA).detach()
                 # print("entropy:", entropy.item(), "; alpha:", self.log_alpha.exp().item())
                 if self.auto_alpha and is_active and self.step >= self.start_steps:
                     alpha_loss = torch.mean(

@@ -171,11 +171,12 @@ class PolicyBank:
         # C * N
         # compute target
         q_targets_CN = torch.zeros((C, N), device=self.device, requires_grad=False)
-        for i, policy in enumerate(self.policies):
-            if type(policy) == DiscreteSAC:
-                q_targets_CN[i, :] = policy.calc_q_target(s2_NS, r_N, terminated_N)
-            else:
-                q_targets_CN[i, :] = policy.get_v(s2_NS)
+        with torch.no_grad():
+            for i, policy in enumerate(self.policies):
+                if type(policy) == DiscreteSAC:
+                    q_targets_CN[i, :] = policy.calc_q_target(s2_NS, r_N, terminated_N)
+                else:
+                    q_targets_CN[i, :] = policy.get_v(s2_NS)
         
         # learn every policy except for true, false
         for i, policy in enumerate(self.policies[2:]): 
@@ -184,11 +185,6 @@ class PolicyBank:
                 s1_NS, a_N, s2_NS, r_N, terminated_N, 
                 next_goal_NC[:, i], 
                 q_targets_CN, is_active=is_active)
-            # update v after this learning process
-            if type(policy) == DiscreteSAC:
-                q_targets_CN[i + 2, :] = policy.calc_q_target(s2_NS, r_N, terminated_N)
-            else:
-                q_targets_CN[i + 2, :] = policy.get_v(s2_NS)
     
     def get_best_action(self, ltl, s1):
         return self.policies[self.policy2id[ltl]].get_best_action(s1)
