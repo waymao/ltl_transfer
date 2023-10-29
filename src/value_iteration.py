@@ -1,4 +1,4 @@
-from game_objects import *
+from envs.grid.game_objects import *
 from dfa import *
 
 

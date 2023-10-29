@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 from schedules import LinearSchedule
 from dfa import *
-from game import *
+from envs.grid.game import *
 from tf_policies.network import get_MLP
 
 

@@ -17,7 +17,7 @@ import networkx as nx
 from lpopl import _initialize_policy_bank, _test_LPOPL
 from torch_policies.policy_bank import *
 from dfa import *
-from game import *
+from envs.grid.game import *
 from test_utils import Loader, save_pkl, load_pkl, save_json
 from run_single_worker import single_worker_rollouts
 

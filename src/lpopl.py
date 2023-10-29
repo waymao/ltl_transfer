@@ -14,7 +14,7 @@ else:
 from schedules import LinearSchedule
 from utils.replay_buffer import ReplayBuffer
 from dfa import *
-from game import *
+from envs.grid.game import *
 from test_utils import Loader, load_pkl
 
 from curriculum import CurriculumLearner

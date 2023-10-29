@@ -4,7 +4,7 @@ import dill
 import argparse
 from collections import defaultdict
 from test_utils import Saver, Loader
-from game import *
+from envs.grid.game import *
 from torch_policies.policy_bank import *
 
 

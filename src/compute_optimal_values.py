@@ -1,6 +1,6 @@
 import time
 import argparse
-from game import GameParams, Game
+from envs.grid.game import GameParams, Game
 from dataset_creator import read_train_test_formulas
 from value_iteration import evaluate_optimal_policy
 

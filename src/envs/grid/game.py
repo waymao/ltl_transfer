@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.spatial import distance
-from game_objects import *
+from .game_objects import *
 from dfa import *
 
 
