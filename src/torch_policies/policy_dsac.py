@@ -139,7 +139,7 @@ class DiscreteSAC(nn.Module):
         # back propagate q loss
         q_loss1 = torch.mean(F.mse_loss(q1_val_N, y_N))
         q_loss2 = torch.mean(F.mse_loss(q2_val_N, y_N))
-        self.q_optim.zero_grad()
+        self.q_optim.zero_grad(set_to_none=True)
         q_loss1.backward()
         q_loss2.backward()
         # print("    q1 loss", q_loss1.item())
@@ -155,7 +155,7 @@ class DiscreteSAC(nn.Module):
                     q2_NA = self.q2(s1_NS)
                     min_q_NA = torch.min(q1_NA, q2_NA)
                 pi_loss = -torch.mean((min_q_NA - alpha * log_pi_NA) * action_probs_NA)
-                self.pi_optim.zero_grad()
+                self.pi_optim.zero_grad(set_to_none=True)
                 pi_loss.backward()
                 self.pi_optim.step()
                 
