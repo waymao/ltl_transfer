@@ -55,10 +55,20 @@ class DiscreteSAC(nn.Module):
         self.q2_target = deepcopy(q2).to(device)
         self.q2_target.eval()
         # q optim
-        self.q_optim = torch.optim.Adam(list(self.q1.parameters()) + list(self.q2.parameters()), lr=lr_q, eps=1e-4)
+        self.q_optim = torch.optim.Adam(
+            list(self.q1.parameters()) + list(self.q2.parameters()), 
+            lr=lr_q, 
+            eps=1e-4,
+            fused=True if self.device == "cuda" else None
+        )
         # pi
         self.pi = pi.to(device)
-        self.pi_optim = torch.optim.Adam(self.pi.parameters(), lr=lr_pi, eps=1e-4)
+        self.pi_optim = torch.optim.Adam(
+            self.pi.parameters(), 
+            lr=lr_pi, 
+            eps=1e-4,
+            fused=True if self.device == "cuda" else None
+        )
         self.tau = tau
 
         # alpha and autotuning

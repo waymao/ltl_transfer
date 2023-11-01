@@ -94,16 +94,16 @@ class PolicyBank:
                     q2=critic2_module,
                     pi=actor_module,
                     auto_alpha=False,
-                    lr_q=1e-3, 
-                    lr_pi=1e-4, 
-                    lr_alpha=1e-2,
+                    lr_q=self.learning_params.lr, 
+                    lr_pi=self.learning_params.pi_lr, 
+                    # lr_alpha=1e-2,
                     alpha=0.05,
                     tau=0.005,
                     # target_entropy=-0.89 * np.log(1 / self.num_actions),
-                    target_entropy=-.3,
+                    # target_entropy=-.3,
                     state_dim=self.num_features,
                     action_dim=self.num_actions,
-                    start_steps=2000,
+                    start_steps=self.learning_params.learning_starts,
                     device=self.device
                 )
             else:    
