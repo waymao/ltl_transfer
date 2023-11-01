@@ -1,7 +1,7 @@
 import argparse
 import random
-from tasks import get_sequence_of_subtasks, get_interleaving_subtasks, get_safety_constraints
-from value_iteration import evaluate_optimal_policy
+from ltl.tasks import get_sequence_of_subtasks, get_interleaving_subtasks, get_safety_constraints
+from utils.value_iteration import evaluate_optimal_policy
 
 
 def addElements(map, elements, num_per_type):

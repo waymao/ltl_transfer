@@ -4,8 +4,8 @@
 Created on Tue Apr  5 12:09:39 2022
 """
 from collections import defaultdict
-from dataset_creator import read_train_test_formulas, SET_TYPES, TRAIN_SIZES, TEST_SIZE
-from ltl_progression import get_dfa
+from exp_dataset_creator import read_train_test_formulas, SET_TYPES, TRAIN_SIZES, TEST_SIZE
+from ltl.ltl_progression import get_dfa
 
 
 def create_progression_set(train_set, naive=False, verbose=False):

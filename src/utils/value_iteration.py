@@ -1,5 +1,6 @@
+# value iteration. seems to be used mostly in testing.
 from envs.grid.game_objects import *
-from dfa import *
+from ltl.dfa import *
 
 
 def value_iteration(S, actions, T, V, discount=1, v_init=0, e=0.01):

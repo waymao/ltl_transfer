@@ -6,7 +6,7 @@ Created on Fri Jul 29 14:07:41 2022
 @author: ajshah
 """
 
-from result_analyzer import *
+from exp_result_analyzer import *
 import pandas as pd
 import json
 

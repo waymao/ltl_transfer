@@ -1,8 +1,8 @@
 import time
 import argparse
 from envs.grid.game import GameParams, Game
-from dataset_creator import read_train_test_formulas
-from value_iteration import evaluate_optimal_policy
+from exp_dataset_creator import read_train_test_formulas
+from utils.value_iteration import evaluate_optimal_policy
 
 if __name__ == "__main__":
     # EXAMPLE: python compute_optimal_values.py --map=0 --train_type=soft_strict --train_size=50

@@ -1,12 +1,12 @@
 import argparse
-# import baseline_dqn
-# import baseline_hrl
-import lpopl
-import lpopl_ppo
-import transfer
-# import random_transfer
+# from algos import baseline_dqn
+# from algos import baseline_hrl
+from algos import lpopl
+from algos import lpopl_online
+from algos import transfer
+# from algos import random_transfer
 from test_utils import TestingParameters, Tester, Saver
-from curriculum import CurriculumLearner
+from utils.curriculum import CurriculumLearner
 from torch_policies.learning_params import LearningParameters
 import cProfile
 
@@ -50,7 +50,7 @@ def run_experiment(
     if alg_name == "lpopl_dsac":
         lpopl.run_experiments(tester, curriculum, saver, num_times, incremental_steps, show_print, rl_algo="dsac", device=device)
     if alg_name == "lpopl_ppo":
-        lpopl_ppo.run_experiments(tester, curriculum, saver, num_times, incremental_steps, show_print, device=device)
+        lpopl_online.run_experiments(tester, curriculum, saver, num_times, incremental_steps, show_print, device=device)
 
     # # Relabel state-centric options learn by LPOPL then zero-shot transfer
     if alg_name == "zero_shot_transfer":

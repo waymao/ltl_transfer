@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 from scipy.stats import beta
 import pandas as pd
 import seaborn as sns
-from dataset_creator import read_train_test_formulas
-from zero_shot_transfer import *
+from exp_dataset_creator import read_train_test_formulas
+from algos.transfer import *
 
 RESULT_DPATH = '../results_test'
 RANDOM_RESULT_DPATH = '../random_results'

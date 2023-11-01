@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.spatial import distance
 from .game_objects import *
-from dfa import *
+from ltl.dfa import *
 
 
 class GameParams:
@@ -271,7 +271,7 @@ def play(params, max_time):
 
 # This code allow to play a game (for debugging purposes)
 if __name__ == '__main__':
-    import tasks
+    import ltl.tasks as tasks
     map = "../experiments/maps/map_0.txt"
     # tasks = get_sequence_of_subtasks
     # tasks = tasks.get_interleaving_subtasks()

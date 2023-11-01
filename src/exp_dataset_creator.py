@@ -7,7 +7,7 @@ import os
 import dill
 import numpy as np
 
-from formula_sampler import sample_formula
+from ltl.formula_sampler import sample_formula
 
 
 ENV2PROPS = {

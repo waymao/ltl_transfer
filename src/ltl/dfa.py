@@ -1,4 +1,4 @@
-import ltl_progression
+from . import ltl_progression
 
 
 class DFA:

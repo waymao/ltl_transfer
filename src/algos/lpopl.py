@@ -4,20 +4,15 @@ import time
 import numpy as np
 # import tensorflow as tf
 
-USE_TF = os.environ.get("USE_TF") or False
-if USE_TF:
-    from tf_policies.policy_bank import *
-    import tensorflow as tf
-else:
-    from torch_policies.policy_bank import *
+from torch_policies.policy_bank import *
 
-from schedules import LinearSchedule
+from utils.schedules import LinearSchedule
 from utils.replay_buffer import ReplayBuffer
-from dfa import *
+from ltl.dfa import *
 from envs.grid.game import *
 from test_utils import Loader, load_pkl
 
-from curriculum import CurriculumLearner
+from utils.curriculum import CurriculumLearner
 from test_utils import TestingParameters, Tester, Saver
 from torch.profiler import profile, record_function, ProfilerActivity
 
@@ -50,10 +45,7 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
 
         # Setting the random seed to 'run_id'
         random.seed(run_id)
-        if USE_TF:
-            sess = tf.Session()
-        else:
-            sess = None
+        sess = None
 
         # Reseting default values
         if not curriculum.incremental:

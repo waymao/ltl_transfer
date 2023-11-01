@@ -6,8 +6,8 @@ import logging
 from collections import defaultdict
 import numpy as np
 from envs.grid.game import GameParams, Game
-from dataset_creator import read_train_test_formulas
-import tasks
+from exp_dataset_creator import read_train_test_formulas
+import ltl.tasks as tasks
 
 
 class TestingParameters:

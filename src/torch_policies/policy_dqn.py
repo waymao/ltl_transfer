@@ -8,7 +8,7 @@ from torch.nn import functional as F
 import numpy as np
 from copy import deepcopy
 
-from schedules import LinearSchedule
+from utils.schedules import LinearSchedule
 from .learning_params import LearningParameters
 from .policy_base import Policy
 

@@ -2,13 +2,13 @@ import time
 import random
 import numpy as np
 import tensorflow as tf
-from schedules import LinearSchedule
-from dfa import *
+from utils.schedules import LinearSchedule
+from ltl.dfa import *
 from envs.grid.game import *
 from tf_policies.policy_bank import PolicyBank
 from utils.replay_buffer import ReplayBuffer
-from tasks import get_option, get_option_night
-from ltl_progression import extract_propositions
+from ltl.tasks import get_option, get_option_night
+from ltl.ltl_progression import extract_propositions
 
 
 class MetaController:
