@@ -13,15 +13,21 @@ from envs.grid.game import *
 from test_utils import Loader, load_pkl
 
 from utils.curriculum import CurriculumLearner
-from test_utils import TestingParameters, Tester, Saver
+from test_utils import Tester, Saver
 from torch.profiler import profile, record_function, ProfilerActivity
+import random
 
-def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver, num_times, incremental_steps, show_print, rl_algo="dqn", device="cpu"):
+def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver, run_id: int, num_times, incremental_steps, show_print, rl_algo="dqn", device="cpu"):
     time_init = time.time()
     tester_original = tester
     curriculum_original = curriculum
     loader = Loader(saver)
     train_dpath = os.path.join(saver.exp_dir, "train_data")
+    
+    # seeding
+    random.seed(run_id)
+    np.random.seed(run_id)
+    torch.manual_seed(run_id)
 
     # Running the tasks 'num_times'
     for run_id in range(num_times):
@@ -83,10 +89,6 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
         except KeyboardInterrupt:
             # gracefully print everything when interrupted
             pass
-
-        if USE_TF:
-            tf.reset_default_graph()
-            sess.close()
 
     # Showing results
     tester.show_results()

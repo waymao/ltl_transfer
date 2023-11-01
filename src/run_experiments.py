@@ -46,11 +46,11 @@ def run_experiment(
 
     # LPOPL
     if alg_name == "lpopl":
-        lpopl.run_experiments(tester, curriculum, saver, num_times, incremental_steps, show_print, device=device)
+        lpopl.run_experiments(tester, curriculum, saver, run_id, num_times, incremental_steps, show_print, device=device)
     if alg_name == "lpopl_dsac":
-        lpopl.run_experiments(tester, curriculum, saver, num_times, incremental_steps, show_print, rl_algo="dsac", device=device)
+        lpopl.run_experiments(tester, curriculum, saver, run_id, num_times, incremental_steps, show_print, rl_algo="dsac", device=device)
     if alg_name == "lpopl_ppo":
-        lpopl_online.run_experiments(tester, curriculum, saver, num_times, incremental_steps, show_print, device=device)
+        lpopl_online.run_experiments(tester, curriculum, saver, run_id, num_times, incremental_steps, show_print, device=device)
 
     # # Relabel state-centric options learn by LPOPL then zero-shot transfer
     if alg_name == "zero_shot_transfer":

@@ -20,12 +20,21 @@ from ltl.dfa import *
 from envs.grid.game import *
 from test_utils import Loader, save_pkl, load_pkl, save_json
 from run_single_worker import single_worker_rollouts
+from utils.curriculum import CurriculumLearner
+from test_utils import TestingParameters, Tester, Saver
 
 RELABEL_CHUNK_SIZE = 21
 TRANSFER_CHUNK_SIZE = 100
 
 
-def run_experiments(tester, curriculum, saver, run_id, relabel_method, num_times):
+def run_experiments(
+        tester: Tester, 
+        curriculum: CurriculumLearner, 
+        saver: Saver, 
+        run_id: int, 
+        relabel_method: str, 
+        num_times: int
+    ):
     loader = Loader(saver)
 
     time_init = time.time()
@@ -80,7 +89,14 @@ def run_experiments(tester, curriculum, saver, run_id, relabel_method, num_times
     saver.save_transfer_results()
 
 
-def relabel_cluster(tester, saver, curriculum, run_id, policy_bank, n_rollouts=100):
+def relabel_cluster(
+        tester: Tester, 
+        saver: Saver, 
+        curriculum: CurriculumLearner, 
+        run_id: int, 
+        policy_bank: PolicyBank, 
+        n_rollouts=100
+    ):
     """
     A worker runs n_rollouts from a specific location for all LTL formulas in policy_bank
     """
