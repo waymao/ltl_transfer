@@ -79,12 +79,14 @@ class PolicyBank:
                 critic_module = get_MLP(
                     num_features=self.num_features,
                     num_actions=self.num_actions,
-                    hidden_layers=[64, 64]
+                    hidden_layers=[64, 64],
+                    init_method=None
                 )
                 critic2_module = get_MLP(
                     num_features=self.num_features,
                     num_actions=self.num_actions,
-                    hidden_layers=[64, 64]
+                    hidden_layers=[64, 64],
+                    init_method=None
                 )
                 policy = DiscreteSAC(
                     ltl,

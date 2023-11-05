@@ -40,6 +40,8 @@ class DiscreteSAC(nn.Module):
         ):
         super().__init__()
 
+        self.device = device
+
         # DFA / LTL related stuff. 
         # TODO: maybe we can modularize it out into an "option" so we can plug in other RL policies.
         self.dfa = dfa
@@ -82,7 +84,6 @@ class DiscreteSAC(nn.Module):
         self.gamma = gamma
         self.target_update_freq = target_update_freq
         self.policy_update_freq = policy_update_freq
-        self.device = device
         self.update_count = 0
         self.state_dim = state_dim
         self.action_dim = action_dim
