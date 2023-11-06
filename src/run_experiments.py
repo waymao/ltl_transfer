@@ -16,13 +16,9 @@ def run_experiment(
         alg_name, map_id, prob, tasks_id, dataset_name, train_type, 
         train_size, test_type, num_times, r_good, total_steps, incremental_steps, 
         run_id, relabel_method, transfer_num_times, edge_matcher, save_dpath, show_print,
-        device):
-    # configuration of learning params
-    learning_params = LearningParameters()
-
-    # configuration of testing params
-    testing_params = TestingParameters()
-
+        learning_params: LearningParameters,
+        testing_params: TestingParameters,
+        device="cpu"):
     # Setting the experiment
     tester = Tester(learning_params, testing_params, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, edge_matcher, save_dpath)
 
@@ -61,7 +57,10 @@ def run_experiment(
     #     random_transfer.run_experiments(tester, curriculum, saver, run_id, relabel_method, transfer_num_times)
 
 
-def run_multiple_experiments(alg, prob, tasks_id, dataset_name, train_type, train_size, test_type, total_steps, incremental_steps, run_id, relabel_method, transfer_num_times, edge_matcher, save_dpath, device):
+def run_multiple_experiments(alg, prob, tasks_id, dataset_name, train_type, train_size, test_type, total_steps, incremental_steps, run_id, relabel_method, transfer_num_times, edge_matcher, save_dpath, 
+                          learning_params,
+                          testing_params,
+                          device="cpu"):
     num_times = 3
     r_good    = 0.5 if tasks_id == 2 else 0.9
     show_print = True
@@ -70,10 +69,14 @@ def run_multiple_experiments(alg, prob, tasks_id, dataset_name, train_type, trai
         print("Running r_good: %0.2f; alg: %s; map_id: %d; stochasticity: %0.2f; train_type: %s; train_size: %d; test_type: %s; edge_mather: %s" % (r_good, alg, map_id, prob, train_type, train_size, test_type, edge_matcher))
         run_experiment(alg, map_id, prob, tasks_id, dataset_name, train_type, 
                        train_size, test_type, num_times, r_good, total_steps, incremental_steps, 
-                       run_id, relabel_method, transfer_num_times, edge_matcher, save_dpath, show_print, device)
+                       run_id, relabel_method, transfer_num_times, edge_matcher, save_dpath, show_print, 
+                       learning_params, testing_params, device)
 
 
-def run_single_experiment(alg, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, total_steps, incremental_steps, run_id, relabel_method, transfer_num_times, edge_matcher, save_dpath, device):
+def run_single_experiment(alg, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, total_steps, incremental_steps, run_id, relabel_method, transfer_num_times, edge_matcher, save_dpath, 
+                          learning_params,
+                          testing_params,
+                          device="cpu"):
     num_times = 1  # each algo was run 3 times per map in the paper
     r_good    = 0.5 if tasks_id == 2 else 0.9
     show_print = True
@@ -81,7 +84,8 @@ def run_single_experiment(alg, map_id, prob, tasks_id, dataset_name, train_type,
     print("Running r_good: %0.2f; alg: %s; map_id: %d; stochasticity: %0.2f; train_type: %s; train_size: %d; test_type: %s; edge_mather: %s" % (r_good, alg, map_id, prob, train_type, train_size, test_type, edge_matcher))
     run_experiment(alg, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, 
                    num_times, r_good, total_steps, incremental_steps, run_id, relabel_method, 
-                   transfer_num_times, edge_matcher, save_dpath, show_print, device)
+                   transfer_num_times, edge_matcher, save_dpath, show_print, 
+                   learning_params, testing_params, device)
 
 
 if __name__ == "__main__":
@@ -143,6 +147,8 @@ if __name__ == "__main__":
                         help='This parameter indicated the dataset to read tasks from')
     parser.add_argument('--device', default="cpu", type=str, choices=['cpu', 'cuda'], 
                         help='The device to run Neural Network computations.')
+    parser.add_argument('--alpha', default=0.05, type=float,
+                        help='The temperature for exploration / exploitation tradeoff.')
     args = parser.parse_args()
     if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")
     if args.train_type not in train_types: raise NotImplementedError("Training tasks " + str(args.train_type) + " hasn't been defined yet")
@@ -155,8 +161,14 @@ if __name__ == "__main__":
     if map_id > -1:
         run_single_experiment(args.algo, map_id, args.prob, tasks_id, args.dataset_name, args.train_type, args.train_size, args.test_type,
                               args.total_steps, args.incremental_steps, args.run_id,
-                              args.relabel_method, args.transfer_num_times, args.edge_matcher, args.save_dpath, args.device)
+                              args.relabel_method, args.transfer_num_times, args.edge_matcher, args.save_dpath, 
+                              LearningParameters(alpha=args.alpha),
+                              TestingParameters(),
+                              args.device)
     else:
         run_multiple_experiments(args.algo, args.prob, tasks_id, args.dataset_name, args.train_type, args.train_size, args.test_type,
                                  args.total_steps, args.incremental_steps, args.run_id,
-                                 args.relabel_method, args.transfer_num_times, args.edge_matcher, args.save_dpath, args.device)
+                                 args.relabel_method, args.transfer_num_times, args.edge_matcher, args.save_dpath, 
+                                 LearningParameters(alpha=args.alpha),
+                                 TestingParameters(),
+                                 args.device)

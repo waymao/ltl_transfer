@@ -30,7 +30,7 @@ class DiscreteSAC(nn.Module):
             lr_alpha=1e-2,
             gamma=0.99, 
             alpha=0.01, # trade off coeff
-            policy_update_freq=5, # policy network update frequency
+            policy_update_freq=1, # policy network update frequency
             target_update_freq=10, # target network update frequency
             tau=0.005, # soft update ratio
             start_steps=1000, # initial exploration phase, per spinning up
@@ -41,6 +41,8 @@ class DiscreteSAC(nn.Module):
         super().__init__()
 
         self.device = device
+
+        print("alpha =", alpha)
 
         # DFA / LTL related stuff. 
         # TODO: maybe we can modularize it out into an "option" so we can plug in other RL policies.
