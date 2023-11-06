@@ -119,7 +119,7 @@ class DiscreteSAC(nn.Module):
         q2_next_NA = self.q2_target(s2_NS)
         # print(torch.min(q1_next_NA, q2_next_NA).mean(), alpha * log_prob_NA.mean())
         q_min_next_NA = torch.min(q1_next_NA, q2_next_NA) - alpha * log_prob_NA
-        q_next_weighed_N = (prob_NA * q_min_next_NA).sum(dim=1)
+        q_next_weighed_N = (prob_NA * q_min_next_NA).sum(dim=-1)
         y_N = r_N + self.gamma * ~ter_N * q_next_weighed_N
         return y_N
 

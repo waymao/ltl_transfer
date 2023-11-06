@@ -38,5 +38,5 @@ class DiscreteSoftActor(nn.Module):
         action_N = policy_dist.sample()
         # Action probabilities for calculating the adapted soft-Q loss
         action_probs_NA = policy_dist.probs
-        log_prob = F.log_softmax(logits_NA, dim=1)
+        log_prob = F.log_softmax(logits_NA, dim=-1)
         return action_N, log_prob, action_probs_NA
