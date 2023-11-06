@@ -66,7 +66,7 @@ def run_multiple_experiments(alg, prob, tasks_id, dataset_name, train_type, trai
     show_print = True
 
     for map_id in range(10):
-        print("Running r_good: %0.2f; alg: %s; map_id: %d; stochasticity: %0.2f; train_type: %s; train_size: %d; test_type: %s; edge_mather: %s" % (r_good, alg, map_id, prob, train_type, train_size, test_type, edge_matcher))
+        print("Running r_good: %0.2f; alg: %s; map_id: %d; run_id: %d, stochasticity: %0.2f; train_type: %s; train_size: %d; test_type: %s; edge_mather: %s" % (r_good, alg, map_id, run_id, prob, train_type, train_size, test_type, edge_matcher))
         run_experiment(alg, map_id, prob, tasks_id, dataset_name, train_type, 
                        train_size, test_type, num_times, r_good, total_steps, incremental_steps, 
                        run_id, relabel_method, transfer_num_times, edge_matcher, save_dpath, show_print, 
@@ -81,7 +81,7 @@ def run_single_experiment(alg, map_id, prob, tasks_id, dataset_name, train_type,
     r_good    = 0.5 if tasks_id == 2 else 0.9
     show_print = True
 
-    print("Running r_good: %0.2f; alg: %s; map_id: %d; stochasticity: %0.2f; train_type: %s; train_size: %d; test_type: %s; edge_mather: %s" % (r_good, alg, map_id, prob, train_type, train_size, test_type, edge_matcher))
+    print("Running r_good: %0.2f; alg: %s; map_id: %d; run_id: %d, stochasticity: %0.2f; train_type: %s; train_size: %d; test_type: %s; edge_mather: %s" % (r_good, alg, map_id, run_id, prob, train_type, train_size, test_type, edge_matcher))
     run_experiment(alg, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, 
                    num_times, r_good, total_steps, incremental_steps, run_id, relabel_method, 
                    transfer_num_times, edge_matcher, save_dpath, show_print, 
