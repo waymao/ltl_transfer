@@ -117,8 +117,9 @@ def _initialize_policy_bank(sess, learning_params, curriculum: CurriculumLearner
 
 
 def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curriculum: CurriculumLearner, replay_buffer, show_print):
+    MAX_EPS = 1000
     # Initializing parameters
-    learning_params = tester.learning_params
+    learning_params: LearningParameters = tester.learning_params
     testing_params = tester.testing_params
 
     # Initializing the game
@@ -132,6 +133,7 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
     training_reward = 0
 
     # Starting interaction with the environment
+    curr_eps_step = 0
     if show_print: print("Executing", num_steps, "actions...")
     for t in range(num_steps):
         # Getting the current state and ltl goal
@@ -195,11 +197,14 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
             tester.run_test(curriculum.get_current_step(), sess, _test_LPOPL, policy_bank, num_features)
 
         # Restarting the environment (Game Over)
-        if task.ltl_game_over or task.env_game_over:
+        curr_eps_step += 1
+        if task.ltl_game_over or task.env_game_over or curr_eps_step > learning_params.max_timesteps_per_episode:
+            curr_eps_step = 0
             # NOTE: Game over occurs for one of three reasons:
             # 1) DFA reached a terminal state,
             # 2) DFA reached a deadend, or
             # 3) The agent reached an environment deadend (e.g. a PIT)
+            # 4) NEW: > episode max time step
             task = Game(task_params)  # Restarting
 
             # updating the hit rates

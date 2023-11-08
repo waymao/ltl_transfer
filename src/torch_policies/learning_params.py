@@ -2,6 +2,7 @@ class LearningParameters:
     def __init__(self, lr=3e-4, max_timesteps_per_task=100000, buffer_size=100000,
                 print_freq=1000, exploration_fraction=0.1, exploration_final_eps=0.02,
                 train_freq=1, batch_size=32, learning_starts=5000, gamma=0.9,
+                max_timesteps_per_episode=1000,
                 # SAC related
                 target_network_update_freq=100,
                 pi_lr=1e-4,
@@ -44,6 +45,7 @@ class LearningParameters:
         self.batch_size = batch_size
         self.learning_starts = learning_starts
         self.gamma = gamma
+        self.max_timesteps_per_episode = max_timesteps_per_episode
 
         # SAC related
         self.target_network_update_freq = target_network_update_freq
