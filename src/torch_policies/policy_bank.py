@@ -37,7 +37,7 @@ class PolicyBank:
         self.policy2id: Mapping[str, int] = {}
 
         self._add_constant_policy("False", 0.0)
-        self._add_constant_policy("True", 1/learning_params.gamma)  # this ensures that reaching 'True' gives reward of 1
+        self._add_constant_policy("True", 10/learning_params.gamma)  # this ensures that reaching 'True' gives reward of 1
         self.rl_algo = policy_type
 
         self.logger = RLLogger() # TODO maybe use it to log metrics

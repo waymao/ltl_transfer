@@ -1,12 +1,12 @@
 class LearningParameters:
-    def __init__(self, lr=0.0001, max_timesteps_per_task=100000, buffer_size=100000,
+    def __init__(self, lr=3e-4, max_timesteps_per_task=100000, buffer_size=100000,
                 print_freq=1000, exploration_fraction=0.1, exploration_final_eps=0.02,
-                train_freq=1, batch_size=64, learning_starts=5000, gamma=0.99,
+                train_freq=1, batch_size=32, learning_starts=5000, gamma=0.9,
                 # SAC related
-                target_network_update_freq=4,
+                target_network_update_freq=100,
                 pi_lr=1e-4,
-                alpha=0.05,
-                tau=0.005):
+                alpha=0.1,
+                tau=0.05):
         """Parameters
         -------
         lr: float
