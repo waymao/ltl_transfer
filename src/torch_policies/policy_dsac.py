@@ -42,8 +42,6 @@ class DiscreteSAC(nn.Module):
 
         self.device = device
 
-        print("alpha =", alpha)
-
         # DFA / LTL related stuff. 
         # TODO: maybe we can modularize it out into an "option" so we can plug in other RL policies.
         self.dfa = dfa

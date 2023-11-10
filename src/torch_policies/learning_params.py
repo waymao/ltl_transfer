@@ -4,10 +4,10 @@ class LearningParameters:
                 train_freq=1, batch_size=32, learning_starts=5000, gamma=0.9,
                 max_timesteps_per_episode=1000,
                 # SAC related
-                target_network_update_freq=100,
+                target_network_update_freq=4,
                 pi_lr=1e-4,
                 alpha=0.1,
-                tau=0.05):
+                tau=0.005):
         """Parameters
         -------
         lr: float

@@ -67,6 +67,7 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
         if os.path.exists(policy_dpath) and os.listdir(policy_dpath):
             loader.load_policy_bank(policy_bank, run_id)
         if show_print:
+            print("Total # of policies:", policy_bank.get_number_LTL_policies())
             print("Policy bank initialization took: %0.2f mins" % ((time.time() - time_init)/60))
 
         # Running the tasks
