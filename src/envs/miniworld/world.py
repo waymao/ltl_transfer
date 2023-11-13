@@ -1,21 +1,15 @@
-# modified from the pickup objects .
-#
-
-import math
-
-from gymnasium import utils
+from gymnasium import spaces, utils
 
 from miniworld.entity import COLOR_NAMES, Ball, Box, Key
 from miniworld.miniworld import MiniWorldEnv
 
 
-class RoomObjects(MiniWorldEnv, utils.EzPickle):
+class NewPickupObjects(MiniWorldEnv, utils.EzPickle):
     """
     ## Description
 
-    Single room with multiple objects. Inspired by the single room environment
-    of the Generative Query Networks paper:
-    https://deepmind.com/blog/neural-scene-representation-and-rendering/
+    Room with multiple objects. The agent collects +1 reward for picking up
+    each object. Objects disappear when picked up.
 
     ## Action Space
 
@@ -24,11 +18,8 @@ class RoomObjects(MiniWorldEnv, utils.EzPickle):
     | 0   | turn left                   |
     | 1   | turn right                  |
     | 2   | move forward                |
-    | 3   | move back                   |
-    | 4   | pick up                     |
-    | 5   | drop                        |
-    | 6   | toggle / activate an object |
-    | 7   | complete task               |
+    | 3   | move_back                   |
+    | 4   | pickup                      |
 
     ## Observation Space
 
@@ -37,24 +28,30 @@ class RoomObjects(MiniWorldEnv, utils.EzPickle):
 
     ## Rewards:
 
-    None
+    +1 when agent picked up object
 
     ## Arguments
 
     ```python
-    RoomObjects(size=16)
+    PickupObjects(size=12, num_objs=5)
     ```
 
     `size`: size of world
 
+    `num_objs`: number of objects
+
     """
 
-    def __init__(self, size=10, **kwargs):
+    def __init__(self, size=12, num_per_obj=2, **kwargs):
         assert size >= 2
         self.size = size
+        self.num_per_objs = num_per_obj
 
-        MiniWorldEnv.__init__(self, max_episode_steps=math.inf, **kwargs)
-        utils.EzPickle.__init__(self, size, **kwargs)
+        MiniWorldEnv.__init__(self, max_episode_steps=400, **kwargs)
+        utils.EzPickle.__init__(self, size, num_per_obj, **kwargs)
+
+        # Reduce the action space
+        self.action_space = spaces.Discrete(self.actions.pickup + 1)
 
     def _gen_world(self):
         self.add_rect_room(
@@ -67,23 +64,33 @@ class RoomObjects(MiniWorldEnv, utils.EzPickle):
             no_ceiling=True,
         )
 
-        self.agent.radius = 0.5
-        colorlist = list(COLOR_NAMES) # red, green, purple, yellow, grey
+        obj_types = [Ball, Box]
+        colorlist = ["red", "green", "blue"]
 
-        self.place_entity(
-            Box(color=colorlist[self.np_random.choice(len(colorlist))], size=0.9)
-        )
-        self.place_entity(
-            Ball(color=colorlist[self.np_random.choice(len(colorlist))], size=0.9)
-        )
-        self.place_entity(Key(color=colorlist[self.np_random.choice(len(colorlist))]))
+        for obj_type in obj_types:
+            for color in colorlist:
+                for count in range(self.num_per_objs):
+                    if obj_type == Box:
+                        self.place_entity(Box(color=color, size=0.9))
+                    if obj_type == Ball:
+                        self.place_entity(Ball(color=color, size=0.9))
+                    if obj_type == Key:
+                        self.place_entity(Key(color=color))
 
         self.place_agent()
-    
-    def _reward(self):
-        # TODO
-        return super()._reward()
+
+        self.num_picked_up = 0
 
     def step(self, action):
         obs, reward, termination, truncation, info = super().step(action)
+
+        if self.agent.carrying:
+            self.entities.remove(self.agent.carrying)
+            self.agent.carrying = None
+            self.num_picked_up += 1
+            reward = 1
+
+            if self.num_picked_up == self.num_per_objs:
+                termination = True
+
         return obs, reward, termination, truncation, info
