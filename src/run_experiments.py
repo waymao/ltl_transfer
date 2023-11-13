@@ -2,7 +2,6 @@ import argparse
 # from algos import baseline_dqn
 # from algos import baseline_hrl
 from algos import lpopl
-from algos import lpopl_online
 from algos import transfer
 # from algos import random_transfer
 from test_utils import TestingParameters, Tester, Saver
@@ -47,8 +46,6 @@ def run_experiment(
             lpopl.run_experiments(tester, curriculum, saver, run_id, num_times, incremental_steps, show_print, resume=resume, device=device)
         elif rl_alg == "dsac":
             lpopl.run_experiments(tester, curriculum, saver, run_id, num_times, incremental_steps, show_print, rl_algo="dsac", resume=resume, device=device)
-        # elif rl_alg == "ppo":
-            # lpopl_online.run_experiments(tester, curriculum, saver, run_id, num_times, incremental_steps, show_print, device=device)
         else:
             print("rl alg not found:", rl_alg)
 
