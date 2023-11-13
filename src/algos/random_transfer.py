@@ -14,10 +14,9 @@ from multiprocessing import Pool
 import numpy as np
 import sympy
 import networkx as nx
-import tensorflow as tf
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+import torch
 from lpopl import _initialize_policy_bank, _test_LPOPL
-from tf_policies.policy_bank import *
+from torch_policies.policy_bank import *
 from ltl.dfa import *
 from envs.grid.game import *
 from test_utils import Loader, save_pkl, load_pkl, save_json
@@ -82,8 +81,6 @@ def random_transfer_cluster(tester, loader, saver, run_id, num_times, num_steps,
 def random_transfer_single_task(transfer_task, ltl_idx, num_times, num_steps, run_id, learning_params, curriculum, tester, loader, saver):
     print('Starting single worker transfer to task: %s' % str(transfer_task))
     logfilename = os.path.join(tester.transfer_results_dpath, f'test_ltl_{ltl_idx}.pkl')
-    config = tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=1, allow_soft_placement=True)
-    tf.reset_default_graph()
     
     n_horiz = 10 #Multiplier for single task policy horizon
 
