@@ -24,7 +24,7 @@ def compute_adv(gamma: float, lmbda: float, delta_N: torch.Tensor) -> torch.Tens
     return torch.from_numpy(adv_list).to(device)
 
 
-class PPO(nn.Module):
+class PPO(nn.Module, metaclass=Policy):
     """
     PPO Module.
     """
@@ -129,7 +129,7 @@ class PPO(nn.Module):
             v_loss.backward()
             self.v_optim.step()
     
-    def get_save_state_dict(self):
+    def get_state_dict(self):
         """
         custom func to get the state dict including the optim
         """

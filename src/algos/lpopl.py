@@ -17,7 +17,7 @@ from test_utils import Tester, Saver
 from torch.profiler import profile, record_function, ProfilerActivity
 import random
 
-def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver, run_id: int, num_times, incremental_steps, show_print, rl_algo="dqn", device="cpu"):
+def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver, run_id: int, num_times, incremental_steps, show_print, rl_algo="dqn", resume=False, device="cpu"):
     time_init = time.time()
     tester_original = tester
     curriculum_original = curriculum
@@ -34,7 +34,7 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
         run_dpath = os.path.join(train_dpath, "run_%d" % run_id)
         # Overwrite 'tester' and 'curriculum' if incremental training
         tester_fpath = os.path.join(run_dpath, "tester.pkl")
-        if os.path.exists(run_dpath) and os.path.exists(tester_fpath):
+        if resume and os.path.exists(run_dpath) and os.path.exists(tester_fpath):
             tester = load_pkl(tester_fpath)
         else:
             tester = tester_original
@@ -42,7 +42,7 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
         learning_params = tester.learning_params
 
         curriculum_fpath = os.path.join(run_dpath, "curriculum.pkl")
-        if os.path.exists(run_dpath) and os.path.exists(curriculum_fpath):
+        if resume and os.path.exists(run_dpath) and os.path.exists(curriculum_fpath):
             curriculum = load_pkl(curriculum_fpath)
             learning_params.learning_starts += curriculum.total_steps  # recollect 'replay_buffer'
             curriculum.incremental_learning(incremental_steps)
@@ -64,8 +64,15 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
         policy_bank = _initialize_policy_bank(sess, learning_params, curriculum, tester, rl_algo=rl_algo, device=device)
         # Load 'policy_bank' if incremental training
         policy_dpath = os.path.join(saver.policy_dpath, "run_%d" % run_id)
-        if os.path.exists(policy_dpath) and os.listdir(policy_dpath):
-            loader.load_policy_bank(policy_bank, run_id)
+        if resume and os.path.exists(policy_dpath) and os.listdir(policy_dpath):
+            try:
+                loader.load_policy_bank(policy_bank, run_id)
+            except (RuntimeError, FileNotFoundError) as e:
+                print()
+                print("Encountered the following error when loading policy bank:")
+                print(e)
+                print("Will not load the bank.")
+                print()
         if show_print:
             print("Total # of policies:", policy_bank.get_number_LTL_policies())
             print("Policy bank initialization took: %0.2f mins" % ((time.time() - time_init)/60))
@@ -82,13 +89,19 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
                 _run_LPOPL(sess, policy_bank, task_params, tester, curriculum, replay_buffer, show_print)
                 num_tasks += 1
                 # # Save 'policy_bank' for incremental training and transfer
-                # saver.save_policy_bank(policy_bank, run_id)
-                # # Backing up the results
-                # saver.save_results()
-                # # Save 'tester' and 'curriculum' for incremental training
-                # saver.save_train_data(curriculum, run_id)
+                saver.save_policy_bank(policy_bank, run_id)
+                # Backing up the results
+                saver.save_results()
+                # Save 'tester' and 'curriculum' for incremental training
+                saver.save_train_data(curriculum, run_id)
         except KeyboardInterrupt:
             # gracefully print everything when interrupted
+            # # Save 'policy_bank' for incremental training and transfer
+            saver.save_policy_bank(policy_bank, run_id)
+            # Backing up the results
+            saver.save_results()
+            # Save 'tester' and 'curriculum' for incremental training
+            saver.save_train_data(curriculum, run_id)
             pass
 
     # Showing results
@@ -169,6 +182,7 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
 
         # Learning
         step = curriculum.get_current_step()
+
         if step > learning_params.learning_starts and step % learning_params.train_freq == 0:
             # Minimize the error in Bellman's equation on a batch sampled from replay buffer.
             S1, A, S2, Goal = replay_buffer.sample(learning_params.batch_size)

@@ -20,7 +20,7 @@ eps=0.05,
 target_update_freq=10, 
 """
 
-class DQN(nn.Module):
+class DQN(nn.Module, metaclass=Policy):
     """
     LPOPL variant of Naive DQN
     """
@@ -149,7 +149,7 @@ class DQN(nn.Module):
         self.optim.step()
         return loss
     
-    def get_save_state_dict(self):
+    def get_state_dict(self):
         """
         custom func to get the state dict including the optim
         """

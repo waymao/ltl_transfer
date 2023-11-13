@@ -11,8 +11,10 @@ from torch.nn import functional as F
 import numpy as np
 from copy import deepcopy
 
+from .policy_base import Policy
 
-class DiscreteSAC(nn.Module):
+
+class DiscreteSAC(nn.Module, metaclass=Policy):
     """
     Naive DQN
     """
@@ -192,6 +194,20 @@ class DiscreteSAC(nn.Module):
         Return proposition formula representing outgoing edges, e.g. a & b
         """
         return self.dfa.nodelist[self.dfa.ltl2state[self.ltl]].values()
+
+    def get_state_dict(self):
+        return {
+            "state": self.state_dict(),
+            "optim": {
+                "q": self.q_optim.state_dict(),
+                "pi": self.pi_optim.state_dict()
+            }
+        }
+    
+    def restore_from_state_dict(self, state_dict):
+        self.load_state_dict(state_dict['state'])
+        self.q_optim.load_state_dict(state_dict['optim']['q'])
+        self.pi_optim.load_state_dict(state_dict['optim']['pi'])
 
     # def add_initiation_set_classifier(self, edge, classifier):
     #     self.edge2classifier[edge] = classifier

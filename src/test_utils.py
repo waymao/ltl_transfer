@@ -34,7 +34,7 @@ def _get_optimal_values(file, experiment):
 
 
 class Tester:
-    def __init__(self, learning_params, testing_params, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, edge_matcher, save_dpath, file_results=None):
+    def __init__(self, learning_params, testing_params, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, edge_matcher, rl_algo, save_dpath, file_results=None):
         if file_results is None:
             # setting the test attributes
             self.learning_params = learning_params
@@ -52,6 +52,13 @@ class Tester:
             self.experiment = f"{train_type}/map_{map_id}"
             self.map = f"{save_dpath}/experiments/maps/map_{map_id}.txt"
             self.consider_night = False
+            self.rl_algo = rl_algo
+
+
+            results_path = os.path.join(save_dpath, "results", rl_algo)
+            results_mixed_path = os.path.join(save_dpath, "results_icra24", rl_algo)
+            results_test_path = os.path.join("..", "results_test", rl_algo)
+
             if train_type == "sequence":
                 self.experiment = f"{train_type}/map_{map_id}"
                 self.experiment_train = f"{train_type}/map_{map_id}"
@@ -66,7 +73,7 @@ class Tester:
                 self.experiment_train = f"{train_type}/map_{map_id}"
                 train_tasks, self.transfer_tasks = read_train_test_formulas(dataset_name, 'hard', test_type, train_size)
                 self.tasks = train_tasks[0: train_size]
-                self.transfer_results_dpath = os.path.join("..", "results_test", f"{train_type}_{test_type}_{edge_matcher}", f"map_{map_id}")
+                self.transfer_results_dpath = os.path.join(results_test_path, f"{train_type}_{test_type}_{edge_matcher}", f"map_{map_id}")
                 os.makedirs(self.transfer_results_dpath, exist_ok=True)
                 self.transfer_log_fpath = os.path.join(self.transfer_results_dpath, "zero_shot_transfer_log.txt")
                 logging.basicConfig(filename=self.transfer_log_fpath, filemode='w', level=logging.INFO, format="%(message)s")
@@ -74,19 +81,19 @@ class Tester:
                 if train_type == 'transfer_sequence':
                     self.tasks = tasks.get_sequence_training_tasks()
                     self.transfer_tasks = tasks.get_transfer_tasks()
-                    self.transfer_results_dpath = os.path.join(save_dpath, "results", train_type, f"map_{map_id}")
+                    self.transfer_results_dpath = os.path.join(results_path, train_type, f"map_{map_id}")
                 elif train_type == 'transfer_interleaving':
                     self.tasks = tasks.get_interleaving_training_tasks()
                     self.transfer_tasks = tasks.get_transfer_tasks()
-                    self.transfer_results_dpath = os.path.join(save_dpath, "results", train_type, f"map_{map_id}")
+                    self.transfer_results_dpath = os.path.join(results_path, train_type, f"map_{map_id}")
                 else:
                     self.experiment = f"{train_type}_{train_size}/map_{map_id}/prob_{self.prob}"
                     self.experiment_train = f"{train_type}_50/map_{map_id}/prob_{self.prob}"
                     train_tasks, self.transfer_tasks = read_train_test_formulas(save_dpath, dataset_name, train_type, test_type, train_size)
                     self.tasks = train_tasks[0: train_size]
-                    self.transfer_results_dpath = os.path.join(save_dpath, "results_icra24", self.transition_type, f"{train_type}_{train_size}_{test_type}_{edge_matcher}", f"map_{map_id}", f"prob_{self.prob}")
+                    self.transfer_results_dpath = os.path.join(results_mixed_path, self.transition_type, f"{train_type}_{train_size}_{test_type}_{edge_matcher}", f"map_{map_id}", f"prob_{self.prob}")
                 os.makedirs(self.transfer_results_dpath, exist_ok=True)
-                print(f"Reults saved at: {self.transfer_results_dpath}")
+                print(f"Results saved at: {self.transfer_results_dpath}")
                 self.transfer_log_fpath = os.path.join(self.transfer_results_dpath, "zero_shot_transfer_log.txt")
                 logging.basicConfig(filename=self.transfer_log_fpath, filemode='w', level=logging.INFO, format="%(message)s")
 
@@ -185,14 +192,14 @@ class Saver:
         self.alg_name = alg_name
         self.tester = tester
 
-        self.exp_dir = os.path.join(tester.save_dpath, "options", tester.transition_type, tester.experiment_train)
+        self.exp_dir = os.path.join(tester.save_dpath, "options", tester.rl_algo, tester.transition_type, tester.experiment_train)
         os.makedirs(self.exp_dir, exist_ok=True)
         print(f"Options saved at: {self.exp_dir}")
 
         self.train_dpath = os.path.join(self.exp_dir, "train_data")
         os.makedirs(self.train_dpath, exist_ok=True)
 
-        self.policy_dpath = os.path.join(self.train_dpath, "policy_model")
+        self.policy_dpath = os.path.join(self.train_dpath)
         os.makedirs(self.policy_dpath, exist_ok=True)
 
         self.classifier_dpath = os.path.join(self.exp_dir, "classifier")
@@ -209,7 +216,7 @@ class Saver:
         save_pkl(os.path.join(run_dpath, "curriculum.pkl"), curriculum)
 
     def save_policy_bank(self, policy_bank, run_id):
-        policy_bank_prefix = os.path.join(self.policy_dpath, f"run_{run_id}", "policy_bank")
+        policy_bank_prefix = os.path.join(self.policy_dpath, f"run_{run_id}")
         policy_bank.save_bank(policy_bank_prefix)
 
     def save_results(self):
@@ -280,7 +287,7 @@ class Loader:
         self.saver = saver
 
     def load_policy_bank(self, policy_bank, run_idx):
-        run_dpath = os.path.join(self.saver.policy_dpath, f"run_{run_idx}", "policy_bank")  # where all pytorch model are saved
+        run_dpath = os.path.join(self.saver.policy_dpath, f"run_{run_idx}")  # where all pytorch model are saved
         # saver = tf.train.import_meta_graph(run_dpath+"policy_bank.meta")
         policy_bank.load_bank(run_dpath)
 

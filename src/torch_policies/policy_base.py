@@ -1,30 +1,19 @@
 from .learning_params import LearningParameters
 import torch
+from abc import ABC, abstractmethod
 
-class Policy(torch.nn.Module):
-    def __init__(self, 
-            nn_module, 
-            dfa,
-            state_dim, 
-            action_dim, 
-            learning_params: LearningParameters,
-            device="cpu"
-        ):
-        super().__init__()
-        raise NotImplementedError()
-    
-    def forward(self, x):
-        # get action
-        pass
-
+class Policy(ABC, type(torch.nn.Module)):
+    @abstractmethod
     def get_v(self, x):
         # get value function for state
         pass
     
+    @abstractmethod
     def update_target_network(self) -> None:
         """Synchronize the weight for the target network."""
         pass
     
+    @abstractmethod
     def compute_loss(
             self, 
             s1_NS, 
@@ -37,8 +26,17 @@ class Policy(torch.nn.Module):
         ):
         return 0
 
+    @abstractmethod
     def get_edge_labels(self):
         """
         Return proposition formula representing outgoing edges, e.g. a & b
         """
         return self.dfa.nodelist[self.dfa.ltl2state[self.ltl]].values()
+    
+    @abstractmethod
+    def get_state_dict(self) -> dict:
+        pass
+
+    @abstractmethod
+    def restore_from_state_dict(self, state_dict: dict):
+        pass

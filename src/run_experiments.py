@@ -13,14 +13,15 @@ import cProfile
 
 
 def run_experiment(
-        alg_name, map_id, prob, tasks_id, dataset_name, train_type, 
+        alg_name, rl_alg, map_id, prob, tasks_id, dataset_name, train_type, 
         train_size, test_type, num_times, r_good, total_steps, incremental_steps, 
         run_id, relabel_method, transfer_num_times, edge_matcher, save_dpath, show_print,
         learning_params: LearningParameters,
         testing_params: TestingParameters,
+        resume=False,
         device="cpu"):
     # Setting the experiment
-    tester = Tester(learning_params, testing_params, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, edge_matcher, save_dpath)
+    tester = Tester(learning_params, testing_params, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, edge_matcher, rl_alg, save_dpath)
 
     # Setting the curriculum learner
     curriculum = CurriculumLearner(tester.tasks, r_good=r_good, total_steps=total_steps)
@@ -42,14 +43,18 @@ def run_experiment(
 
     # LPOPL
     if alg_name == "lpopl":
-        lpopl.run_experiments(tester, curriculum, saver, run_id, num_times, incremental_steps, show_print, device=device)
-    if alg_name == "lpopl_dsac":
-        lpopl.run_experiments(tester, curriculum, saver, run_id, num_times, incremental_steps, show_print, rl_algo="dsac", device=device)
-    if alg_name == "lpopl_ppo":
-        lpopl_online.run_experiments(tester, curriculum, saver, run_id, num_times, incremental_steps, show_print, device=device)
+        if rl_alg == "dqn":
+            lpopl.run_experiments(tester, curriculum, saver, run_id, num_times, incremental_steps, show_print, resume=resume, device=device)
+        elif rl_alg == "dsac":
+            lpopl.run_experiments(tester, curriculum, saver, run_id, num_times, incremental_steps, show_print, rl_algo="dsac", resume=resume, device=device)
+        # elif rl_alg == "ppo":
+            # lpopl_online.run_experiments(tester, curriculum, saver, run_id, num_times, incremental_steps, show_print, device=device)
+        else:
+            print("rl alg not found:", rl_alg)
 
     # # Relabel state-centric options learn by LPOPL then zero-shot transfer
     if alg_name == "zero_shot_transfer":
+        # TODO resume is ignored here
         transfer.run_experiments(tester, curriculum, saver, run_id, relabel_method, transfer_num_times)
 
     # # Random policy baseline
@@ -57,9 +62,10 @@ def run_experiment(
     #     random_transfer.run_experiments(tester, curriculum, saver, run_id, relabel_method, transfer_num_times)
 
 
-def run_multiple_experiments(alg, prob, tasks_id, dataset_name, train_type, train_size, test_type, total_steps, incremental_steps, run_id, relabel_method, transfer_num_times, edge_matcher, save_dpath, 
+def run_multiple_experiments(alg, rl_alg, prob, tasks_id, dataset_name, train_type, train_size, test_type, total_steps, incremental_steps, run_id, relabel_method, transfer_num_times, edge_matcher, save_dpath, 
                           learning_params,
                           testing_params,
+                          resume=False,
                           device="cpu"):
     num_times = 3
     r_good    = 0.5 if tasks_id == 2 else 0.9
@@ -67,25 +73,26 @@ def run_multiple_experiments(alg, prob, tasks_id, dataset_name, train_type, trai
 
     for map_id in range(10):
         print("Running r_good: %0.2f; alg: %s; map_id: %d; run_id: %d, stochasticity: %0.2f; train_type: %s; train_size: %d; test_type: %s; edge_mather: %s" % (r_good, alg, map_id, run_id, prob, train_type, train_size, test_type, edge_matcher))
-        run_experiment(alg, map_id, prob, tasks_id, dataset_name, train_type, 
+        run_experiment(alg, rl_alg, map_id, prob, tasks_id, dataset_name, train_type, 
                        train_size, test_type, num_times, r_good, total_steps, incremental_steps, 
                        run_id, relabel_method, transfer_num_times, edge_matcher, save_dpath, show_print, 
-                       learning_params, testing_params, device)
+                       learning_params, testing_params, resume, device)
 
 
-def run_single_experiment(alg, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, total_steps, incremental_steps, run_id, relabel_method, transfer_num_times, edge_matcher, save_dpath, 
+def run_single_experiment(alg, rl_alg, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, total_steps, incremental_steps, run_id, relabel_method, transfer_num_times, edge_matcher, save_dpath, 
                           learning_params,
                           testing_params,
+                          resume=False,
                           device="cpu"):
     num_times = 1  # each algo was run 3 times per map in the paper
     r_good    = 0.5 if tasks_id == 2 else 0.9
     show_print = True
 
     print("Running r_good: %0.2f; alg: %s; map_id: %d; run_id: %d, stochasticity: %0.2f; train_type: %s; train_size: %d; test_type: %s; edge_mather: %s" % (r_good, alg, map_id, run_id, prob, train_type, train_size, test_type, edge_matcher))
-    run_experiment(alg, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, 
+    run_experiment(alg, rl_alg, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, 
                    num_times, r_good, total_steps, incremental_steps, run_id, relabel_method, 
                    transfer_num_times, edge_matcher, save_dpath, show_print, 
-                   learning_params, testing_params, device)
+                   learning_params, testing_params, resume, device)
 
 
 if __name__ == "__main__":
@@ -93,6 +100,7 @@ if __name__ == "__main__":
 
     # Getting params
     algos = ["dqn-l", "hrl-e", "hrl-l", "lpopl", "lpopl_ppo", "lpopl_dsac", "zero_shot_transfer", "random_transfer"]
+    rl_algos = ["dqn", "dsac"]
     train_types = [
         "sequence",
         "interleaving",
@@ -116,7 +124,10 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog="run_experiments", description='Runs a multi-task RL experiment over a gridworld domain that is inspired by Minecraft.')
     parser.add_argument('--algo', default='lpopl', type=str,
-                        help='This parameter indicated which RL algorithm to use. The options are: ' + str(algos))
+                        help='This parameter indicated which algorithm to use. The options are: ' + str(algos))
+    parser.add_argument('--rl_algo', default="dqn", type=str, choices=rl_algos,
+                        help="The RL Algorithm to be used for LPOPL / Transfer.  The options are: " + str(rl_algos))
+    
     parser.add_argument('--train_type', default='sequence', type=str,
                         help='This parameter indicated which tasks to solve. The options are: ' + str(train_types))
     parser.add_argument('--train_size', default=50, type=int,
@@ -149,6 +160,8 @@ if __name__ == "__main__":
                         help='The device to run Neural Network computations.')
     parser.add_argument('--alpha', default=0.05, type=float,
                         help='The temperature for exploration / exploitation tradeoff.')
+    parser.add_argument('--resume', default=False, action="store_true",
+                        help='Whether to resume from a checkpoint or not.')
     args = parser.parse_args()
     if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")
     if args.train_type not in train_types: raise NotImplementedError("Training tasks " + str(args.train_type) + " hasn't been defined yet")
@@ -159,16 +172,18 @@ if __name__ == "__main__":
     tasks_id = train_types.index(args.train_type)
     map_id = args.map
     if map_id > -1:
-        run_single_experiment(args.algo, map_id, args.prob, tasks_id, args.dataset_name, args.train_type, args.train_size, args.test_type,
+        run_single_experiment(args.algo, args.rl_algo, map_id, args.prob, tasks_id, args.dataset_name, args.train_type, args.train_size, args.test_type,
                               args.total_steps, args.incremental_steps, args.run_id,
                               args.relabel_method, args.transfer_num_times, args.edge_matcher, args.save_dpath, 
                               LearningParameters(alpha=args.alpha),
                               TestingParameters(),
+                              args.resume,
                               args.device)
     else:
-        run_multiple_experiments(args.algo, args.prob, tasks_id, args.dataset_name, args.train_type, args.train_size, args.test_type,
+        run_multiple_experiments(args.algo, args.rl_algo, args.prob, tasks_id, args.dataset_name, args.train_type, args.train_size, args.test_type,
                                  args.total_steps, args.incremental_steps, args.run_id,
                                  args.relabel_method, args.transfer_num_times, args.edge_matcher, args.save_dpath, 
                                  LearningParameters(alpha=args.alpha),
                                  TestingParameters(),
+                                 args.resume,
                                  args.device)

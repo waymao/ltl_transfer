@@ -44,7 +44,14 @@ class PolicyBank:
 
 
     def _add_constant_policy(self, ltl, value):
-        policy = ConstantPolicy(ltl, value, self.num_actions, device=self.device)
+        policy = ConstantPolicy(
+            ltl, 
+            None,
+            self.num_features,
+            self.num_actions,
+            value=value, 
+            device=self.device
+        )
         self._add_policy(ltl, policy)
 
     def _add_policy(self, ltl, policy):
@@ -203,10 +210,9 @@ class PolicyBank:
         checkpoint_path = os.path.join(policy_bank_prefix, "policy_bank.pth")
         checkpoint = torch.load(checkpoint_path)
         for ltl, policy_id in self.policy2id.items():
-            if ltl not in self.policies: continue # skip unknown policies
-            policy: nn.Module = self.policies[policy_id]
-            policy.load_state_dict(checkpoint['policies'][ltl][0])
-            policy.optim.load_state_dict(checkpoint['policies'][ltl][1])
+            if ltl not in checkpoint['policies']: continue # skip unsaved policies
+            policy: Policy = self.policies[policy_id]
+            policy.restore_from_state_dict(checkpoint['policies'][ltl])
         print("loaded policy bank from", checkpoint_path)
 
 
@@ -215,11 +221,10 @@ class PolicyBank:
         save = {}
         policies_dict = {}
         for ltl, policy_id in self.policy2id.items():
-            policy: Union[nn.Module, ConstantPolicy] = self.policies[policy_id]
+            policy: Union[nn.Module, Policy] = self.policies[policy_id]
             if type(policy) != ConstantPolicy:
                 # only save non-constant policy
-                state_dict = policy.state_dict()
-                policies_dict[ltl] = (policy.state_dict(), policy.optim.state_dict())
+                policies_dict[ltl] = policy.get_state_dict()
         save['policies'] = policies_dict
         checkpoint_path = os.path.join(policy_bank_prefix, "policy_bank.pth")
         if not os.path.exists(policy_bank_prefix):
