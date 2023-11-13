@@ -60,17 +60,18 @@ class Tester:
             results_test_path = os.path.join("..", "results_test", rl_algo)
 
             if train_type == "sequence":
-                self.experiment = f"{train_type}/map_{map_id}"
-                self.experiment_train = f"{train_type}/map_{map_id}"
+                # original LPOPL code, testing use only
+                self.experiment = f"{train_type}/map_{map_id}/prob_{self.prob}"
+                self.experiment_train = f"{train_type}/map_{map_id}/prob_{self.prob}"
                 self.tasks = tasks.get_sequence_of_subtasks()
-            elif train_type == "interleaving":
-                self.tasks = tasks.get_interleaving_subtasks()
-            elif train_type == "safety":
-                self.tasks = tasks.get_safety_constraints()
-                self.consider_night = True
+            # elif train_type == "interleaving":
+            #     self.tasks = tasks.get_interleaving_subtasks()
+            # elif train_type == "safety":
+            #     self.tasks = tasks.get_safety_constraints()
+            #     self.consider_night = True
             elif train_type == 'random':
-                self.experiment = f"{train_type}/map_{map_id}"
-                self.experiment_train = f"{train_type}/map_{map_id}"
+                self.experiment = f"{train_type}/map_{map_id}/prob_{self.prob}"
+                self.experiment_train = f"{train_type}/map_{map_id}/prob_{self.prob}"
                 train_tasks, self.transfer_tasks = read_train_test_formulas(dataset_name, 'hard', test_type, train_size)
                 self.tasks = train_tasks[0: train_size]
                 self.transfer_results_dpath = os.path.join(results_test_path, f"{train_type}_{test_type}_{edge_matcher}", f"map_{map_id}")
@@ -81,11 +82,11 @@ class Tester:
                 if train_type == 'transfer_sequence':
                     self.tasks = tasks.get_sequence_training_tasks()
                     self.transfer_tasks = tasks.get_transfer_tasks()
-                    self.transfer_results_dpath = os.path.join(results_path, train_type, f"map_{map_id}")
+                    self.transfer_results_dpath = os.path.join(results_path, train_type, f"map_{map_id}", f"prob_{self.prob}")
                 elif train_type == 'transfer_interleaving':
                     self.tasks = tasks.get_interleaving_training_tasks()
                     self.transfer_tasks = tasks.get_transfer_tasks()
-                    self.transfer_results_dpath = os.path.join(results_path, train_type, f"map_{map_id}")
+                    self.transfer_results_dpath = os.path.join(results_path, train_type, f"map_{map_id}", f"prob_{self.prob}")
                 else:
                     self.experiment = f"{train_type}_{train_size}/map_{map_id}/prob_{self.prob}"
                     self.experiment_train = f"{train_type}_50/map_{map_id}/prob_{self.prob}"
@@ -188,7 +189,7 @@ class Tester:
 
 
 class Saver:
-    def __init__(self, alg_name, tester):
+    def __init__(self, alg_name, tester: Tester):
         self.alg_name = alg_name
         self.tester = tester
 
@@ -328,7 +329,7 @@ def transfer_metrics(train_type, train_size, test_type, map_id, prob, num_times,
 
 
 def export_results(algorithm, task_type, prob, save_dpath):
-    transition_type = "stochastic" if prob == 1.0 else "deterministic"
+    transition_type = "stochastic" if prob != 1.0 else "deterministic"
     for map_type, maps in [("random", range(0, 5)), ("adversarial", range(5, 10))]:
         # Computing the summary of the results
         normalized_rewards = None
