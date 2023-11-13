@@ -111,8 +111,8 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
 
 def _initialize_policy_bank(sess, learning_params, curriculum: CurriculumLearner, tester: Tester, load_tf=True, rl_algo="dqn", device="cpu"):
     task_aux = Game(tester.get_task_params(curriculum.get_current_task()))
-    num_actions = len(task_aux.get_actions())
-    num_features = task_aux.get_num_features()
+    num_actions = task_aux.action_space.n
+    num_features = task_aux.observation_space.shape[0]
     policy_bank = PolicyBank(sess, num_actions, num_features, learning_params, policy_type=rl_algo, device=device)
     for idx, f_task in enumerate(tester.get_LTL_tasks()[:tester.train_size]):  # only load first 'train_size' policies
         # start_time = time.time()
@@ -138,10 +138,10 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
 
     # Initializing the game
     task = Game(task_params)
-    actions = task.get_actions()
+    action_space = task.action_space
 
     # Initializing parameters
-    num_features = task.get_num_features()
+    num_features = task.observation_space.shape[0]
     num_steps = learning_params.max_timesteps_per_task
     exploration = LinearSchedule(schedule_timesteps=int(learning_params.exploration_fraction * num_steps), initial_p=1.0, final_p=learning_params.exploration_final_eps)
     training_reward = 0
@@ -158,10 +158,10 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
 
         # Choosing an action to perform
         if policy_bank.rl_algo == "dqn":
-            if random.random() < exploration.value(t): a = random.choice(actions)
-            else: a = Actions(policy_bank.get_best_action(ltl_goal, s1.reshape((1, num_features))))
+            if random.random() < exploration.value(t): a = action_space.sample()
+            else: a = policy_bank.get_best_action(ltl_goal, s1.reshape((1, num_features)))
         else:
-            a = Actions(policy_bank.get_best_action(ltl_goal, s1.reshape((1, num_features))))
+            a = policy_bank.get_best_action(ltl_goal, s1.reshape((1, num_features)))
         # updating the curriculum
         curriculum.add_step()
 
@@ -179,7 +179,7 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
             else:
                 ltl_next_id = policy_bank.get_id(policy_bank.get_policy_next_LTL(ltl, true_props))
             next_goals[ltl_id-2] = ltl_next_id
-        replay_buffer.add(s1, a.value, s2, next_goals)
+        replay_buffer.add(s1, a, s2, next_goals)
 
         s1 = s2
 

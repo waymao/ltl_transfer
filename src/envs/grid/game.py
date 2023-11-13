@@ -3,6 +3,7 @@ from scipy.spatial import distance
 from .game_objects import *
 from ltl.dfa import *
 
+import gymnasium as gym
 
 class GameParams:
     """
@@ -17,7 +18,7 @@ class GameParams:
         self.init_loc = init_loc
 
 
-class Game:
+class Game(gym.Env):
     def __init__(self, params):
         self.params = params
         self.prob = params.prob
@@ -34,12 +35,20 @@ class Game:
         self.dfa = DFA(params.ltl_task, params.init_dfa_state)
         reward, self.ltl_game_over, self.env_game_over = self._get_rewards()
         self.agent.update_reward(reward)
+        # spaces
+        self.action_space = gym.spaces.Discrete(len(self.agent.get_actions()))
+        max_dist = self.map_height + self.map_width
+        self.observation_space = gym.spaces.Box(
+            low=np.array([0] * self._get_num_features()),
+            high=np.array([max_dist] * self._get_num_features()),
+        )
 
     def step(self, action):
         """
         We execute 'action' in the game
         Returns the reward that the agent gets after executing the action
         """
+        action = Actions(action)
         agent = self.agent
         self.hour = (self.hour + 1) % 24
 
@@ -193,7 +202,7 @@ class Game:
             return 1 + self.sunset - self.hour
         return 0  # it is night
 
-    def get_num_features(self):
+    def _get_num_features(self):
         """
         return the size of the feature representation of the map
         """
@@ -223,12 +232,6 @@ class Game:
     #     Returns the Manhattan distance between 'obj' and the agent
     #     """
     #     return abs(obj.i - self.agent.i) + abs(obj.j - self.agent.j)
-
-    def get_actions(self):
-        """
-        Returns the list with the actions that the agent can perform
-        """
-        return self.agent.get_actions()
 
     def get_LTL_goal(self):
         """
@@ -272,14 +275,13 @@ def play(params, max_time):
     for t in range(max_time):
         # Showing game
         game.show_map()
-        acts = game.get_actions()
         # Getting action
         print("\nSteps ", t)
         print("Action? ", end="")
         a = input()
         print()
         # Executing action
-        if a in str_to_action and str_to_action[a] in acts:
+        if a in str_to_action:
             reward = game.step(str_to_action[a])
             if game.ltl_game_over or game.env_game_over:  # Game Over
                 break
