@@ -149,10 +149,12 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
     # Starting interaction with the environment
     curr_eps_step = 0
     if show_print: print("Executing", num_steps, "actions...")
+    s1 = task.reset()
+    s2 = None
+
     for t in range(num_steps):
         # Getting the current state and ltl goal
         ltl_goal = task.get_LTL_goal()
-        s1 = task.get_features()
 
         # Choosing an action to perform
         if policy_bank.rl_algo == "dqn":
@@ -164,12 +166,11 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
         curriculum.add_step()
 
         # Executing the action
-        reward = task.execute_action(a)
+        s2, reward, term, trunc, info = task.step(a)
         training_reward += reward
         true_props = task.get_true_propositions()
 
         # Saving this transition
-        s2 = task.get_features()
         next_goals = np.zeros((policy_bank.get_number_LTL_policies(),), dtype=np.float64)
         for ltl in policy_bank.get_LTL_policies():
             ltl_id = policy_bank.get_id(ltl)
@@ -179,6 +180,8 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
                 ltl_next_id = policy_bank.get_id(policy_bank.get_policy_next_LTL(ltl, true_props))
             next_goals[ltl_id-2] = ltl_next_id
         replay_buffer.add(s1, a.value, s2, next_goals)
+
+        s1 = s2
 
         # Learning
         step = curriculum.get_current_step()
@@ -220,7 +223,7 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
             # 2) DFA reached a deadend, or
             # 3) The agent reached an environment deadend (e.g. a PIT)
             # 4) NEW: > episode max time step
-            task = Game(task_params)  # Restarting
+            s1 = task.reset()  # Restarting
 
             # updating the hit rates
             curriculum.update_succ_rate(t, reward)
@@ -238,18 +241,17 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
 def _test_LPOPL(sess, task_params, learning_params, testing_params, policy_bank, num_features):
     # Initializing parameters
     task = Game(task_params)
+    s1 = task.reset()
 
     # Starting interaction with the environment
     r_total = 0
     for t in range(testing_params.num_steps):
-        # Getting the current state and ltl goal
-        s1 = task.get_features()
-
         # Choosing an action to perform
         a = Actions(policy_bank.get_best_action(task.get_LTL_goal(), s1.reshape((1, num_features))))
 
         # Executing the action
-        r_total += task.execute_action(a) * learning_params.gamma**t
+        s1, r, term, trunc, info = task.step(a)
+        r_total += r * learning_params.gamma**t
 
         # Restarting the environment (Game Over)
         if task.ltl_game_over or task.env_game_over:

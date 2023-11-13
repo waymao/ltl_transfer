@@ -108,7 +108,7 @@ def random_transfer_single_task(transfer_task, ltl_idx, num_times, num_steps, ru
             
             actions = task._load_actions()
             a = np.random.choice(actions)
-            r = task.execute_action(a)
+            obs, r, term, trunc, info = task.step(a)
             transition = ((cur_loc, cur_node), a.name, r, ((task.agent.i, task.agent.j), task.dfa.state))
             run_traj.append(transition)
             step = step+1

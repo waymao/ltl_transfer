@@ -97,7 +97,7 @@ def rollout(tester, policy_bank, ltl, init_loc, n_rollouts, max_depth):
             s1 = task.get_features()
             action = Actions(policy_bank.get_best_action(ltl, s1.reshape((1, len(task.get_features())))))
             prev_state = task.dfa.state
-            _ = task.execute_action(action)
+            _ = task.step(action)
             # print(prev_state, action, task.dfa.state)
             if prev_state != task.dfa.state:
                 traversed_edge = task.dfa.nodelist[prev_state][task.dfa.state]

@@ -35,7 +35,7 @@ class Game:
         reward, self.ltl_game_over, self.env_game_over = self._get_rewards()
         self.agent.update_reward(reward)
 
-    def execute_action(self, action):
+    def step(self, action):
         """
         We execute 'action' in the game
         Returns the reward that the agent gets after executing the action
@@ -59,7 +59,27 @@ class Game:
         agent.update_reward(reward)
 
         # we continue playing
-        return reward
+        obs = self.get_features()
+        return obs, reward, self.ltl_game_over or self.env_game_over, False, {}
+
+    def reset(self, seed=None, options={}):
+        if 'params' in options:
+            self.params = options['params']
+        self.prob = self.params.prob
+        self._load_map(self.params.map_fpath)
+        if self.params.init_loc:
+            self._set_agent_loc(self.params.init_loc)
+        # Adding day and night if need it
+        self.consider_night = self.params.consider_night
+        self.hour = 12
+        if self.consider_night:
+            self.sunrise = 5
+            self.sunset  = 21
+        # Loading and progressing the LTL reward
+        self.dfa = DFA(self.params.ltl_task, self.params.init_dfa_state)
+        reward, self.ltl_game_over, self.env_game_over = self._get_rewards()
+        self.agent.update_reward(reward)
+        return self.get_features()
 
     def _get_next_position(self, action):
         """
@@ -260,7 +280,7 @@ def play(params, max_time):
         print()
         # Executing action
         if a in str_to_action and str_to_action[a] in acts:
-            reward = game.execute_action(str_to_action[a])
+            reward = game.step(str_to_action[a])
             if game.ltl_game_over or game.env_game_over:  # Game Over
                 break
         else:
