@@ -10,3 +10,4 @@ bash_scripts/run_lpopl_singlejob_*
 *.out
 *.err
 options/
+.vscode/
