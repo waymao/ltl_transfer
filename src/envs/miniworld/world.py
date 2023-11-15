@@ -1,7 +1,55 @@
 from gymnasium import spaces, utils
+from typing import Mapping, Tuple
+import numpy as np
 
-from miniworld.entity import COLOR_NAMES, Ball, Box, Key
+from miniworld.entity import COLOR_NAMES, Ball, Box, Key, Entity
 from miniworld.miniworld import MiniWorldEnv
+
+from .params import GameParams
+
+
+OBJ_MAP: Mapping[str, Tuple[Entity, str]] = {
+    "a": (Box, 'red'),
+    "b": (Box, 'green'),
+    "c": (Box, 'blue'),
+    "d": (Ball, 'red'),
+    "e": (Ball, 'green'),
+    "f": (Ball, 'blue'),
+    "g": (Key, 'red'),
+    "h": (Key, 'green'),
+    "i": (Key, 'blue'),
+    "X": (Box, 'grey') # obstacle
+}
+AGENT_MARKER = "A"
+OBSTACLE_MARKER = "X"
+BLOCK_SCALE = 0.5 # in meters
+
+def mat_to_opengl(i, j, num_rows, offset=0.5):
+    offset *= BLOCK_SCALE
+    return (j + offset, num_rows - i - 1 + offset)
+
+def get_map_size(self, map_mat):
+    width = 0
+    height = 0
+    for i, l in enumerate(map_mat):
+        # I don't consider empty lines!
+        l_stripped = l.rstrip()
+        if len(l.rstrip()) == 0: continue
+
+        # this is not an empty line!
+        height += 1
+        width = max(width, len(l_stripped))
+    return width, height
+
+def get_map_obj_set(self, map_mat):
+    item_set = set()
+    for l in map_mat:
+        l_stripped = l.rstrip()
+        if len(l.rstrip()) == 0: continue
+        for e in l.rstrip():
+            if e in OBJ_MAP.keys():
+                item_set.add(e)
+    return item_set
 
 
 class NewPickupObjects(MiniWorldEnv, utils.EzPickle):
@@ -42,18 +90,39 @@ class NewPickupObjects(MiniWorldEnv, utils.EzPickle):
 
     """
 
-    def __init__(self, size=12, num_per_obj=2, **kwargs):
+    def __init__(self, params: GameParams, **kwargs):
+        with open(params.map_fpath, 'r') as f:
+            map_mat = f.readlines()
+        width, height = get_map_size(map_mat)
+        size = max(width, height)
         assert size >= 2
         self.size = size
-        self.num_per_objs = num_per_obj
 
         MiniWorldEnv.__init__(self, max_episode_steps=400, **kwargs)
-        utils.EzPickle.__init__(self, size, num_per_obj, **kwargs)
+        utils.EzPickle.__init__(self, size, map_mat, **kwargs)
 
-        # Reduce the action space
-        self.action_space = spaces.Discrete(self.actions.pickup + 1)
+        self._map_mat = map_mat
+
+        # create a new observation space
+        obj_set = get_map_obj_set(map_mat)
+        num_features = len(obj_set)
+        max_dist = np.sqrt(self.size ** 2)
+        self.observation_space = spaces.Box(
+            low=np.zeros((1 * num_features,)),
+            high=np.ones((1 * num_features,)) * max_dist
+        )
 
     def _gen_world(self):
+        self._load_map(self._map_mat)
+    
+    def _load_map(self, map_mat):
+        """
+        This method adds the entities and agents to the game
+        The inputs:
+            - map_fpath: path to the map file
+        
+        Converts matrix units to OpenGL x-z coord.
+        """
         self.add_rect_room(
             min_x=0,
             max_x=self.size,
@@ -64,22 +133,39 @@ class NewPickupObjects(MiniWorldEnv, utils.EzPickle):
             no_ceiling=True,
         )
 
-        obj_types = [Ball, Box]
-        colorlist = ["red", "green", "blue"]
+        # contains all the actions that the agent can perform
+        items_set = set()
+        height = 0
+        width = 0
+        # loading the map
+        for i, l in enumerate(map_mat):
+            # I don't consider empty lines!
+            l_stripped = l.rstrip()
+            if len(l.rstrip()) == 0: continue
 
-        for obj_type in obj_types:
-            for color in colorlist:
-                for count in range(self.num_per_objs):
-                    if obj_type == Box:
-                        self.place_entity(Box(color=color, size=0.9))
-                    if obj_type == Ball:
-                        self.place_entity(Ball(color=color, size=0.9))
-                    if obj_type == Key:
-                        self.place_entity(Key(color=color))
+            # this is not an empty line!
+            height += 1
+            for j, e in enumerate(l_stripped):
+                if e in OBJ_MAP.keys():
+                    Entity, color = OBJ_MAP[e]
+                    entity = Entity(color=color)
 
-        self.place_agent()
+                    # set obstacle to be static (non-pickable)
+                    if e == OBSTACLE_MARKER:
+                        entity.is_static = True
+                    
+                    # place the item
+                    x, z = mat_to_opengl(i, j)
+                    self.place_entity(entity, min_x=x, max_x=x, min_z=z, max_z=z)
 
-        self.num_picked_up = 0
+                    # update the feature set
+                    items_set.add(e)
+                elif e == AGENT_MARKER:
+                    # add the agent
+                    x, z = mat_to_opengl(i, j)
+                    self.place_agent(min_x=x, max_x=x, min_z=z, max_z=z)
+            width = max(width, len(l_stripped))
+        return items_set
 
     def step(self, action):
         obs, reward, termination, truncation, info = super().step(action)
