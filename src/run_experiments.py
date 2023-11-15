@@ -42,12 +42,7 @@ def run_experiment(
 
     # LPOPL
     if alg_name == "lpopl":
-        if rl_alg == "dqn":
-            lpopl.run_experiments(tester, curriculum, saver, run_id, num_times, incremental_steps, show_print, resume=resume, device=device)
-        elif rl_alg == "dsac":
-            lpopl.run_experiments(tester, curriculum, saver, run_id, num_times, incremental_steps, show_print, rl_algo="dsac", resume=resume, device=device)
-        else:
-            print("rl alg not found:", rl_alg)
+        lpopl.run_experiments(tester, curriculum, saver, run_id, num_times, incremental_steps, show_print, rl_algo=rl_alg, resume=resume, device=device)
 
     # # Relabel state-centric options learn by LPOPL then zero-shot transfer
     if alg_name == "zero_shot_transfer":
