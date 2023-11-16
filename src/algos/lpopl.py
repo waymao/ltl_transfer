@@ -225,7 +225,7 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
             if active_policy_metrics is not None:
                 for key, val in active_policy_metrics.items():
                     tester.logger.add_scalar(
-                        f"train/active_policy/{key}",
+                        f"train/active/{key}",
                         val,
                         global_step=curriculum.get_current_step() + 1
                     )

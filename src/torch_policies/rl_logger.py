@@ -1,3 +1,5 @@
+from torch.utils.tensorboard import SummaryWriter
+
 class RLLogger():
     def __init__(self):
         self.hist = {}

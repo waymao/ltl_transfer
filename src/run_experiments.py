@@ -7,20 +7,26 @@ from algos import transfer
 from test_utils import TestingParameters, Tester, Saver
 from utils.curriculum import CurriculumLearner
 from torch_policies.learning_params import LearningParameters
+from torch.utils.tensorboard import SummaryWriter
+import os
 import cProfile
 
 
 
 def run_experiment(
-        alg_name, rl_alg, map_id, prob, tasks_id, dataset_name, train_type, 
+        alg_name, rl_alg, map_id, prob, tasks_id, domain_name, train_type, 
         train_size, test_type, num_times, r_good, total_steps, incremental_steps, 
         run_id, relabel_method, transfer_num_times, edge_matcher, save_dpath, show_print,
         learning_params: LearningParameters,
         testing_params: TestingParameters,
         resume=False,
         device="cpu"):
+    # Setting the proper logger
+    tb_log_path = os.path.join(save_dpath, "results", domain_name, f"{train_type}_p{prob}", f"{alg_name}_{rl_alg}", f"map{map_id}", str(run_id))
+    logger = SummaryWriter(log_dir=tb_log_path)
+
     # Setting the experiment
-    tester = Tester(learning_params, testing_params, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, edge_matcher, rl_alg, save_dpath)
+    tester = Tester(learning_params, testing_params, map_id, prob, tasks_id, domain_name, train_type, train_size, test_type, edge_matcher, rl_alg, save_dpath, logger)
 
     # Setting the curriculum learner
     curriculum = CurriculumLearner(tester.tasks, r_good=r_good, total_steps=total_steps)
@@ -146,7 +152,7 @@ if __name__ == "__main__":
                         help='This parameter indicated the number of times to run a transfer experiment')
     parser.add_argument('--save_dpath', default='..', type=str,
                         help='path to directory to save options and results')
-    parser.add_argument('--dataset_name', default='minecraft', type=str, choices=['minecraft', 'spot', 'spot_1', 'spot_mixed20-mixed50'],
+    parser.add_argument('--domain_name', '--dataset_name', default='minecraft', type=str, choices=['minecraft', 'spot', 'spot_1', 'spot_mixed20-mixed50'],
                         help='This parameter indicated the dataset to read tasks from')
     parser.add_argument('--device', default="cpu", type=str, choices=['cpu', 'cuda'], 
                         help='The device to run Neural Network computations.')
@@ -164,7 +170,7 @@ if __name__ == "__main__":
     tasks_id = train_types.index(args.train_type)
     map_id = args.map
     if map_id > -1:
-        run_single_experiment(args.algo, args.rl_algo, map_id, args.prob, tasks_id, args.dataset_name, args.train_type, args.train_size, args.test_type,
+        run_single_experiment(args.algo, args.rl_algo, map_id, args.prob, tasks_id, args.domain_name, args.train_type, args.train_size, args.test_type,
                               args.total_steps, args.incremental_steps, args.run_id,
                               args.relabel_method, args.transfer_num_times, args.edge_matcher, args.save_dpath, 
                               LearningParameters(alpha=args.alpha),
@@ -172,7 +178,7 @@ if __name__ == "__main__":
                               args.resume,
                               args.device)
     else:
-        run_multiple_experiments(args.algo, args.rl_algo, args.prob, tasks_id, args.dataset_name, args.train_type, args.train_size, args.test_type,
+        run_multiple_experiments(args.algo, args.rl_algo, args.prob, tasks_id, args.domain_name, args.train_type, args.train_size, args.test_type,
                                  args.total_steps, args.incremental_steps, args.run_id,
                                  args.relabel_method, args.transfer_num_times, args.edge_matcher, args.save_dpath, 
                                  LearningParameters(alpha=args.alpha),

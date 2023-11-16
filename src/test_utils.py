@@ -35,7 +35,7 @@ def _get_optimal_values(file, experiment):
 
 
 class Tester:
-    def __init__(self, learning_params, testing_params, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, edge_matcher, rl_algo, save_dpath, file_results=None):
+    def __init__(self, learning_params, testing_params, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, edge_matcher, rl_algo, save_dpath, logger=None, file_results=None):
         if file_results is None:
             # setting the test attributes
             self.learning_params = learning_params
@@ -60,7 +60,7 @@ class Tester:
             results_mixed_path = os.path.join(save_dpath, "results_icra24", rl_algo)
             results_test_path = os.path.join("..", "results_test", rl_algo)
 
-            self.logger = SummaryWriter(log_dir=results_path)
+            self.logger: SummaryWriter = logger
 
             if train_type == "sequence":
                 # original LPOPL code, testing use only
