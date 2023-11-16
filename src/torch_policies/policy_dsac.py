@@ -136,6 +136,8 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
             next_y_vals_CN,
             is_active=False
         ):
+        metrics = {}
+
         self.update_count += 1
         alpha = torch.exp(self.log_alpha).detach()
 
@@ -157,6 +159,8 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
         q_loss2.backward()
         # print("    q1 loss", q_loss1.item())
         # print("    q2 loss", q_loss2.item())
+        metrics['q1_loss'] = q_loss1.item()
+        metrics['q2_loss'] = q_loss2.item()
         self.q_optim.step()
 
         # pi loss
@@ -170,6 +174,7 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
                 pi_loss = -torch.mean((min_q_NA - alpha * log_pi_NA) * action_probs_NA)
                 self.pi_optim.zero_grad(set_to_none=True)
                 pi_loss.backward()
+                metrics['pi_loss'] = pi_loss.item()
                 self.pi_optim.step()
                 
                 # entropy = torch.mean(-log_pi_NA).detach()
@@ -179,6 +184,7 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
                         (-log_pi_NA - self.target_entropy)).detach() * torch.exp(self.log_alpha)
                     self.alpha_optim.zero_grad()
                     alpha_loss.backward()
+                    metrics['alpha_loss'] = alpha_loss.item()
                     self.alpha_optim.step()
                     # print(np.exp(self.log_alpha.item()))
             # print("    pi loss", pi_loss)
@@ -188,6 +194,7 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
             # handled by policy bank already
             # if self.update_count % self.target_update_freq == 0:
             #     self.sync_weight()
+        return metrics
     
     def get_edge_labels(self):
         """

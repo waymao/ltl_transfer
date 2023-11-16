@@ -185,6 +185,7 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
 
         # Learning
         step = curriculum.get_current_step()
+        active_policy_metrics = None # for logging loss
 
         if step > learning_params.learning_starts and step % learning_params.train_freq == 0:
             # Minimize the error in Bellman's equation on a batch sampled from replay buffer.
@@ -196,7 +197,7 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
             # # prof.export_chrome_trace("profile_trace.json")
             # print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=20))
 
-            policy_bank.learn(S1, A, S2, Goal, active_policy=curriculum.current_task)
+            active_policy_metrics = policy_bank.learn(S1, A, S2, Goal, active_policy=curriculum.current_task)
             if step % learning_params.target_network_update_freq == 0:
                 # print("step", step, "; loss", loss.cpu().item())
                 pass
@@ -207,8 +208,27 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
             policy_bank.update_target_network()
 
         # Printing
-        if show_print and (curriculum.get_current_step()+1) % learning_params.print_freq == 0:
-            print("Step:", curriculum.get_current_step()+1, "\tTotal reward:", training_reward, "\tSucc rate:", "%0.3f"%curriculum.get_succ_rate())
+        global_step = curriculum.get_current_step() + 1
+        if global_step % learning_params.print_freq == 0:
+            if show_print:
+                print("Step:", curriculum.get_current_step()+1, "\tTotal reward:", training_reward, "\tSucc rate:", "%0.3f"%curriculum.get_succ_rate())
+            tester.logger.add_scalar(
+                "train/rew",
+                training_reward,
+                global_step=curriculum.get_current_step() + 1
+            )
+            tester.logger.add_scalar(
+                "train/succ_rate",
+                curriculum.get_succ_rate(),
+                global_step=curriculum.get_current_step() + 1
+            )
+            if active_policy_metrics is not None:
+                for key, val in active_policy_metrics.items():
+                    tester.logger.add_scalar(
+                        f"train/active_policy/{key}",
+                        val,
+                        global_step=curriculum.get_current_step() + 1
+                    )
 
         # Testing
         if testing_params.test and curriculum.get_current_step() % testing_params.test_freq == 0:

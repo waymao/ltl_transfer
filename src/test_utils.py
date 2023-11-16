@@ -7,6 +7,7 @@ from collections import defaultdict
 import numpy as np
 from envs.grid.game import GameParams, Game
 from exp_dataset_creator import read_train_test_formulas
+from torch.utils.tensorboard import SummaryWriter
 import ltl.tasks as tasks
 
 
@@ -58,6 +59,8 @@ class Tester:
             results_path = os.path.join(save_dpath, "results", rl_algo)
             results_mixed_path = os.path.join(save_dpath, "results_icra24", rl_algo)
             results_test_path = os.path.join("..", "results_test", rl_algo)
+
+            self.logger = SummaryWriter(log_dir=results_path)
 
             if train_type == "sequence":
                 # original LPOPL code, testing use only

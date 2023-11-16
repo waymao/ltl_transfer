@@ -5,7 +5,7 @@ class LearningParameters:
                 max_timesteps_per_episode=1000,
                 # SAC related
                 target_network_update_freq=4,
-                pi_lr=1e-4,
+                pi_lr=3e-4,
                 alpha=0.1,
                 tau=0.005):
         """Parameters

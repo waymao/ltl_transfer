@@ -188,12 +188,16 @@ class PolicyBank:
                     q_targets_CN[i, :] = policy.get_v(s2_NS)
         
         # learn every policy except for true, false
+        active_policy_metrics = None
         for i, policy in enumerate(self.policies[2:]): 
             is_active = (i == active_policy)
-            policy.learn(
+            metrics = policy.learn(
                 s1_NS, a_N, s2_NS, r_N, terminated_N, 
                 next_goal_NC[:, i], 
                 q_targets_CN, is_active=is_active)
+            if is_active:
+                active_policy_metrics = metrics
+        return active_policy_metrics
     
     def get_best_action(self, ltl, s1):
         return self.policies[self.policy2id[ltl]].get_best_action(s1)
