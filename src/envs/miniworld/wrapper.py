@@ -12,13 +12,13 @@ class MiniWorldDistObsWrapper(gym.Wrapper):
 
 
 def get_ent_str(ent):
-    if type(ent) != Entity:
+    if not isinstance(ent, Entity):
         return ""
     else:
-        return OBJ_REV_MAP.get((ent.__class__.__name__, ent.color), "")
+        return OBJ_REV_MAP.get(f"{ent.__class__.__name__}_{ent.color}", "")
 
 class MiniWorldLTLWrapper(gym.Wrapper):
-    def __init__(self, env: MiniWorldEnv, params: GameParams, is_visit=False):
+    def __init__(self, env: MiniWorldEnv, params: GameParams, is_visit=True):
         """
         Wraps around the miniworld env, adding necessary LTL-related func.
         """
@@ -34,8 +34,8 @@ class MiniWorldLTLWrapper(gym.Wrapper):
         """
         Returns the string with the propositions that are True in this state
         """
-        test_pos = self.unwrapped.agent.pos + self.unwrapped.agent.dir_vec * 1.5 * self.agent.radius
-        ent = self.unwrapped.intersect(self.unwrapped.agent, test_pos, 1.2 * self.agent.radius)
+        test_pos = self.unwrapped.agent.pos + self.unwrapped.agent.dir_vec * 1.3 * self.agent.radius
+        ent = self.unwrapped.intersect(self.unwrapped.agent, test_pos, 1.1 * self.agent.radius)
 
         # adding the is_night proposition
         return get_ent_str(ent)

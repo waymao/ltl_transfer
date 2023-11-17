@@ -9,6 +9,8 @@ using the keyboard arrows.
 import argparse
 
 import gymnasium as gym
+from envs.miniworld.wrapper import MiniWorldLTLWrapper
+from envs.miniworld.params import GameParams
 
 import miniworld
 from miniworld.manual_control import ManualControl
@@ -16,7 +18,7 @@ from miniworld.manual_control import ManualControl
 class CustomManualControl(ManualControl):
     def step(self, action):
         result = super().step(action)
-        print(self.env.get_true_propositions())
+        print("True Propositions:", self.env.get_true_propositions())
         return result
 
 
@@ -40,11 +42,15 @@ def main():
     view_mode = "top"
 
     env = gym.make(args.env_name, view=view_mode, render_mode="human")
+
+    ltl_formula = ('until', 'True', "a")
+    params = GameParams('../../../experiments/maps/map_0.txt', 1, ltl_formula, False, False, None)
+    wrapped = MiniWorldLTLWrapper(env, params, True)
     miniworld_version = miniworld.__version__
 
     print(f"Miniworld v{miniworld_version}, Env: {args.env_name}")
 
-    manual_control = CustomManualControl(env, args.no_time_limit, args.domain_rand)
+    manual_control = CustomManualControl(wrapped, args.no_time_limit, args.domain_rand)
     manual_control.run()
 
 

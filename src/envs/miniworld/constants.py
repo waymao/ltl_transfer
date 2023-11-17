@@ -14,18 +14,9 @@ OBJ_MAP: Mapping[str, Tuple[Entity, str]] = {
     "X": (Box, 'grey') # obstacle
 }
 
-OBJ_REV_MAP: Mapping[Tuple[str, str], str] = {
-    ("Box", "red"): "a",
-    ("Box", "green"): "b",
-    ("Box", "blue"): "c",
-    ("Ball", "red"): "d",
-    ("Ball", "green"): "e",
-    ("Ball", "blue"): "f",
-    ("Key", "red"): "g",
-    ("Key", "green"): "h",
-    ("Key", "blue"): "i",
-    ("Box", "grey"): "X"
-}
+OBJ_REV_MAP = {}
+for key, (Module, color) in OBJ_MAP.items():
+    OBJ_REV_MAP[f"{Module.__name__}_{color}"] = key
 
 AGENT_MARKER = "A"
 OBSTACLE_MARKER = "X"
