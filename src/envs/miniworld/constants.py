@@ -2,17 +2,20 @@ from miniworld.entity import COLOR_NAMES, Ball, Box, Key, Entity
 from typing import Mapping, Tuple
 
 OBJ_MAP: Mapping[str, Tuple[Entity, str]] = {
-    "a": (Box, 'red'),
+    "a": (Box, 'yellow'),
     "b": (Box, 'green'),
     "c": (Box, 'blue'),
-    "d": (Ball, 'red'),
+    "d": (Ball, 'yellow'),
     "e": (Ball, 'green'),
     "f": (Ball, 'blue'),
-    "g": (Key, 'red'),
+    "g": (Key, 'yellow'),
     "h": (Key, 'green'),
     "i": (Key, 'blue'),
     "X": (Box, 'grey') # obstacle
 }
+
+RANDOM_OBJ_TYPES = [Ball, Box]
+RANDOM_COLOR_LIST = ["yellow", "green", "blue"]
 
 OBJ_REV_MAP = {}
 for key, (Module, color) in OBJ_MAP.items():
@@ -20,4 +23,5 @@ for key, (Module, color) in OBJ_MAP.items():
 
 AGENT_MARKER = "A"
 OBSTACLE_MARKER = "X"
-BLOCK_SCALE = 0.5 # in meters
+BLOCK_SCALE = 1 # in meters
+DEFAULT_MAP_SIZE = 16

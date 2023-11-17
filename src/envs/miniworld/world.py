@@ -1,11 +1,13 @@
 from gymnasium import utils
 import numpy as np
+from typing import Optional
 
-from miniworld.entity import COLOR_NAMES, Ball, Box, Key
+from miniworld.entity import Box, Ball, Key
 from miniworld.miniworld import MiniWorldEnv
 
 from .params import GameParams
-from .constants import OBJ_MAP, AGENT_MARKER, BLOCK_SCALE, OBSTACLE_MARKER
+from .constants import OBJ_MAP, AGENT_MARKER, BLOCK_SCALE, OBSTACLE_MARKER, \
+    RANDOM_COLOR_LIST, RANDOM_OBJ_TYPES, DEFAULT_MAP_SIZE
 
 def mat_to_opengl(i, j, num_rows, offset=0.5):
     offset *= BLOCK_SCALE
@@ -73,22 +75,29 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
 
     """
 
-    def __init__(self, params: GameParams, **kwargs):
-        with open(params.map_fpath, 'r') as f:
-            map_mat = f.readlines()
-        width, height = get_map_size(map_mat)
-        size = max(width, height)
-        assert size >= 2
-        self.size = size
+    def __init__(self, params: Optional[GameParams] = None, **kwargs):
+        if params is not None:
+            with open(params.map_fpath, 'r') as f:
+                self._map_mat = f.readlines()
+            width, height = get_map_size(self._map_mat)
+            size = max(width, height)
+            assert size >= 2
+            self.size = size
+        else:
+            self.size = getattr(params, 'size', DEFAULT_MAP_SIZE) if params is not None else DEFAULT_MAP_SIZE
+            self.num_per_objs = getattr(params, 'num_per_objs', 2) if params is not None else 2
+            self._map_mat = None
 
         MiniWorldEnv.__init__(self, max_episode_steps=1000, **kwargs)
-        utils.EzPickle.__init__(self, size, map_mat, **kwargs)
-
-        self._map_mat = map_mat
+        utils.EzPickle.__init__(self, self.size, self._map_mat, **kwargs)
 
 
-    def _gen_world(self, is_random=False):
-        if is_random:
+    def _gen_world(self):
+        """
+        Generate a random world if map is not set.
+        Load the map if map is present.
+        """
+        if self._map_mat is None:
             self._random_map()
         else:
             self._load_map(self._map_mat)
@@ -103,18 +112,19 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
             floor_tex="asphalt",
             no_ceiling=True,
         )
-        obj_types = [Ball, Box]
-        colorlist = ["red", "green", "blue"]
 
-        for obj_type in obj_types:
-            for color in colorlist:
+        for obj_type in RANDOM_OBJ_TYPES:
+            for color in RANDOM_COLOR_LIST:
                 for count in range(self.num_per_objs):
                     if obj_type == Box:
-                        self.place_entity(Box(color=color, size=0.9))
-                    if obj_type == Ball:
-                        self.place_entity(Ball(color=color, size=0.9))
-                    if obj_type == Key:
-                        self.place_entity(Key(color=color))
+                        ent = self.place_entity(Box(color=color, size=0.9 * BLOCK_SCALE))
+                    elif obj_type == Ball:
+                        ent = self.place_entity(Ball(color=color, size=0.9 * BLOCK_SCALE))
+                    elif obj_type == Key:
+                        ent = self.place_entity(Key(color=color))
+                    else:
+                        raise NotImplementedError("Unknown object type: " + str(obj_type))
+                    ent.color = color
 
         self.place_agent()
 
@@ -152,6 +162,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
                 if e in OBJ_MAP.keys():
                     Entity, color = OBJ_MAP[e]
                     entity = Entity(color=color)
+                    entity.color = color
 
                     # set obstacle to be static (non-pickable)
                     if e == OBSTACLE_MARKER:
