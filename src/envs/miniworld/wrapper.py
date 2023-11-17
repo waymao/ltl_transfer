@@ -39,3 +39,9 @@ class MiniWorldLTLWrapper(gym.Wrapper):
 
         # adding the is_night proposition
         return get_ent_str(ent)
+
+    def get_LTL_goal(self):
+        """
+        Returns the next LTL goal
+        """
+        return self.dfa.get_LTL()

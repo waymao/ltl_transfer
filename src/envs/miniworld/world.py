@@ -35,7 +35,7 @@ def get_map_obj_set(self, map_mat):
     return item_set
 
 
-class NewPickupObjects(MiniWorldEnv, utils.EzPickle):
+class NavigateEnv(MiniWorldEnv, utils.EzPickle):
     """
     ## Description
 
