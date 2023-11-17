@@ -1,28 +1,11 @@
-from gymnasium import spaces, utils
-from typing import Mapping, Tuple
+from gymnasium import utils
 import numpy as np
 
-from miniworld.entity import COLOR_NAMES, Ball, Box, Key, Entity
+from miniworld.entity import COLOR_NAMES, Ball, Box, Key
 from miniworld.miniworld import MiniWorldEnv
 
 from .params import GameParams
-
-
-OBJ_MAP: Mapping[str, Tuple[Entity, str]] = {
-    "a": (Box, 'red'),
-    "b": (Box, 'green'),
-    "c": (Box, 'blue'),
-    "d": (Ball, 'red'),
-    "e": (Ball, 'green'),
-    "f": (Ball, 'blue'),
-    "g": (Key, 'red'),
-    "h": (Key, 'green'),
-    "i": (Key, 'blue'),
-    "X": (Box, 'grey') # obstacle
-}
-AGENT_MARKER = "A"
-OBSTACLE_MARKER = "X"
-BLOCK_SCALE = 0.5 # in meters
+from .constants import OBJ_MAP, AGENT_MARKER, BLOCK_SCALE, OBSTACLE_MARKER
 
 def mat_to_opengl(i, j, num_rows, offset=0.5):
     offset *= BLOCK_SCALE
@@ -98,23 +81,43 @@ class NewPickupObjects(MiniWorldEnv, utils.EzPickle):
         assert size >= 2
         self.size = size
 
-        MiniWorldEnv.__init__(self, max_episode_steps=400, **kwargs)
+        MiniWorldEnv.__init__(self, max_episode_steps=1000, **kwargs)
         utils.EzPickle.__init__(self, size, map_mat, **kwargs)
 
         self._map_mat = map_mat
 
-        # create a new observation space
-        obj_set = get_map_obj_set(map_mat)
-        num_features = len(obj_set)
-        max_dist = np.sqrt(self.size ** 2)
-        self.observation_space = spaces.Box(
-            low=np.zeros((1 * num_features,)),
-            high=np.ones((1 * num_features,)) * max_dist
-        )
 
-    def _gen_world(self):
-        self._load_map(self._map_mat)
+    def _gen_world(self, is_random=False):
+        if is_random:
+            self._random_map()
+        else:
+            self._load_map(self._map_mat)
     
+    def _random_map(self):
+        self.add_rect_room(
+            min_x=0,
+            max_x=self.size,
+            min_z=0,
+            max_z=self.size,
+            wall_tex="brick_wall",
+            floor_tex="asphalt",
+            no_ceiling=True,
+        )
+        obj_types = [Ball, Box]
+        colorlist = ["red", "green", "blue"]
+
+        for obj_type in obj_types:
+            for color in colorlist:
+                for count in range(self.num_per_objs):
+                    if obj_type == Box:
+                        self.place_entity(Box(color=color, size=0.9))
+                    if obj_type == Ball:
+                        self.place_entity(Ball(color=color, size=0.9))
+                    if obj_type == Key:
+                        self.place_entity(Key(color=color))
+
+        self.place_agent()
+
     def _load_map(self, map_mat):
         """
         This method adds the entities and agents to the game
@@ -170,13 +173,13 @@ class NewPickupObjects(MiniWorldEnv, utils.EzPickle):
     def step(self, action):
         obs, reward, termination, truncation, info = super().step(action)
 
-        if self.agent.carrying:
-            self.entities.remove(self.agent.carrying)
-            self.agent.carrying = None
-            self.num_picked_up += 1
-            reward = 1
+        # carrying
+        # if self.agent.carrying:
+        #     self.entities.remove(self.agent.carrying)
+        #     self.agent.carrying = None
+        #     reward = 1
 
-            if self.num_picked_up == self.num_per_objs:
-                termination = True
+        #     if self.num_picked_up == self.num_per_objs:
+        #         termination = True
 
         return obs, reward, termination, truncation, info
