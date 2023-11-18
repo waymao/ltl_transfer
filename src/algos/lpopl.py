@@ -9,7 +9,7 @@ from torch_policies.policy_bank import *
 from utils.schedules import LinearSchedule
 from utils.replay_buffer import ReplayBuffer
 from ltl.dfa import *
-from envs.grid.game import *
+from envs.grid.game import Game
 from test_utils import Loader, load_pkl
 
 from utils.curriculum import CurriculumLearner
@@ -267,7 +267,7 @@ def _test_LPOPL(sess, task_params, learning_params, testing_params, policy_bank,
     r_total = 0
     for t in range(testing_params.num_steps):
         # Choosing an action to perform
-        a = Actions(policy_bank.get_best_action(task.get_LTL_goal(), s1.reshape((1, num_features))))
+        a = policy_bank.get_best_action(task.get_LTL_goal(), s1.reshape((1, num_features)))
 
         # Executing the action
         s1, r, term, trunc, info = task.step(a)
