@@ -8,10 +8,10 @@ from envs.grid.game import *
 from torch_policies.policy_bank import *
 
 
-def initialize_policy_bank(sess, task_aux, tester, ltl, f_task):
+def initialize_policy_bank(task_aux, tester, ltl, f_task):
     num_actions = len(task_aux.get_actions())
     num_features = task_aux.get_num_features()
-    policy_bank = PolicyBank(sess, num_actions, num_features, tester.learning_params)
+    policy_bank = PolicyBank(num_actions, num_features, tester.learning_params)
 
     policy_bank.add_LTL_policy(ltl, f_task, DFA(f_task))
     # for f_task in tester.get_LTL_tasks():
@@ -52,18 +52,17 @@ def single_worker_rollouts(alg_name, classifier_dpath, run_id, ltl_id, state_id,
     # create task_aux
     task_aux = Game(tester.get_task_params(tester.get_LTL_tasks()[0]))
 
-    with None as sess:
-        # load policy_bank
-        # start_time = time.time()
-        policy_bank = initialize_policy_bank(sess, task_aux, tester, ltl, f_task)
-        loader.load_policy_bank(policy_bank, run_id)
-        # print("took %0.2f mins to load policy: %s" % ((time.time() - start_time) / 60, str(ltl)))
+    # load policy_bank
+    # start_time = time.time()
+    policy_bank = initialize_policy_bank(task_aux, tester, ltl, f_task)
+    loader.load_policy_bank(policy_bank, run_id)
+    # print("took %0.2f mins to load policy: %s" % ((time.time() - start_time) / 60, str(ltl)))
 
-        # ltl = policy_bank.policies[ltl_id]
-        # print("policy for ltl: ", ltl)
+    # ltl = policy_bank.policies[ltl_id]
+    # print("policy for ltl: ", ltl)
 
-        # run rollouts
-        edge2hits = rollout(tester, policy_bank, ltl, init_state, n_rollouts, max_depth)
+    # run rollouts
+    edge2hits = rollout(tester, policy_bank, ltl, init_state, n_rollouts, max_depth)
 
     # save rollout results
     saver.save_worker_results(run_id, ltl_id, init_state, edge2hits, n_rollouts)

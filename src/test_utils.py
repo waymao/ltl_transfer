@@ -137,12 +137,12 @@ class Tester:
     def get_task_params(self, ltl_task, init_dfa_state=None, init_loc=None):
         return GameParams(self.map, self.prob, ltl_task, self.consider_night, init_dfa_state, init_loc)
 
-    def run_test(self, step, sess, test_function, *test_args):
+    def run_test(self, step, game_name, test_function, *test_args):
         # 'test_function' parameters should be (sess, task_params, learning_params, testing_params, *test_args)
         # and returns the reward
         for task in self.tasks:
             task_params = self.get_task_params(task)
-            reward = test_function(sess, task_params, self.learning_params, self.testing_params, *test_args)
+            reward = test_function(game_name, task_params, self.learning_params, self.testing_params, *test_args)
             if step not in self.results[task]:
                 self.results[task][step] = []  # store reward per run for a total of 'num_times' runs
             if len(self.steps) == 0 or self.steps[-1] < step:

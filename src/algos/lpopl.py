@@ -9,7 +9,7 @@ from torch_policies.policy_bank import *
 from utils.schedules import LinearSchedule
 from utils.replay_buffer import ReplayBuffer
 from ltl.dfa import *
-from envs.grid.game import Game
+from envs.game_creator import get_game
 from test_utils import Loader, load_pkl
 
 from utils.curriculum import CurriculumLearner
@@ -17,7 +17,13 @@ from test_utils import Tester, Saver
 from torch.profiler import profile, record_function, ProfilerActivity
 import random
 
-def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver, run_id: int, num_times, incremental_steps, show_print, rl_algo="dqn", resume=False, device="cpu"):
+def run_experiments(
+        game_name: str,
+        tester: Tester, 
+        curriculum: CurriculumLearner, 
+        saver: Saver, run_id: int, 
+        num_times, incremental_steps, show_print, 
+        rl_algo="dqn", resume=False, device="cpu"):
     time_init = time.time()
     tester_original = tester
     curriculum_original = curriculum
@@ -51,7 +57,6 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
 
         # Setting the random seed to 'run_id'
         random.seed(run_id)
-        sess = None
 
         # Reseting default values
         if not curriculum.incremental:
@@ -61,7 +66,7 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
         replay_buffer = ReplayBuffer(learning_params.buffer_size)
 
         # Initializing policies per each subtask
-        policy_bank = _initialize_policy_bank(sess, learning_params, curriculum, tester, rl_algo=rl_algo, device=device)
+        policy_bank = _initialize_policy_bank(game_name, learning_params, curriculum, tester, rl_algo=rl_algo, device=device)
         # Load 'policy_bank' if incremental training
         policy_dpath = os.path.join(saver.policy_dpath, "run_%d" % run_id)
         if resume and os.path.exists(policy_dpath) and os.listdir(policy_dpath):
@@ -86,7 +91,7 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
                     print("Current step:", curriculum.get_current_step(), "from", curriculum.total_steps)
                     print("%d Current task: %d, %s" % (num_tasks, curriculum.current_task, str(task)))
                 task_params = tester.get_task_params(task)
-                _run_LPOPL(sess, policy_bank, task_params, tester, curriculum, replay_buffer, show_print)
+                _run_LPOPL(game_name, policy_bank, task_params, tester, curriculum, replay_buffer, show_print)
                 num_tasks += 1
                 # # Save 'policy_bank' for incremental training and transfer
                 saver.save_policy_bank(policy_bank, run_id)
@@ -109,11 +114,11 @@ def run_experiments(tester: Tester, curriculum: CurriculumLearner, saver: Saver,
     print("Time:", "%0.2f" % ((time.time() - time_init)/60), "mins")
 
 
-def _initialize_policy_bank(sess, learning_params, curriculum: CurriculumLearner, tester: Tester, load_tf=True, rl_algo="dqn", device="cpu"):
-    task_aux = Game(tester.get_task_params(curriculum.get_current_task()))
+def _initialize_policy_bank(game_name, learning_params, curriculum: CurriculumLearner, tester: Tester, load_tf=True, rl_algo="dqn", device="cpu"):
+    task_aux = get_game(game_name, tester.get_task_params(curriculum.get_current_task()))
     num_actions = task_aux.action_space.n
     num_features = task_aux.observation_space.shape[0]
-    policy_bank = PolicyBank(sess, num_actions, num_features, learning_params, policy_type=rl_algo, device=device)
+    policy_bank = PolicyBank(num_actions, num_features, learning_params, policy_type=rl_algo, device=device)
     for idx, f_task in enumerate(tester.get_LTL_tasks()[:tester.train_size]):  # only load first 'train_size' policies
         # start_time = time.time()
         dfa = DFA(f_task)
@@ -130,14 +135,14 @@ def _initialize_policy_bank(sess, learning_params, curriculum: CurriculumLearner
     return policy_bank
 
 
-def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curriculum: CurriculumLearner, replay_buffer, show_print):
+def _run_LPOPL(game_name, policy_bank: PolicyBank, task_params, tester: Tester, curriculum: CurriculumLearner, replay_buffer, show_print):
     MAX_EPS = 1000
     # Initializing parameters
     learning_params: LearningParameters = tester.learning_params
     testing_params = tester.testing_params
 
     # Initializing the game
-    task = Game(task_params)
+    task = get_game(game_name, task_params)
     action_space = task.action_space
 
     # Initializing parameters
@@ -231,8 +236,8 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
                     )
 
         # Testing
-        if testing_params.test and curriculum.get_current_step() % testing_params.test_freq == 0:
-            tester.run_test(curriculum.get_current_step(), sess, _test_LPOPL, policy_bank, num_features)
+        # if testing_params.test and curriculum.get_current_step() % testing_params.test_freq == 0:
+        #     tester.run_test(curriculum.get_current_step(), game_name, _test_LPOPL, policy_bank, num_features)
 
         # Restarting the environment (Game Over)
         curr_eps_step += 1
@@ -258,9 +263,9 @@ def _run_LPOPL(sess, policy_bank: PolicyBank, task_params, tester: Tester, curri
         print("Done! Total reward:", training_reward)
 
 
-def _test_LPOPL(sess, task_params, learning_params, testing_params, policy_bank, num_features):
+def _test_LPOPL(game_name, task_params, learning_params, testing_params, policy_bank, num_features):
     # Initializing parameters
-    task = Game(task_params)
+    task = get_game(game_name, task_params)
     s1 = task.reset()
 
     # Starting interaction with the environment
