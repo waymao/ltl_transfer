@@ -1,4 +1,5 @@
-from miniworld.entity import COLOR_NAMES, Ball, Box, Key, Entity
+from miniworld.entity import COLOR_NAMES, Ball, Box, Entity
+from .entity import Key
 from typing import Mapping, Tuple
 
 OBJ_MAP: Mapping[str, Tuple[Entity, str]] = {

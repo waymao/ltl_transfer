@@ -13,7 +13,7 @@ def mat_to_opengl(i, j, num_rows, offset=0.5):
     offset *= BLOCK_SCALE
     return (j + offset, num_rows - i - 1 + offset)
 
-def get_map_size(self, map_mat):
+def get_map_size(map_mat):
     width = 0
     height = 0
     for i, l in enumerate(map_mat):
@@ -26,7 +26,7 @@ def get_map_size(self, map_mat):
         width = max(width, len(l_stripped))
     return width, height
 
-def get_map_obj_set(self, map_mat):
+def get_map_obj_set(map_mat):
     item_set = set()
     for l in map_mat:
         l_stripped = l.rstrip()
@@ -161,22 +161,23 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
             for j, e in enumerate(l_stripped):
                 if e in OBJ_MAP.keys():
                     Entity, color = OBJ_MAP[e]
-                    entity = Entity(color=color)
+                    entity = Entity(color=color, size=0.5)
                     entity.color = color
 
                     # set obstacle to be static (non-pickable)
                     if e == OBSTACLE_MARKER:
-                        entity.is_static = True
+                        entity.static = True
                     
                     # place the item
-                    x, z = mat_to_opengl(i, j)
+                    x, z = mat_to_opengl(i, j, num_rows=self.size)
+                    print(x, z)
                     self.place_entity(entity, min_x=x, max_x=x, min_z=z, max_z=z)
 
                     # update the feature set
                     items_set.add(e)
                 elif e == AGENT_MARKER:
                     # add the agent
-                    x, z = mat_to_opengl(i, j)
+                    x, z = mat_to_opengl(i, j, num_rows=self.size)
                     self.place_agent(min_x=x, max_x=x, min_z=z, max_z=z)
             width = max(width, len(l_stripped))
         return items_set
