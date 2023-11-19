@@ -18,7 +18,7 @@ def get_ent_str(ent):
         return OBJ_REV_MAP.get(f"{ent.__class__.__name__}_{ent.color}", "")
 
 class MiniWorldLTLWrapper(gym.Wrapper):
-    def __init__(self, env: MiniWorldEnv, params: GameParams, is_visit=True):
+    def __init__(self, env: MiniWorldEnv, params: GameParams):
         """
         Wraps around the miniworld env, adding necessary LTL-related func.
         """

@@ -1,4 +1,4 @@
-from gymnasium import utils
+from gymnasium import utils, spaces
 import numpy as np
 from typing import Optional
 
@@ -75,7 +75,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
 
     """
 
-    def __init__(self, params: Optional[GameParams] = None, **kwargs):
+    def __init__(self, params: Optional[GameParams] = None, visit_only=True, **kwargs):
         if params is not None:
             with open(params.map_fpath, 'r') as f:
                 self._map_mat = f.readlines()
@@ -90,6 +90,9 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
 
         MiniWorldEnv.__init__(self, max_episode_steps=1000, **kwargs)
         utils.EzPickle.__init__(self, self.size, self._map_mat, **kwargs)
+
+        if visit_only:
+            self.action_space = spaces.Discrete(self.Actions.move_back + 1)
 
 
     def _gen_world(self):
