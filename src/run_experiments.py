@@ -6,7 +6,7 @@ from algos import transfer
 # from algos import random_transfer
 from test_utils import TestingParameters, Tester, Saver
 from utils.curriculum import CurriculumLearner
-from torch_policies.learning_params import LearningParameters
+from torch_policies.learning_params import LearningParameters, get_learning_parameters
 from torch.utils.tensorboard import SummaryWriter
 import os
 import cProfile
@@ -172,21 +172,22 @@ if __name__ == "__main__":
     # Running the experiment
     tasks_id = train_types.index(args.train_type)
     map_id = args.map
+    learning_params = get_learning_parameters(policy_name=args.rl_algo, alpha=args.alpha)
     if map_id > -1:
         run_single_experiment(args.game_name, 
                               args.algo, args.rl_algo, map_id, args.prob, tasks_id, args.domain_name, args.train_type, args.train_size, args.test_type,
                               args.total_steps, args.incremental_steps, args.run_id,
                               args.relabel_method, args.transfer_num_times, args.edge_matcher, args.save_dpath, 
-                              LearningParameters(alpha=args.alpha),
+                              learning_params,
                               TestingParameters(),
                               args.resume,
                               args.device)
     else:
-        run_multiple_experiments(game_name, 
+        run_multiple_experiments(args.game_name, 
                                  args.algo, args.rl_algo, args.prob, tasks_id, args.domain_name, args.train_type, args.train_size, args.test_type,
                                  args.total_steps, args.incremental_steps, args.run_id,
                                  args.relabel_method, args.transfer_num_times, args.edge_matcher, args.save_dpath, 
-                                 LearningParameters(alpha=args.alpha),
+                                 learning_params,
                                  TestingParameters(),
                                  args.resume,
                                  args.device)
