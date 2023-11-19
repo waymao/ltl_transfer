@@ -19,6 +19,40 @@ gamma=0.99,
 eps=0.05, 
 target_update_freq=10, 
 """
+@torch.jit.script
+def compute_dqn_loss(
+        gamma: float,
+        q_all_values_NA,
+        s1_NS, 
+        a_N, 
+        s2_NS, 
+        r_N, 
+        terminated_N, 
+        next_q_index_N, 
+        max_q_values_CN
+    ):
+    """
+    Compute the loss of the model.
+    s1: float32, prev state.
+    a: int64, action. 
+    s2: float32, next state. 
+    r: float32, reward.
+    next_goal: int64, index of the q value to use next.
+    q_values_next_all: float32, computed Q value from all models (including itself)
+    """
+    # q for current state
+    q_values_N = torch.gather(q_all_values_NA, 1, a_N.view(-1, 1)).squeeze() # selected Q
+    
+    # q for next state using target model.
+    with torch.no_grad():
+        max_q_values_next_N = torch.gather(max_q_values_CN, 0, next_q_index_N.view(1, -1)).squeeze(0)
+
+    # target and loss
+    q_values_hat_N = r_N + gamma * max_q_values_next_N * ~terminated_N
+    # dqn_loss = F.mse_loss(q_values_N, q_values_hat_N, reduction="mean")
+    dqn_loss = torch.mean(torch.square(q_values_hat_N - q_values_N))
+
+    return dqn_loss
 
 class DQN(nn.Module, metaclass=Policy):
     """
@@ -63,7 +97,7 @@ class DQN(nn.Module, metaclass=Policy):
         self.action_dim = action_dim
         self.t = -1
         self.training = False # used to distinguish training vs testing
-        self.optim = torch.optim.Adam(self.model.parameters(), lr=learning_params.lr)
+        self.optim = torch.optim.Adam(self.model.parameters(), lr=learning_params.lr, eps=1e-7)
     
     def forward(self, x):
         return self.target_model(x)
@@ -94,41 +128,6 @@ class DQN(nn.Module, metaclass=Policy):
         """Synchronize the weight for the target network."""
         self.target_model.load_state_dict(self.model.state_dict())
     
-    def compute_loss(
-            self, 
-            s1_NS, 
-            a_N, 
-            s2_NS, 
-            r_N, 
-            terminated_N, 
-            next_q_index_N, 
-            max_q_values_CN
-        ):
-        """
-        Compute the loss of the model.
-        s1: float32, prev state.
-        a: int64, action. 
-        s2: float32, next state. 
-        r: float32, reward.
-        next_goal: int64, index of the q value to use next.
-        q_values_next_all: float32, computed Q value from all models (including itself)
-        """
-        A = self.action_dim
-        # q for current state
-        q_all_values_NA = self.model(s1_NS) # Q values for all actions
-        q_values_N = torch.gather(q_all_values_NA, 1, a_N.view(-1, 1)).squeeze() # selected Q
-        
-        # q for next state using target model.
-        with torch.no_grad():
-            max_q_values_next_N = torch.gather(max_q_values_CN, 0, next_q_index_N.view(1, -1)).squeeze(0)
-
-        # target and loss
-        q_values_hat_N = r_N + self.gamma * max_q_values_next_N * ~terminated_N
-        # dqn_loss = F.mse_loss(q_values_N, q_values_hat_N, reduction="mean")
-        dqn_loss = 0.5 * torch.sum(torch.square(q_values_hat_N - q_values_N))
-
-        return dqn_loss
-
     def learn(
             self, 
             s1_NS, 
@@ -144,10 +143,11 @@ class DQN(nn.Module, metaclass=Policy):
         train using dqn loss
         """
         self.optim.zero_grad()
-        loss = self.compute_loss(s1_NS, a_N, s2_NS, r_N, terminated_N, next_q_index_N, next_q_values_CNA)
+        q_curr_val = self.model(s1_NS)
+        loss = compute_dqn_loss(self.gamma, q_curr_val, s1_NS, a_N, s2_NS, r_N, terminated_N, next_q_index_N, next_q_values_CNA)
         loss.backward()
         self.optim.step()
-        return {"q_loss": loss}
+        return {"q_loss": loss.item()}
     
     def get_state_dict(self):
         """

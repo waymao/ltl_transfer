@@ -260,6 +260,16 @@ def _run_LPOPL(game_name, policy_bank: PolicyBank, task_params, tester: Tester, 
             break
 
     if show_print:
+        tester.logger.add_scalar(
+            "train/rew",
+            training_reward,
+            global_step=curriculum.get_current_step() + 1
+        )
+        tester.logger.add_scalar(
+            "train/succ_rate",
+            curriculum.get_succ_rate(),
+            global_step=curriculum.get_current_step() + 1
+        )
         print("Done! Total reward:", training_reward)
 
 
