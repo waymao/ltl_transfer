@@ -2,9 +2,11 @@ import os
 import random
 import time
 import numpy as np
+import torch
 # import tensorflow as tf
 
-from torch_policies.policy_bank import *
+from torch_policies.policy_bank import PolicyBank, LearningParameters
+from torch_policies.policy_bank_cnn import PolicyBankCNN
 
 from utils.schedules import LinearSchedule
 from utils.replay_buffer import ReplayBuffer
@@ -118,7 +120,10 @@ def _initialize_policy_bank(game_name, learning_params, curriculum: CurriculumLe
     task_aux = get_game(game_name, tester.get_task_params(curriculum.get_current_task()))
     num_actions = task_aux.action_space.n
     num_features = task_aux.observation_space.shape[0]
-    policy_bank = PolicyBank(num_actions, num_features, learning_params, policy_type=rl_algo, device=device)
+    if game_name == "grid":
+        policy_bank = PolicyBank(num_actions, num_features, learning_params, policy_type=rl_algo, device=device)
+    else:
+        policy_bank = PolicyBankCNN(num_actions, num_features, learning_params, policy_type=rl_algo, device=device)
     for idx, f_task in enumerate(tester.get_LTL_tasks()[:tester.train_size]):  # only load first 'train_size' policies
         # start_time = time.time()
         dfa = DFA(f_task)
@@ -155,6 +160,7 @@ def _run_LPOPL(game_name, policy_bank: PolicyBank, task_params, tester: Tester, 
     curr_eps_step = 0
     if show_print: print("Executing", num_steps, "actions...")
     s1, info = task.reset()
+    print(s1.shape)
     s2 = None
 
     # aux render code for testing

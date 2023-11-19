@@ -188,6 +188,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
 
     def step(self, action):
         obs, reward, termination, truncation, info = super().step(action)
+        obs = np.transpose(obs, (2, 0, 1))
 
         # carrying
         # if self.agent.carrying:
@@ -198,3 +199,8 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
         #     if self.num_picked_up == self.num_per_objs:
         #         termination = True
         return obs, reward, termination, truncation, info
+    
+    def reset(self, **kwargs):
+        obs, info = super().reset(**kwargs)
+        obs = np.transpose(obs, (2, 0, 1))
+        return obs, info

@@ -34,8 +34,8 @@ class MiniWorldLTLWrapper(gym.Wrapper):
         """
         Returns the string with the propositions that are True in this state
         """
-        test_pos = self.unwrapped.agent.pos + self.unwrapped.agent.dir_vec * 1.3 * self.agent.radius
-        ent = self.unwrapped.intersect(self.unwrapped.agent, test_pos, 1.1 * self.agent.radius)
+        test_pos = self.unwrapped.agent.pos + self.unwrapped.agent.dir_vec * 1.3 * self.unwrapped.agent.radius
+        ent = self.unwrapped.intersect(self.unwrapped.agent, test_pos, 1.1 * self.unwrapped.agent.radius)
 
         # adding the is_night proposition
         return get_ent_str(ent)

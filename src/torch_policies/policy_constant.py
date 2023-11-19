@@ -17,11 +17,11 @@ class ConstantPolicy(nn.Module, metaclass=Policy):
         super().__init__()
     
     def forward(self, x):
-        N, S = x.shape
+        N = x.shape[0]
         return torch.tile(self.q_target_value, (N, 1))
     
     def get_v(self, x):
-        N, S = x.shape
+        N = x.shape[0]
         return torch.ones((N,), dtype=torch.float32, device=self.device) * self.value
 
     def compute_loss(self, s1_NS, a_N, s2_NS, r_N, terminated_N, next_q_index_N, next_q_values_CNA):

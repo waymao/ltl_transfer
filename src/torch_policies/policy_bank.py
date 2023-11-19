@@ -30,7 +30,6 @@ class PolicyBank:
                  num_actions, 
                  num_features, 
                  learning_params: LearningParameters, 
-                 preprocess_fn: Optional[Callable[[np.ndarray], np.ndarray]] = None,
                  policy_type="dqn", 
                  device="cpu"
     ):
@@ -48,7 +47,6 @@ class PolicyBank:
         self.rl_algo = policy_type
 
         self.logger = RLLogger() # TODO maybe use it to log metrics
-        self.preprocess_fn = preprocess_fn
 
 
     def _add_constant_policy(self, ltl, value):

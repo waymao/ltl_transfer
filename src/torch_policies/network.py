@@ -22,6 +22,10 @@ def init_weights_fanin(m, b_init_val=0.1):
             nn.init.uniform_(m.weight, -bound, bound)
             m.bias.data.fill_(b_init_val)
 
+def cnn_init_weights(layer: nn.Module, std: float = np.sqrt(2), bias_const: float = 0.0) -> nn.Module:
+    torch.nn.init.orthogonal_(layer.weight, std)
+    torch.nn.init.constant_(layer.bias, bias_const)
+    return layer
 
 def get_MLP(
         num_features: int, 
@@ -63,3 +67,41 @@ def get_MLP(
         network = nn.Sequential(*layers)
 
         return network.to(device)
+
+def get_CNN_preprocess(in_channels, device="cpu"):
+    # cnn_preprocess = nn.Sequential(
+    #     nn.Conv2d(3, 32, kernel_size=8, stride=4),
+    #     nn.ReLU(),
+    #     nn.MaxPool2d(3),
+    #     nn.Conv2d(32, 64, kernel_size=4, stride=2),
+    #     nn.ReLU(),
+    #     nn.MaxPool2d(3),
+    #     nn.Conv2d(64, 64, kernel_size=3, stride=1),
+    #     nn.ReLU(),
+    #     nn.MaxPool2d(3),
+    #     nn.Flatten(2, -1), # N,C,H, W => N,C, H * W
+    #     nn.AvgPool1d(5), # N, C, L => N, C, L'
+    #     nn.Flatten(1,-1), # N, C, L' => N, L''
+    # )
+    # using the same architecture as Tianshou
+    # in: 3 * 60 * 80
+    # 
+    # out: 64
+    cnn_preprocess = nn.Sequential(
+            cnn_init_weights(nn.Conv2d(in_channels, 24, kernel_size=8, stride=4)), # out: 14 * 19
+            nn.ReLU(inplace=True),
+            cnn_init_weights(nn.Conv2d(24, 32, kernel_size=4, stride=2)), # out: 6 * 8
+            nn.ReLU(inplace=True),
+            cnn_init_weights(nn.Conv2d(32, 32, kernel_size=3, stride=1)), # 4 * 6
+            nn.ReLU(inplace=True),
+            nn.Flatten(),
+    )
+    return cnn_preprocess.to(device)
+
+def get_CNN_Dense(preprocess_net, in_dim, out_dim, device="cpu"):
+    return nn.Sequential(
+        preprocess_net,
+        cnn_init_weights(nn.Linear(in_dim, 512)),
+        nn.ReLU(inplace=True),
+        cnn_init_weights(nn.Linear(512, out_dim)),
+    ).to(device)
