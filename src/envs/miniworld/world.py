@@ -197,5 +197,4 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
 
         #     if self.num_picked_up == self.num_per_objs:
         #         termination = True
-        print(obs.shape)
-        return np.array(obs), reward, termination, truncation, info
+        return obs, reward, termination, truncation, info

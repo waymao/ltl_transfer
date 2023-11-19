@@ -101,7 +101,7 @@ def random_transfer_single_task(transfer_task, ltl_idx, num_times, num_steps, ru
         run_traj = []
         #node2option2prob = {}
         step = 0
-        while not task.ltl_game_over and not task.env_game_over and step <= n_horiz*num_steps:
+        while not task.dfa.is_game_over() and not task.env_game_over and step <= n_horiz*num_steps:
             cur_node = task.dfa.state
             #next_node = cur_node
             cur_loc = (task.agent.i, task.agent.j)
@@ -113,7 +113,7 @@ def random_transfer_single_task(transfer_task, ltl_idx, num_times, num_steps, ru
             run_traj.append(transition)
             step = step+1
             
-            if task.ltl_game_over:
+            if task.dfa.is_game_over():
                 if task.dfa.state != -1:
                     success += 1
                     run2exitcode[num_time] = 0

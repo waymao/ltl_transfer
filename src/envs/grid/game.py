@@ -88,7 +88,7 @@ class Game(gym.Env):
         self.dfa = DFA(self.params.ltl_task, self.params.init_dfa_state)
         reward, self.ltl_game_over, self.env_game_over = self._get_rewards()
         self.agent.update_reward(reward)
-        return self.get_features()
+        return self.get_features(), {}
 
     def _get_next_position(self, action):
         """

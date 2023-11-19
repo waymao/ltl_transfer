@@ -361,7 +361,7 @@ def zero_shot_transfer_single_task(game_name, transfer_task, ltl_idx, num_times,
         task = Game(tester.get_task_params(transfer_task))
         run_traj = []
         node2option2prob = {}
-        while not task.ltl_game_over and not task.env_game_over:
+        while not task.dfa.is_game_over() and not task.env_game_over:
             cur_node = task.dfa.state
             next_node = cur_node
             cur_loc = (task.agent.i, task.agent.j)
@@ -397,7 +397,7 @@ def zero_shot_transfer_single_task(game_name, transfer_task, ltl_idx, num_times,
             if cur_node == next_node:
                 run2exitcode[num_time] = 'options_exhausted'
                 break  # All matched options tried and failed to progress the state
-        if task.ltl_game_over:
+        if task.dfa.is_game_over():
             if task.dfa.state != -1:
                 success += 1
                 run2exitcode[num_time] = 0
@@ -472,7 +472,7 @@ def zero_shot_transfer(game_name, tester, loader, policy_bank, run_id, policy2ed
             task = Game(tester.get_task_params(transfer_task))  # same grid map as the training tasks
             run_traj = []
             node2option2prob = {}
-            while not task.ltl_game_over and not task.env_game_over:
+            while not task.dfa.is_game_over() and not task.env_game_over:
                 cur_node = task.dfa.state
                 next_node = cur_node
                 tester.log_results("\ncurrent node: %d" % cur_node)
@@ -533,7 +533,7 @@ def zero_shot_transfer(game_name, tester, loader, policy_bank, run_id, policy2ed
                     break
             tester.log_results("current node: %d\n\n" % task.dfa.state)
             print("current node: %d\n\n" % task.dfa.state)
-            if task.ltl_game_over:
+            if task.dfa.is_game_over():
                 if task.dfa.state != -1:
                     tester.task2success[str(transfer_task)] += 1
             tester.task2run2trajs[str(transfer_task)][num_time] = run_traj

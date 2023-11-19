@@ -154,7 +154,7 @@ def _run_LPOPL(game_name, policy_bank: PolicyBank, task_params, tester: Tester, 
     # Starting interaction with the environment
     curr_eps_step = 0
     if show_print: print("Executing", num_steps, "actions...")
-    s1 = task.reset()
+    s1, info = task.reset()
     s2 = None
 
     # aux render code for testing
@@ -184,7 +184,7 @@ def _run_LPOPL(game_name, policy_bank: PolicyBank, task_params, tester: Tester, 
         next_goals = np.zeros((policy_bank.get_number_LTL_policies(),), dtype=np.float64)
         for ltl in policy_bank.get_LTL_policies():
             ltl_id = policy_bank.get_id(ltl)
-            if task.env_game_over:
+            if term:
                 ltl_next_id = policy_bank.get_id("False")  # env deadends are equal to achive the 'False' formula
             else:
                 ltl_next_id = policy_bank.get_id(policy_bank.get_policy_next_LTL(ltl, true_props))
@@ -246,14 +246,14 @@ def _run_LPOPL(game_name, policy_bank: PolicyBank, task_params, tester: Tester, 
 
         # Restarting the environment (Game Over)
         curr_eps_step += 1
-        if task.ltl_game_over or task.env_game_over or curr_eps_step > learning_params.max_timesteps_per_episode:
+        if task.dfa.is_game_over() or trunc or term or curr_eps_step > learning_params.max_timesteps_per_episode:
             curr_eps_step = 0
             # NOTE: Game over occurs for one of three reasons:
             # 1) DFA reached a terminal state,
             # 2) DFA reached a deadend, or
             # 3) The agent reached an environment deadend (e.g. a PIT)
             # 4) NEW: > episode max time step
-            s1 = task.reset()  # Restarting
+            s1, info = task.reset()  # Restarting
 
             # updating the hit rates
             curriculum.update_succ_rate(t, reward)
@@ -281,7 +281,7 @@ def _run_LPOPL(game_name, policy_bank: PolicyBank, task_params, tester: Tester, 
 def _test_LPOPL(game_name, task_params, learning_params, testing_params, policy_bank, num_features):
     # Initializing parameters
     task = get_game(game_name, task_params)
-    s1 = task.reset()
+    s1, info = task.reset()
 
     # Starting interaction with the environment
     r_total = 0
@@ -294,6 +294,6 @@ def _test_LPOPL(game_name, task_params, learning_params, testing_params, policy_
         r_total += r * learning_params.gamma**t
 
         # Restarting the environment (Game Over)
-        if task.ltl_game_over or task.env_game_over:
+        if task.dfa.is_game_over() or task.env_game_over:
             break
     return r_total

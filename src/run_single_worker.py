@@ -92,7 +92,7 @@ def rollout(tester, policy_bank, ltl, init_loc, n_rollouts, max_depth):
             traversed_edge = task.dfa.nodelist[default_initial_state][task.dfa.state]
             # print("traversed edge before while: ", traversed_edge)
         depth = 0
-        while not traversed_edge and not task.ltl_game_over and not task.env_game_over and depth <= max_depth:
+        while not traversed_edge and not task.dfa.is_game_over() and not task.env_game_over and depth <= max_depth:
             s1 = task.get_features()
             action = Actions(policy_bank.get_best_action(ltl, s1.reshape((1, len(task.get_features())))))
             prev_state = task.dfa.state
