@@ -72,20 +72,7 @@ class PolicyBank:
         """
         if ltl not in self.policy2id:
             PolicyModule = POLICY_MODULES[self.rl_algo]
-            if self.rl_algo == "ppo":
-                critic_module = get_MLP(
-                    self.num_features, 1, 
-                    hidden_layers=HIDDEN_LAYER_SIZE, 
-                    device=self.device)
-                actor_module = get_MLP(
-                    self.num_features, self.num_actions, 
-                    hidden_layers=HIDDEN_LAYER_SIZE, 
-                    final_layer_softmax=True,
-                    device=self.device)
-                policy = PPO(ltl, f_task, dfa, actor_module, critic_module,
-                            self.learning_params, self.logger,
-                            device=self.device)
-            elif self.rl_algo == "dsac":
+            if self.rl_algo == "dsac":
                 actor_module = DiscreteSoftActor(
                     self.num_features, self.num_actions,
                     hidden=[64, 64],
