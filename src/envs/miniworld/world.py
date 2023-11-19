@@ -11,7 +11,7 @@ from .constants import OBJ_MAP, AGENT_MARKER, BLOCK_SCALE, OBSTACLE_MARKER, \
 
 def mat_to_opengl(i, j, num_rows, offset=0.5):
     offset *= BLOCK_SCALE
-    return (j + offset, num_rows - i - 1 + offset)
+    return (j + offset, i + offset)
 
 def get_map_size(map_mat):
     width = 0
@@ -171,7 +171,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
                     # place the item
                     x, z = mat_to_opengl(i, j, num_rows=self.size)
                     print(x, z)
-                    self.place_entity(entity, min_x=x, max_x=x, min_z=z, max_z=z)
+                    self.place_entity(entity, pos=(x, 0, z), dir=0)
 
                     # update the feature set
                     items_set.add(e)

@@ -9,9 +9,9 @@ OBJ_MAP: Mapping[str, Tuple[Entity, str]] = {
     "d": (Ball, 'yellow'),
     "e": (Ball, 'green'),
     "f": (Ball, 'blue'),
-    "g": (Key, 'yellow'),
-    "h": (Key, 'green'),
-    "i": (Key, 'blue'),
+    "g": (Box, 'purple'),
+    "h": (Ball, 'purple'),
+    "i": (Ball, 'red'),
     "X": (Box, 'grey') # obstacle
 }
 

@@ -1,4 +1,4 @@
-from typing import Mapping, List, Union
+from typing import Mapping, List, Union, Callable, Optional
 import os
 import numpy as np
 import torch
@@ -26,7 +26,14 @@ class PolicyBank:
     """
     This class includes a list of policies (a.k.a neural nets) for achieving different LTL goals
     """
-    def __init__(self, num_actions, num_features, learning_params: LearningParameters, policy_type="dqn", device="cpu"):
+    def __init__(self, 
+                 num_actions, 
+                 num_features, 
+                 learning_params: LearningParameters, 
+                 preprocess_fn: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+                 policy_type="dqn", 
+                 device="cpu"
+    ):
         self.num_actions = num_actions
         self.num_features = num_features
         self.learning_params = learning_params
@@ -41,6 +48,7 @@ class PolicyBank:
         self.rl_algo = policy_type
 
         self.logger = RLLogger() # TODO maybe use it to log metrics
+        self.preprocess_fn = preprocess_fn
 
 
     def _add_constant_policy(self, ltl, value):

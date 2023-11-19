@@ -157,6 +157,11 @@ def _run_LPOPL(game_name, policy_bank: PolicyBank, task_params, tester: Tester, 
     s1 = task.reset()
     s2 = None
 
+    # aux render code for testing
+    # task.render()
+    # while True:
+    #     input("hi")
+
     for t in range(num_steps):
         # Getting the current state and ltl goal
         ltl_goal = task.get_LTL_goal()
@@ -164,9 +169,9 @@ def _run_LPOPL(game_name, policy_bank: PolicyBank, task_params, tester: Tester, 
         # Choosing an action to perform
         if policy_bank.rl_algo == "dqn":
             if random.random() < exploration.value(t): a = action_space.sample()
-            else: a = policy_bank.get_best_action(ltl_goal, s1.reshape((1, num_features)))
+            else: a = policy_bank.get_best_action(ltl_goal, np.expand_dims(s1, axis=0))
         else:
-            a = policy_bank.get_best_action(ltl_goal, s1.reshape((1, num_features)))
+            a = policy_bank.get_best_action(ltl_goal, np.expand_dims(s1, axis=0))
         # updating the curriculum
         curriculum.add_step()
 
