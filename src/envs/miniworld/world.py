@@ -52,7 +52,8 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
     | 1   | turn right                  |
     | 2   | move forward                |
     | 3   | move_back                   |
-    | 4   | pickup                      |
+    | 4   | pickup [optional]           |
+    | 5   | drop [optional]             |
 
     ## Observation Space
 
@@ -69,9 +70,10 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
     PickupObjects(size=12, num_objs=5)
     ```
 
-    `size`: size of world
+    `params`: parameters [see GameParams]. if None, a map will be randomly
+    generated.
 
-    `num_objs`: number of objects
+    `visit_only`: whether pick / place should be enabled.
 
     """
 
@@ -173,7 +175,6 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
                     
                     # place the item
                     x, z = mat_to_opengl(i, j, num_rows=self.size)
-                    print(x, z)
                     self.place_entity(entity, pos=(x, 0, z), dir=0)
 
                     # update the feature set
@@ -196,5 +197,5 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
 
         #     if self.num_picked_up == self.num_per_objs:
         #         termination = True
-
-        return obs, reward, termination, truncation, info
+        print(obs.shape)
+        return np.array(obs), reward, termination, truncation, info
