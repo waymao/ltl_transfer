@@ -147,7 +147,7 @@ class DQN(nn.Module, metaclass=Policy):
         loss = self.compute_loss(s1_NS, a_N, s2_NS, r_N, terminated_N, next_q_index_N, next_q_values_CNA)
         loss.backward()
         self.optim.step()
-        return loss
+        return {"q_loss": loss}
     
     def get_state_dict(self):
         """
