@@ -6,7 +6,7 @@ class LearningParameters:
                 # SAC related
                 target_network_update_freq=4,
                 pi_lr=1e-4,
-                alpha=0.1,
+                alpha=0.05,
                 tau=0.005):
         """Parameters
         -------
