@@ -139,7 +139,13 @@ def _initialize_policy_bank(game_name, learning_params, curriculum: CurriculumLe
     return policy_bank
 
 
-def _run_LPOPL(game_name, policy_bank: PolicyBank, task_params, tester: Tester, curriculum: CurriculumLearner, replay_buffer, show_print):
+def _run_LPOPL(
+        game_name, 
+        policy_bank: PolicyBank, task_params, 
+        tester: Tester, curriculum: CurriculumLearner, 
+        replay_buffer, show_print, 
+        do_render=False
+    ):
     MAX_EPS = 1000
     # Initializing parameters
     learning_params: LearningParameters = tester.learning_params
@@ -159,13 +165,16 @@ def _run_LPOPL(game_name, policy_bank: PolicyBank, task_params, tester: Tester, 
     curr_eps_step = 0
     if show_print: print("Executing", num_steps, "actions...")
     s1, info = task.reset()
-    print(s1.shape)
+    print("Image shape:", s1.shape)
+    print("Action shape:", task.action_space)
     s2 = None
 
     # aux render code for testing
     # task.render()
     # while True:
     #     input("hi")
+    if do_render:
+        task.render()
 
     for t in range(num_steps):
         # Getting the current state and ltl goal
@@ -177,6 +186,9 @@ def _run_LPOPL(game_name, policy_bank: PolicyBank, task_params, tester: Tester, 
             else: a = policy_bank.get_best_action(ltl_goal, np.expand_dims(s1, axis=0))
         else:
             a = policy_bank.get_best_action(ltl_goal, np.expand_dims(s1, axis=0))
+        if do_render:
+            print(a)
+            task.render()
         # updating the curriculum
         curriculum.add_step()
 
