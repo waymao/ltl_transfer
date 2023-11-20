@@ -45,7 +45,7 @@ def main():
 
     ltl_formula = ('until', 'True', "a")
     params = GameParams('../../../experiments/maps/map_0.txt', 1, ltl_formula, False, False, None)
-    wrapped = MiniWorldLTLWrapper(env, params, True)
+    wrapped = MiniWorldLTLWrapper(env, params)
     miniworld_version = miniworld.__version__
 
     print(f"Miniworld v{miniworld_version}, Env: {args.env_name}")

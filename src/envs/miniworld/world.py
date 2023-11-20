@@ -90,7 +90,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
             self.num_per_objs = getattr(params, 'num_per_objs', 2) if params is not None else 2
             self._map_mat = None
 
-        MiniWorldEnv.__init__(self, max_episode_steps=1000, **kwargs)
+        MiniWorldEnv.__init__(self, max_episode_steps=1500, **kwargs)
         utils.EzPickle.__init__(self, self.size, self._map_mat, **kwargs)
 
         if visit_only:

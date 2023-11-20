@@ -187,7 +187,7 @@ def _run_LPOPL(
         else:
             a = policy_bank.get_best_action(ltl_goal, np.expand_dims(s1, axis=0))
         if do_render:
-            print(a)
+            # print("action:", a, "true propositions:", task.get_true_propositions())
             task.render()
         # updating the curriculum
         curriculum.add_step()
@@ -264,6 +264,7 @@ def _run_LPOPL(
         # Restarting the environment (Game Over)
         curr_eps_step += 1
         if task.dfa.is_game_over() or trunc or term or curr_eps_step > learning_params.max_timesteps_per_episode:
+            print("game over")
             curr_eps_step = 0
             # NOTE: Game over occurs for one of three reasons:
             # 1) DFA reached a terminal state,

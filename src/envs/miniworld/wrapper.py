@@ -29,6 +29,21 @@ class MiniWorldLTLWrapper(gym.Wrapper):
 
         # DFA / LTL
         self.dfa = DFA(self.params.ltl_task, self.params.init_dfa_state)
+    
+    def reset(self, *, seed=None, options=None):
+        self.dfa = DFA(self.params.ltl_task, self.params.init_dfa_state)
+        self.env_game_over = False
+        self.ltl_game_over = False
+        return super().reset(seed=seed, options=options)
+    
+    def step(self, action):
+        obs, rew, ter, trunc, info = self.env.step(action)
+        true_props = self.get_true_propositions()
+        self.dfa.progress(true_props)
+        rew = 1 if self.dfa.in_terminal_state() else 0
+        self.ltl_game_over = self.dfa.is_game_over()
+        self.env_game_over = ter
+        return obs, rew, self.ltl_game_over or ter, trunc, info
 
     def get_true_propositions(self):
         """
@@ -38,7 +53,8 @@ class MiniWorldLTLWrapper(gym.Wrapper):
         ent = self.unwrapped.intersect(self.unwrapped.agent, test_pos, 1.1 * self.unwrapped.agent.radius)
 
         # adding the is_night proposition
-        return get_ent_str(ent)
+        symbol = get_ent_str(ent)
+        return symbol.replace("X", "")
 
     def get_LTL_goal(self):
         """
