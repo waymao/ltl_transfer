@@ -248,6 +248,9 @@ class Game(gym.Env):
         if self.consider_night:
             print("Steps before night:", self._steps_before_dark(), "Current time:", self.hour)
         print("Reward:", self.agent.reward, "Agent has", self.agent.num_keys, "keys.", "Goal", self.get_LTL_goal())
+    
+    def render(self):
+        pass
 
     def __str__(self):
         return self._get_map_str()
