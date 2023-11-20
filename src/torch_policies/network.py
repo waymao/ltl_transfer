@@ -68,7 +68,8 @@ def get_MLP(
 
         return network.to(device)
 
-def get_CNN_preprocess(in_channels, device="cpu"):
+def get_CNN_preprocess(in_channels, embed_dim=64, device="cpu"):
+    # https://github.com/ezliu/dream/blob/d52204c94067641df6e6649b19abb359b87ff028/embed.py#L773
     # cnn_preprocess = nn.Sequential(
     #     nn.Conv2d(3, 32, kernel_size=8, stride=4),
     #     nn.ReLU(),
@@ -87,15 +88,30 @@ def get_CNN_preprocess(in_channels, device="cpu"):
     # in: 3 * 60 * 80
     # 
     # out: 64
+    # cnn_preprocess = nn.Sequential(
+    #         cnn_init_weights(nn.Conv2d(in_channels, 24, kernel_size=8, stride=4)), # out: 14 * 19
+    #         nn.ReLU(inplace=True),
+    #         cnn_init_weights(nn.Conv2d(24, 32, kernel_size=4, stride=2)), # out: 6 * 8
+    #         nn.ReLU(inplace=True),
+    #         cnn_init_weights(nn.Conv2d(32, 32, kernel_size=3, stride=1)), # 4 * 6
+    #         nn.ReLU(inplace=True),
+    #         nn.Flatten(),
+    # )
+
+    # this is using 
     cnn_preprocess = nn.Sequential(
-            cnn_init_weights(nn.Conv2d(in_channels, 24, kernel_size=8, stride=4)), # out: 14 * 19
-            nn.ReLU(inplace=True),
-            cnn_init_weights(nn.Conv2d(24, 32, kernel_size=4, stride=2)), # out: 6 * 8
-            nn.ReLU(inplace=True),
-            cnn_init_weights(nn.Conv2d(32, 32, kernel_size=3, stride=1)), # 4 * 6
-            nn.ReLU(inplace=True),
-            nn.Flatten(),
-    )
+        nn.Conv2d(in_channels, 32, kernel_size=5, stride=2),
+        nn.ReLU(),
+
+        nn.Conv2d(32, 32, kernel_size=5, stride=2),
+        nn.ReLU(),
+
+        nn.Conv2d(32, 32, kernel_size=4, stride=2),
+        nn.ReLU(),
+
+        nn.Flatten(),
+        nn.Linear(32 * 7 * 5, embed_dim),
+    ) # out: 32 * 7 * 5
     return cnn_preprocess.to(device)
 
 def get_CNN_Dense(preprocess_net, in_dim, out_dim, device="cpu"):

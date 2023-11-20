@@ -40,7 +40,7 @@ class PolicyBankCNN(PolicyBank):
         # CNN shared preprocess net
         if self.cnn_preprocess is None:
             self.cnn_preprocess = get_CNN_preprocess(3, device=self.device)
-            self.preprocess_out_dim = 768
+            self.preprocess_out_dim = 64
         if self.rl_algo == "dsac":
             actor_module = DiscreteSoftActor(
                 self.num_features, self.num_actions,

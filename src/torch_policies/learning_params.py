@@ -1,6 +1,6 @@
 class LearningParameters:
     def __init__(self, lr=1e-4, max_timesteps_per_task=100000, buffer_size=100000,
-                print_freq=1000, exploration_fraction=0.1, exploration_final_eps=0.02,
+                print_freq=1000, exploration_fraction=0.2, exploration_final_eps=0.02,
                 train_freq=1, batch_size=32, learning_starts=5000, gamma=0.9,
                 max_timesteps_per_episode=1000,
                 # SAC related

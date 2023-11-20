@@ -112,7 +112,6 @@ def run_experiments(
             pass
 
     # Showing results
-    tester.show_results()
     print("Time:", "%0.2f" % ((time.time() - time_init)/60), "mins")
 
 

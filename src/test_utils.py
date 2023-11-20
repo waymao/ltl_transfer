@@ -102,14 +102,14 @@ class Tester:
                 logging.basicConfig(filename=self.transfer_log_fpath, filemode='w', level=logging.INFO, format="%(message)s")
 
             # load pre-computed optimal steps for 'task_type' in 'map_id'
-            optimal_aux = _get_optimal_values(f'{save_dpath}/experiments/optimal_policies/map_{map_id}.txt', tasks_id)
+            # optimal_aux = _get_optimal_values(f'{save_dpath}/experiments/optimal_policies/map_{map_id}.txt', tasks_id)
 
             # I store the results here
             self.results = {}
-            self.optimal = {}
+            # self.optimal = {}
             self.steps = []
             for idx, task in enumerate(self.tasks):
-                self.optimal[task] = learning_params.gamma ** (float(optimal_aux[idx]) - 1)
+                # self.optimal[task] = learning_params.gamma ** (float(optimal_aux[idx]) - 1)
                 self.results[task] = {}
             # save results for transfer learning
             if tasks_id > 2:
@@ -120,7 +120,7 @@ class Tester:
             # Loading precomputed results
             data = read_json(file_results)
             self.results = dict([(eval(t), data["results"][t]) for t in data["results"]])
-            self.optimal = dict([(eval(t), data["optimal"][t]) for t in data["optimal"]])
+            # self.optimal = dict([(eval(t), data["optimal"][t]) for t in data["optimal"]])
             self.steps = data["steps"]
             self.tasks = [eval(t) for t in data["tasks"]]
             # obs: json transform the integer keys from 'results' into strings
@@ -148,24 +148,6 @@ class Tester:
             if len(self.steps) == 0 or self.steps[-1] < step:
                 self.steps.append(step)
             self.results[task][step].append(reward)
-
-    def show_results(self):
-        # Computing average performance per task
-        average_reward = {}
-        for t in self.tasks:
-            for s in self.steps:
-                normalized_rewards = [r / self.optimal[t] for r in self.results[t][s]]
-                a = np.array(normalized_rewards)
-                if s not in average_reward: average_reward[s] = a
-                else: average_reward[s] = a + average_reward[s]
-        # Showing average performance across all the task
-        print("\nAverage discounted reward on this map --------------------")
-        print("\tsteps\tP25\tP50\tP75")
-        num_tasks = float(len(self.tasks))
-        for s in self.steps:
-            normalized_rewards = average_reward[s] / num_tasks
-            p25, p50, p75 = get_precentiles_str(normalized_rewards)
-            print("\t" + str(s) + "\t" + p25 + "\t" + p50 + "\t" + p75)
 
     def export_results(self):
         # Showing performance per task
@@ -226,7 +208,7 @@ class Saver:
     def save_results(self):
         results = {
             "tasks": [str(t) for t in self.tester.tasks],
-            "optimal": dict([(str(t), self.tester.optimal[t]) for t in self.tester.optimal]),
+            # "optimal": dict([(str(t), self.tester.optimal[t]) for t in self.tester.optimal]),
             "steps": self.tester.steps,
             "results": dict([(str(t), self.tester.results[t]) for t in self.tester.results])
         }

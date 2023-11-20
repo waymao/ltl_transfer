@@ -122,9 +122,9 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
             for color in RANDOM_COLOR_LIST:
                 for count in range(self.num_per_objs):
                     if obj_type == Box:
-                        ent = self.place_entity(Box(color=color, size=0.9 * BLOCK_SCALE))
+                        ent = self.place_entity(Box(color=color, size=BLOCK_SCALE))
                     elif obj_type == Ball:
-                        ent = self.place_entity(Ball(color=color, size=0.9 * BLOCK_SCALE))
+                        ent = self.place_entity(Ball(color=color, size=BLOCK_SCALE))
                     elif obj_type == Key:
                         ent = self.place_entity(Key(color=color))
                     else:

@@ -15,7 +15,7 @@ import cProfile
 
 def run_experiment(
         game_name,
-        alg_name, rl_alg, map_id, prob, tasks_id, domain_name, train_type, 
+        alg_name, rl_alg, map_id, prob, tasks_id, dataset_name, train_type, 
         train_size, test_type, num_times, r_good, total_steps, incremental_steps, 
         run_id, relabel_method, transfer_num_times, edge_matcher, save_dpath, show_print,
         learning_params: LearningParameters,
@@ -23,11 +23,11 @@ def run_experiment(
         resume=False,
         device="cpu"):
     # Setting the proper logger
-    tb_log_path = os.path.join(save_dpath, "results", domain_name, f"{train_type}_p{prob}", f"{alg_name}_{rl_alg}", f"map{map_id}", str(run_id))
+    tb_log_path = os.path.join(save_dpath, "results", f"{game_name}_{dataset_name}", f"{train_type}_p{prob}", f"{alg_name}_{rl_alg}", f"map{map_id}", str(run_id))
     logger = SummaryWriter(log_dir=tb_log_path)
 
     # Setting the experiment
-    tester = Tester(learning_params, testing_params, map_id, prob, tasks_id, domain_name, train_type, train_size, test_type, edge_matcher, rl_alg, save_dpath, logger)
+    tester = Tester(learning_params, testing_params, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, edge_matcher, rl_alg, save_dpath, logger)
 
     # Setting the curriculum learner
     curriculum = CurriculumLearner(tester.tasks, r_good=r_good, total_steps=total_steps)
@@ -167,7 +167,7 @@ if __name__ == "__main__":
     if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")
     if args.train_type not in train_types: raise NotImplementedError("Training tasks " + str(args.train_type) + " hasn't been defined yet")
     if args.test_type not in test_types: raise NotImplementedError("Test tasks " + str(args.test_type) + " hasn't been defined yet")
-    if not(-1 <= args.map < 10 or args. map == 20): raise NotImplementedError("The map must be a number between -1 and 9")
+    if not(-1 <= args.map < 20): raise NotImplementedError("The map must be a number between -1 and 9")
 
     # Running the experiment
     tasks_id = train_types.index(args.train_type)
