@@ -42,23 +42,27 @@ class PolicyBankCNN(PolicyBank):
             self.cnn_preprocess = get_CNN_preprocess(3, device=self.device)
             self.preprocess_out_dim = 64
         if self.rl_algo == "dsac":
-            actor_module = DiscreteSoftActor(
-                self.num_features, self.num_actions,
-                hidden=[64, 64],
+            pi_module = get_CNN_Dense(
+                self.cnn_preprocess,
+                self.preprocess_out_dim,
+                out_dim=self.num_actions,
                 device=self.device
             )
-            critic_module = get_MLP(
-                num_features=self.num_features,
-                num_actions=self.num_actions,
-                hidden_layers=[64, 64],
-                init_method=None
+            actor_module = DiscreteSoftActor(
+                self.num_features, self.num_actions,
+                pi_module,
+                device=self.device
             )
-            critic2_module = get_MLP(
-                num_features=self.num_features,
-                num_actions=self.num_actions,
-                hidden_layers=[64, 64],
-                init_method=None
-            )
+            critic_module = get_CNN_Dense(
+                self.cnn_preprocess,
+                self.preprocess_out_dim,
+                out_dim=self.num_actions,
+                device=self.device)
+            critic2_module = get_CNN_Dense(
+                self.cnn_preprocess,
+                self.preprocess_out_dim,
+                out_dim=self.num_actions,
+                device=self.device)
             policy = DiscreteSAC(
                 ltl,
                 f_task, # full task

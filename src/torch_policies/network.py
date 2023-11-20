@@ -117,7 +117,7 @@ def get_CNN_preprocess(in_channels, embed_dim=64, device="cpu"):
 def get_CNN_Dense(preprocess_net, in_dim, out_dim, device="cpu"):
     return nn.Sequential(
         preprocess_net,
-        cnn_init_weights(nn.Linear(in_dim, 512)),
+        cnn_init_weights(nn.Linear(in_dim, 64)),
         nn.ReLU(inplace=True),
-        cnn_init_weights(nn.Linear(512, out_dim)),
+        cnn_init_weights(nn.Linear(64, out_dim)),
     ).to(device)

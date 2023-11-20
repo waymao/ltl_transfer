@@ -71,9 +71,17 @@ class PolicyBank:
         if ltl not in self.policy2id:
             PolicyModule = POLICY_MODULES[self.rl_algo]
             if self.rl_algo == "dsac":
+                pi_module = get_MLP(
+                    self.num_features, self.num_actions,
+                    [64, 64], 
+                    use_relu=True, 
+                    device=self.device,
+                    init_method="fanin",
+                    output_init_scale=3e-1
+                )
                 actor_module = DiscreteSoftActor(
                     self.num_features, self.num_actions,
-                    hidden=[64, 64],
+                    pi_module,
                     device=self.device
                 )
                 critic_module = get_MLP(
