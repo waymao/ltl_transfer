@@ -66,6 +66,7 @@ def run_multiple_experiments(game_name, alg, rl_alg, prob, tasks_id, dataset_nam
                           testing_params,
                           resume=False,
                           device="cpu"):
+    # TODO unused. remove
     num_times = 3
     r_good    = 0.5 if tasks_id == 2 else 0.9
     show_print = True

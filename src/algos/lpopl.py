@@ -1,6 +1,7 @@
 import os
 import random
 import time
+import gymnasium
 import numpy as np
 import torch
 # import tensorflow as tf
@@ -29,6 +30,7 @@ def run_experiments(
     time_init = time.time()
     tester_original = tester
     curriculum_original = curriculum
+    curriculum.restart()
     loader = Loader(saver)
     train_dpath = os.path.join(saver.exp_dir, "train_data")
     
@@ -36,6 +38,8 @@ def run_experiments(
     random.seed(run_id)
     np.random.seed(run_id)
     torch.manual_seed(run_id)
+    game = get_game(game_name, tester.get_task_params(curriculum.get_current_task()))
+    game.reset(seed=run_id)
 
     # Running the tasks 'num_times'
     for run_id in range(num_times):
@@ -56,9 +60,6 @@ def run_experiments(
             curriculum.incremental_learning(incremental_steps)
         else:
             curriculum = curriculum_original
-
-        # Setting the random seed to 'run_id'
-        random.seed(run_id)
 
         # Reseting default values
         if not curriculum.incremental:
@@ -92,8 +93,13 @@ def run_experiments(
                 if show_print:
                     print("Current step:", curriculum.get_current_step(), "from", curriculum.total_steps)
                     print("%d Current task: %d, %s" % (num_tasks, curriculum.current_task, str(task)))
+                
+                # Apply task params
                 task_params = tester.get_task_params(task)
-                _run_LPOPL(game_name, policy_bank, task_params, tester, curriculum, replay_buffer, show_print)
+                game.reset(options=dict(task_params=task_params))
+
+                # Running the task
+                _run_LPOPL(game, policy_bank, tester, curriculum, replay_buffer, show_print)
                 num_tasks += 1
                 # # Save 'policy_bank' for incremental training and transfer
                 saver.save_policy_bank(policy_bank, run_id)
@@ -140,8 +146,8 @@ def _initialize_policy_bank(game_name, learning_params, curriculum: CurriculumLe
 
 
 def _run_LPOPL(
-        game_name, 
-        policy_bank: PolicyBank, task_params, 
+        game: gymnasium.Env, 
+        policy_bank: PolicyBank, 
         tester: Tester, curriculum: CurriculumLearner, 
         replay_buffer, show_print, 
         do_render=False
@@ -152,11 +158,10 @@ def _run_LPOPL(
     testing_params = tester.testing_params
 
     # Initializing the game
-    task = get_game(game_name, task_params)
-    action_space = task.action_space
+    action_space = game.action_space
 
     # Initializing parameters
-    num_features = task.observation_space.shape[0]
+    num_features = game.observation_space.shape[0]
     num_steps = learning_params.max_timesteps_per_task
     exploration = LinearSchedule(schedule_timesteps=int(learning_params.exploration_fraction * num_steps), initial_p=1.0, final_p=learning_params.exploration_final_eps)
     training_reward = 0
@@ -164,9 +169,9 @@ def _run_LPOPL(
     # Starting interaction with the environment
     curr_eps_step = 0
     if show_print: print("Executing", num_steps, "actions...")
-    s1, info = task.reset()
+    s1, info = game.reset()
     print("Image shape:", s1.shape)
-    print("Action shape:", task.action_space)
+    print("Action shape:", game.action_space)
     s2 = None
 
     # aux render code for testing
@@ -174,11 +179,11 @@ def _run_LPOPL(
     # while True:
     #     input("hi")
     if do_render:
-        task.render()
+        game.render()
 
     for t in range(num_steps):
         # Getting the current state and ltl goal
-        ltl_goal = task.get_LTL_goal()
+        ltl_goal = game.get_LTL_goal()
 
         # Choosing an action to perform
         if policy_bank.rl_algo == "dqn":
@@ -188,14 +193,14 @@ def _run_LPOPL(
             a = policy_bank.get_best_action(ltl_goal, np.expand_dims(s1, axis=0))
         if do_render:
             # print("action:", a, "true propositions:", task.get_true_propositions())
-            task.render()
+            game.render()
         # updating the curriculum
         curriculum.add_step()
 
         # Executing the action
-        s2, reward, term, trunc, info = task.step(a)
+        s2, reward, term, trunc, info = game.step(a)
         training_reward += reward
-        true_props = task.get_true_propositions()
+        true_props = game.get_true_propositions()
 
         # Saving this transition
         next_goals = np.zeros((policy_bank.get_number_LTL_policies(),), dtype=np.float64)
@@ -263,7 +268,7 @@ def _run_LPOPL(
 
         # Restarting the environment (Game Over)
         curr_eps_step += 1
-        if task.dfa.is_game_over() or trunc or term or curr_eps_step > learning_params.max_timesteps_per_episode:
+        if game.dfa.is_game_over() or trunc or term or curr_eps_step > learning_params.max_timesteps_per_episode:
             print("game over")
             curr_eps_step = 0
             # NOTE: Game over occurs for one of three reasons:
@@ -271,7 +276,7 @@ def _run_LPOPL(
             # 2) DFA reached a deadend, or
             # 3) The agent reached an environment deadend (e.g. a PIT)
             # 4) NEW: > episode max time step
-            s1, info = task.reset()  # Restarting
+            s1, info = game.reset()  # Restarting
 
             # updating the hit rates
             curriculum.update_succ_rate(t, reward)
