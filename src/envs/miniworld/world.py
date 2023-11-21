@@ -7,7 +7,7 @@ from miniworld.miniworld import MiniWorldEnv
 
 from .params import GameParams
 from .constants import OBJ_MAP, AGENT_MARKER, BLOCK_SCALE, OBSTACLE_MARKER, \
-    RANDOM_COLOR_LIST, RANDOM_OBJ_TYPES, DEFAULT_MAP_SIZE
+    RANDOM_COLOR_LIST, RANDOM_OBJ_TYPES, DEFAULT_MAP_SIZE, ALWAYS_RANDOM_AGENT_LOC
 
 def mat_to_opengl(i, j, num_rows, offset=0.5):
     offset *= BLOCK_SCALE
@@ -166,12 +166,17 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
             for j, e in enumerate(l_stripped):
                 if e in OBJ_MAP.keys():
                     Entity, color = OBJ_MAP[e]
-                    entity = Entity(color=color, size=0.5)
-                    entity.color = color
+                    
 
                     # set obstacle to be static (non-pickable)
                     if e == OBSTACLE_MARKER:
+                        entity = Entity(color=color, size=1.0)
                         entity.static = True
+                        entity.color = color
+                    else:
+                        entity = Entity(color=color, size=0.5)
+                        entity.static = True
+                        entity.color = color
                     
                     # place the item
                     x, z = mat_to_opengl(i, j, num_rows=self.size)
@@ -179,11 +184,15 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
 
                     # update the feature set
                     items_set.add(e)
-                elif e == AGENT_MARKER:
-                    # add the agent
+                elif e == AGENT_MARKER and not ALWAYS_RANDOM_AGENT_LOC:
+                    # add the agent if not randomizing agent loc
                     x, z = mat_to_opengl(i, j, num_rows=self.size)
                     self.place_agent(min_x=x, max_x=x, min_z=z, max_z=z)
             width = max(width, len(l_stripped))
+        
+        if ALWAYS_RANDOM_AGENT_LOC:
+            # add the agent in the end
+            self.place_agent()
         return items_set
 
     def step(self, action):
