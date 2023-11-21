@@ -10,6 +10,7 @@ from torch import nn
 from torch.nn import functional as F
 import numpy as np
 from copy import deepcopy
+from typing import Optional
 
 from .policy_base import Policy
 
@@ -23,7 +24,9 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
             f_task, # full task
             dfa,
             q1: nn.Module, 
+            q1_target: Optional[nn.Module],
             q2: nn.Module, 
+            q2_target: Optional[nn.Module],
             pi: nn.Module,
             state_dim, 
             action_dim, 
@@ -52,12 +55,18 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
 
         # q1
         self.q1 = q1.to(device)
-        self.q1_target = deepcopy(q1).to(device)
-        self.q1_target.eval()
+        if q1_target is not None:
+            self.q1_target = q1_target.to(device)
+        else:
+            self.q1_target = deepcopy(q1).to(device)
+            self.q1_target.eval()
         # q2
         self.q2 = q2.to(device)
-        self.q2_target = deepcopy(q2).to(device)
-        self.q2_target.eval()
+        if q2_target is not None:
+            self.q2_target = q2_target.to(device)
+        else:
+            self.q2_target = deepcopy(q2).to(device)
+            self.q2_target.eval()
         # q optim
         self.q_optim = torch.optim.Adam(
             list(self.q1.parameters()) + list(self.q2.parameters()), 

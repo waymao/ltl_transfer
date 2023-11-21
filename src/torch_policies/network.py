@@ -2,6 +2,7 @@ from typing import List
 from torch import nn
 import torch
 import numpy as np
+from copy import deepcopy
 
 def init_weights(m, scale=np.sqrt(2), b_init_val=0.0):
     if isinstance(m, nn.Linear):
@@ -114,10 +115,30 @@ def get_CNN_preprocess(in_channels, embed_dim=64, device="cpu"):
     ) # out: 32 * 7 * 5
     return cnn_preprocess.to(device)
 
+class CNNDense(nn.Module):
+    def __init__(self, preprocess_net, fc_in_dim, out_dim, fc_layers=None):
+        super().__init__()
+        self.preprocess_net = preprocess_net
+        self.fc_in_dim = fc_in_dim
+        self.out_dim = out_dim
+        if fc_layers is not None:
+            self.fc_layers = nn.Sequential(
+                cnn_init_weights(nn.Linear(fc_in_dim, 64)),
+                nn.ReLU(inplace=True),
+                cnn_init_weights(nn.Linear(64, out_dim)),
+            )
+        else:
+            self.fc_layers = fc_layers
+    
+    def forward(self, x):
+        z = self.preprocess_net(x)
+        return self.fc_layers(z)
+    
+    def deepcopy_w_preprocess(self, new_preprocess_net):
+        copied_fc = deepcopy(self.fc_layers)
+        copied_fc.eval()
+        return CNNDense(new_preprocess_net, self.fc_in_dim, self.out_dim, copied_fc)
+
 def get_CNN_Dense(preprocess_net, in_dim, out_dim, device="cpu"):
-    return nn.Sequential(
-        preprocess_net,
-        cnn_init_weights(nn.Linear(in_dim, 64)),
-        nn.ReLU(inplace=True),
-        cnn_init_weights(nn.Linear(64, out_dim)),
-    ).to(device)
+    return CNNDense(preprocess_net, in_dim, out_dim).to(device)
+

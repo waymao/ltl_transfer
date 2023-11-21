@@ -3,6 +3,7 @@ import os
 import numpy as np
 import torch
 from torch import nn
+from copy import deepcopy
 
 from .learning_params import LearningParameters
 from .policy_dqn import DQN
@@ -44,6 +45,8 @@ class PolicyBankCNN(PolicyBank):
         # CNN shared preprocess net
         if self.cnn_preprocess is None:
             self.cnn_preprocess = get_CNN_preprocess(3, device=self.device)
+            self.cnn_preprocess_target = deepcopy(self.cnn_preprocess)
+            self.cnn_preprocess_target.eval()
             self.preprocess_out_dim = 64
         if self.rl_algo == "dsac":
             pi_module = get_CNN_Dense(
@@ -62,17 +65,21 @@ class PolicyBankCNN(PolicyBank):
                 self.preprocess_out_dim,
                 out_dim=self.num_actions,
                 device=self.device)
+            critic1_tgt = critic_module.deepcopy_w_preprocess(self.cnn_preprocess_target)
             critic2_module = get_CNN_Dense(
                 self.cnn_preprocess,
                 self.preprocess_out_dim,
                 out_dim=self.num_actions,
                 device=self.device)
+            critic2_tgt = critic2_module.deepcopy_w_preprocess(self.cnn_preprocess_target)
             policy = DiscreteSAC(
                 ltl,
                 f_task, # full task
                 dfa,
                 q1=critic_module,
                 q2=critic2_module,
+                q1_target=critic1_tgt,
+                q2_target=critic2_tgt,
                 pi=actor_module,
                 auto_alpha=False,
                 lr_q=self.learning_params.lr, 
