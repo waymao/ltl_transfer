@@ -135,7 +135,7 @@ if __name__ == "__main__":
     parser.add_argument('--test_type', default='mixed', type=str,
                         help='This parameter indicated which test tasks to solve. The options are: ' + str(test_types))
     parser.add_argument('--map', default=0, type=int,
-                        help='This parameter indicated which map to use. It must be a number between -1 and 9. Use "-1" to run experiments over the 10 maps, 3 times per map')
+                        help='This parameter indicated which map to use. It must be a number between -2 and 9. Use "-1" to run experiments over the 10 maps, 3 times per map. Use "-2" to generate a random map.s')
     parser.add_argument('--prob', default=1.0, type=float,
                         help='probability of intended action succeeding')
     parser.add_argument('--total_steps', default=500000, type=int,
@@ -168,13 +168,13 @@ if __name__ == "__main__":
     if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")
     if args.train_type not in train_types: raise NotImplementedError("Training tasks " + str(args.train_type) + " hasn't been defined yet")
     if args.test_type not in test_types: raise NotImplementedError("Test tasks " + str(args.test_type) + " hasn't been defined yet")
-    if not(-1 <= args.map < 20): raise NotImplementedError("The map must be a number between -1 and 9")
+    if not(-2 <= args.map < 20): raise NotImplementedError("The map must be a number between -1 and 9")
 
     # Running the experiment
     tasks_id = train_types.index(args.train_type)
     map_id = args.map
-    learning_params = get_learning_parameters(policy_name=args.rl_algo, alpha=args.alpha)
-    if map_id > -1:
+    learning_params = get_learning_parameters(policy_name=args.rl_algo, game_name=args.game_name, alpha=args.alpha)
+    if map_id != -1:
         run_single_experiment(args.game_name, 
                               args.algo, args.rl_algo, map_id, args.prob, tasks_id, args.domain_name, args.train_type, args.train_size, args.test_type,
                               args.total_steps, args.incremental_steps, args.run_id,

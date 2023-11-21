@@ -30,6 +30,10 @@ class PolicyBankCNN(PolicyBank):
     def __init__(self, num_actions, num_features, learning_params: LearningParameters, policy_type="dqn", device="cpu"):
         super().__init__(num_actions, num_features, learning_params, policy_type, device)
         self.cnn_preprocess = None
+    
+    def _add_true_false_policy(self, gamma):
+        self._add_constant_policy("False", 0.0)
+        self._add_constant_policy("True", 100/gamma)  # this ensures that reaching 'True' gives reward of 1
 
     def add_LTL_policy(self, ltl, f_task, dfa, load_tf=True):
         """
@@ -148,6 +152,7 @@ class PolicyBankCNN(PolicyBank):
             if ltl not in checkpoint['policies']: continue # skip unsaved policies
             policy: Policy = self.policies[policy_id]
             policy.restore_from_state_dict(checkpoint['policies'][ltl])
+        self.cnn_preprocess.load_state_dict(checkpoint['cnn_preprocess'])
         print("loaded policy bank from", checkpoint_path)
 
 
@@ -161,6 +166,7 @@ class PolicyBankCNN(PolicyBank):
                 # only save non-constant policy
                 policies_dict[ltl] = policy.get_state_dict()
         save['policies'] = policies_dict
+        save['cnn_preprocess'] = self.cnn_preprocess.state_dict()
         checkpoint_path = os.path.join(policy_bank_prefix, "policy_bank.pth")
         if not os.path.exists(policy_bank_prefix):
             os.makedirs(policy_bank_prefix)

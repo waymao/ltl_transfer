@@ -44,80 +44,79 @@ def run_experiments(
     game.reset(seed=run_id)
 
     # Running the tasks 'num_times'
-    for run_id in range(num_times):
-        run_dpath = os.path.join(train_dpath, "run_%d" % run_id)
-        # Overwrite 'tester' and 'curriculum' if incremental training
-        tester_fpath = os.path.join(run_dpath, "tester.pkl")
-        if resume and os.path.exists(run_dpath) and os.path.exists(tester_fpath):
-            tester = load_pkl(tester_fpath)
-        else:
-            tester = tester_original
+    run_dpath = os.path.join(train_dpath, "run_%d" % run_id)
+    # Overwrite 'tester' and 'curriculum' if incremental training
+    tester_fpath = os.path.join(run_dpath, "tester.pkl")
+    if resume and os.path.exists(run_dpath) and os.path.exists(tester_fpath):
+        tester = load_pkl(tester_fpath)
+    else:
+        tester = tester_original
 
-        learning_params = tester.learning_params
+    learning_params = tester.learning_params
 
-        curriculum_fpath = os.path.join(run_dpath, "curriculum.pkl")
-        if resume and os.path.exists(run_dpath) and os.path.exists(curriculum_fpath):
-            curriculum = load_pkl(curriculum_fpath)
-            learning_params.learning_starts += curriculum.total_steps  # recollect 'replay_buffer'
-            curriculum.incremental_learning(incremental_steps)
-        else:
-            curriculum = curriculum_original
+    curriculum_fpath = os.path.join(run_dpath, "curriculum.pkl")
+    if resume and os.path.exists(run_dpath) and os.path.exists(curriculum_fpath):
+        curriculum = load_pkl(curriculum_fpath)
+        learning_params.learning_starts += curriculum.total_steps  # recollect 'replay_buffer'
+        curriculum.incremental_learning(incremental_steps)
+    else:
+        curriculum = curriculum_original
 
-        # Reseting default values
-        if not curriculum.incremental:
-            curriculum.restart()
+    # Reseting default values
+    if not curriculum.incremental:
+        curriculum.restart()
 
-        # Initializing experience replay buffer
-        replay_buffer = ReplayBuffer(learning_params.buffer_size)
+    # Initializing experience replay buffer
+    replay_buffer = ReplayBuffer(learning_params.buffer_size)
 
-        # Initializing policies per each subtask
-        policy_bank = _initialize_policy_bank(game_name, learning_params, curriculum, tester, rl_algo=rl_algo, device=device)
-        # Load 'policy_bank' if incremental training
-        policy_dpath = os.path.join(saver.policy_dpath, "run_%d" % run_id)
-        if resume and os.path.exists(policy_dpath) and os.listdir(policy_dpath):
-            try:
-                loader.load_policy_bank(policy_bank, run_id)
-            except (RuntimeError, FileNotFoundError) as e:
-                print()
-                print("Encountered the following error when loading policy bank:")
-                print(e)
-                print("Will not load the bank.")
-                print()
-        if show_print:
-            print("Total # of policies:", policy_bank.get_number_LTL_policies())
-            print("Policy bank initialization took: %0.2f mins" % ((time.time() - time_init)/60))
-
-        # Running the tasks
-        num_tasks = 0
+    # Initializing policies per each subtask
+    policy_bank = _initialize_policy_bank(game_name, learning_params, curriculum, tester, rl_algo=rl_algo, device=device)
+    # Load 'policy_bank' if incremental training
+    policy_dpath = os.path.join(saver.policy_dpath, "run_%d" % run_id)
+    if resume and os.path.exists(policy_dpath) and os.listdir(policy_dpath):
         try:
-            while not curriculum.stop_learning():
-                task = curriculum.get_next_task()
-                if show_print:
-                    print("Current step:", curriculum.get_current_step(), "from", curriculum.total_steps)
-                    print("%d Current task: %d, %s" % (num_tasks, curriculum.current_task, str(task)))
-                
-                # Apply task params
-                task_params = tester.get_task_params(task)
-                game.reset(options=dict(task_params=task_params))
+            loader.load_policy_bank(policy_bank, run_id)
+        except (RuntimeError, FileNotFoundError) as e:
+            print()
+            print("Encountered the following error when loading policy bank:")
+            print(e)
+            print("Will not load the bank.")
+            print()
+    if show_print:
+        print("Total # of policies:", policy_bank.get_number_LTL_policies())
+        print("Policy bank initialization took: %0.2f mins" % ((time.time() - time_init)/60))
 
-                # Running the task
-                _run_LPOPL(game, policy_bank, tester, curriculum, replay_buffer, show_print)
-                num_tasks += 1
-                # # Save 'policy_bank' for incremental training and transfer
-                saver.save_policy_bank(policy_bank, run_id)
-                # Backing up the results
-                saver.save_results()
-                # Save 'tester' and 'curriculum' for incremental training
-                saver.save_train_data(curriculum, run_id)
-        except KeyboardInterrupt:
-            # gracefully print everything when interrupted
+    # Running the tasks
+    num_tasks = 0
+    try:
+        while not curriculum.stop_learning():
+            task = curriculum.get_next_task()
+            if show_print:
+                print("Current step:", curriculum.get_current_step(), "from", curriculum.total_steps)
+                print("%d Current task: %d, %s" % (num_tasks, curriculum.current_task, str(task)))
+            
+            # Apply task params
+            task_params = tester.get_task_params(task)
+            game.reset(options=dict(task_params=task_params))
+
+            # Running the task
+            _run_LPOPL(game, policy_bank, tester, curriculum, replay_buffer, show_print)
+            num_tasks += 1
             # # Save 'policy_bank' for incremental training and transfer
             saver.save_policy_bank(policy_bank, run_id)
             # Backing up the results
             saver.save_results()
             # Save 'tester' and 'curriculum' for incremental training
             saver.save_train_data(curriculum, run_id)
-            pass
+    except KeyboardInterrupt:
+        # gracefully print everything when interrupted
+        # # Save 'policy_bank' for incremental training and transfer
+        saver.save_policy_bank(policy_bank, run_id)
+        # Backing up the results
+        saver.save_results()
+        # Save 'tester' and 'curriculum' for incremental training
+        saver.save_train_data(curriculum, run_id)
+        pass
 
     # Showing results
     print("Time:", "%0.2f" % ((time.time() - time_init)/60), "mins")

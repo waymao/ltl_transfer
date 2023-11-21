@@ -51,7 +51,10 @@ class Tester:
             self.edge_matcher = edge_matcher
             self.save_dpath = save_dpath
             self.experiment = f"{train_type}/map_{map_id}"
-            self.map = f"{save_dpath}/experiments/maps/map_{map_id}.txt"
+            if map_id == -2:
+                self.map = None
+            else:
+                self.map = f"{save_dpath}/experiments/maps/map_{map_id}.txt"
             self.consider_night = False
             self.rl_algo = rl_algo
 

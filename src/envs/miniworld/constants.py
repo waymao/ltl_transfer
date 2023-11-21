@@ -15,8 +15,8 @@ OBJ_MAP: Mapping[str, Tuple[Entity, str]] = {
     "X": (Box, 'grey') # obstacle
 }
 
-RANDOM_OBJ_TYPES = [Ball, Box]
-RANDOM_COLOR_LIST = ["yellow", "green", "blue"]
+RANDOM_OBJ_TYPES = [Box]
+RANDOM_COLOR_LIST = ["yellow", "green"]
 
 OBJ_REV_MAP = {}
 for key, (Module, color) in OBJ_MAP.items():
@@ -25,4 +25,4 @@ for key, (Module, color) in OBJ_MAP.items():
 AGENT_MARKER = "A"
 OBSTACLE_MARKER = "X"
 BLOCK_SCALE = 1 # in meters
-DEFAULT_MAP_SIZE = 16
+DEFAULT_MAP_SIZE = 10

@@ -53,17 +53,30 @@ class LearningParameters:
         self.alpha = alpha
         self.tau = tau
 
-def get_learning_parameters(policy_name, **kwargs):
+def get_learning_parameters(policy_name, game_name, **kwargs):
     if policy_name == "dsac":
         return LearningParameters(**kwargs)
     elif policy_name == "dqn":
-        return LearningParameters(
-            lr=1e-4,
-            max_timesteps_per_task=50000,
-            buffer_size=25000,
-            train_freq=1,
-            batch_size=32,
-            learning_starts=1000,
-            target_network_update_freq=100,
-            **kwargs
-        )
+        if game_name == "miniworld":
+            return LearningParameters(
+                lr=1e-3,
+                max_timesteps_per_task=100000,
+                buffer_size=25000,
+                train_freq=1,
+                batch_size=64,
+                learning_starts=1000,
+                exploration_fraction=0.3,
+                target_network_update_freq=50,
+                **kwargs
+            )
+        else:
+            return LearningParameters(
+                lr=1e-4,
+                max_timesteps_per_task=50000,
+                buffer_size=25000,
+                train_freq=1,
+                batch_size=32,
+                learning_starts=1000,
+                target_network_update_freq=100,
+                **kwargs
+            )

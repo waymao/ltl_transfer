@@ -78,7 +78,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
     """
 
     def __init__(self, params: Optional[GameParams] = None, visit_only=True, **kwargs):
-        if params is not None:
+        if params is not None and params.map_fpath is not None:
             with open(params.map_fpath, 'r') as f:
                 self._map_mat = f.readlines()
             width, height = get_map_size(self._map_mat)
