@@ -9,6 +9,7 @@ from envs.grid.game import GameParams, Game
 from exp_dataset_creator import read_train_test_formulas
 from torch.utils.tensorboard import SummaryWriter
 import ltl.tasks as tasks
+from tqdm import tqdm
 
 
 class TestingParameters:
@@ -27,15 +28,15 @@ class TestingParameters:
         self.num_steps = num_steps
 
 
-def _get_optimal_values(file, experiment):
-    f = open(file)
-    lines = [line.rstrip() for line in f]
-    f.close()
-    return eval(lines[experiment])
-
-
 class Tester:
-    def __init__(self, learning_params, testing_params, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, edge_matcher, rl_algo, save_dpath, logger=None, file_results=None):
+    def __init__(self, 
+                 learning_params, testing_params, 
+                 map_id, prob, tasks_id, 
+                 dataset_name, train_type, 
+                 train_size, test_type, 
+                 edge_matcher, rl_algo, 
+                 save_dpath, logger=None, file_results=None
+        ):
         if file_results is None:
             # setting the test attributes
             self.learning_params = learning_params
@@ -140,17 +141,18 @@ class Tester:
     def get_task_params(self, ltl_task, init_dfa_state=None, init_loc=None):
         return GameParams(self.map, self.prob, ltl_task, self.consider_night, init_dfa_state, init_loc)
 
-    def run_test(self, step, game_name, test_function, *test_args):
+    def run_test(self, step, game_name, game_params):
         # 'test_function' parameters should be (sess, task_params, learning_params, testing_params, *test_args)
         # and returns the reward
-        for task in self.tasks:
-            task_params = self.get_task_params(task)
-            reward = test_function(game_name, task_params, self.learning_params, self.testing_params, *test_args)
-            if step not in self.results[task]:
-                self.results[task][step] = []  # store reward per run for a total of 'num_times' runs
-            if len(self.steps) == 0 or self.steps[-1] < step:
-                self.steps.append(step)
-            self.results[task][step].append(reward)
+        pass
+        # for task in self.tasks:
+        #     task_params = self.get_task_params(task)
+        #     reward = test_function(game_name, task_params, self.learning_params, self.testing_params, *test_args)
+        #     if step not in self.results[task]:
+        #         self.results[task][step] = []  # store reward per run for a total of 'num_times' runs
+        #     if len(self.steps) == 0 or self.steps[-1] < step:
+        #         self.steps.append(step)
+        #     self.results[task][step].append(reward)
 
     def export_results(self):
         # Showing performance per task
