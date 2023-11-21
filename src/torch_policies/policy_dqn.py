@@ -67,6 +67,7 @@ class DQN(nn.Module, metaclass=Policy):
             action_dim, 
             learning_params: LearningParameters,
             logger,
+            nn_module_tgt=None,
             device="cpu"
         ):
         super().__init__()
@@ -80,8 +81,11 @@ class DQN(nn.Module, metaclass=Policy):
 
         # deep copy the model into the target model which will
         # only be updated once in a while
-        self.target_model = deepcopy(nn_module).to(device)
-        self.target_model.eval()
+        if nn_module_tgt is None:
+            self.target_model = deepcopy(nn_module).to(device)
+            self.target_model.eval()
+        else:
+            self.target_model = nn_module_tgt
         
         self.gamma = learning_params.gamma
 

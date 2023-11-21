@@ -100,11 +100,13 @@ class PolicyBankCNN(PolicyBank):
                 self.preprocess_out_dim,
                 out_dim=self.num_actions,
                 device=self.device)
+            nn_module_tgt = nn_module.deepcopy_w_preprocess(self.cnn_preprocess_target)
 
             # initialize and add the policy module
             policy = DQN(ltl, f_task, dfa, nn_module, 
                                 self.num_features, self.num_actions, self.learning_params,
                                 self.logger,
+                                nn_module_tgt=nn_module_tgt,
                                 device=self.device)
         self._add_policy(ltl, policy)
 

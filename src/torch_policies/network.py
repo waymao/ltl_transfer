@@ -121,7 +121,7 @@ class CNNDense(nn.Module):
         self.preprocess_net = preprocess_net
         self.fc_in_dim = fc_in_dim
         self.out_dim = out_dim
-        if fc_layers is not None:
+        if fc_layers is None:
             self.fc_layers = nn.Sequential(
                 cnn_init_weights(nn.Linear(fc_in_dim, 64)),
                 nn.ReLU(inplace=True),
