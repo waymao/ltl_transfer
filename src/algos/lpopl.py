@@ -1,6 +1,7 @@
 import os
 import random
 import time
+from typing import Union
 import gymnasium
 import numpy as np
 import torch
@@ -13,6 +14,7 @@ from utils.schedules import LinearSchedule
 from utils.replay_buffer import ReplayBuffer
 from ltl.dfa import *
 from envs.game_creator import get_game
+from envs.game_base import BaseGame
 from test_utils import Loader, load_pkl
 
 from utils.curriculum import CurriculumLearner
@@ -146,7 +148,7 @@ def _initialize_policy_bank(game_name, learning_params, curriculum: CurriculumLe
 
 
 def _run_LPOPL(
-        game: gymnasium.Env, 
+        game: BaseGame, 
         policy_bank: PolicyBank, 
         tester: Tester, curriculum: CurriculumLearner, 
         replay_buffer, show_print, 
@@ -269,7 +271,7 @@ def _run_LPOPL(
         # Restarting the environment (Game Over)
         curr_eps_step += 1
         if game.dfa.is_game_over() or trunc or term or curr_eps_step > learning_params.max_timesteps_per_episode:
-            print("game over")
+            print("game over. Final LTL:", game.dfa.get_LTL())
             curr_eps_step = 0
             # NOTE: Game over occurs for one of three reasons:
             # 1) DFA reached a terminal state,
