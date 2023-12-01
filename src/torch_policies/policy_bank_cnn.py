@@ -34,7 +34,7 @@ class PolicyBankCNN(PolicyBank):
     
     def _add_true_false_policy(self, gamma):
         self._add_constant_policy("False", 0.0)
-        self._add_constant_policy("True", 100/gamma)  # this ensures that reaching 'True' gives reward of 1
+        self._add_constant_policy("True", 10/gamma)  # this ensures that reaching 'True' gives reward of 1
 
     def add_LTL_policy(self, ltl, f_task, dfa, load_tf=True):
         """

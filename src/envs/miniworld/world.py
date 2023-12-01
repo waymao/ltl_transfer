@@ -9,6 +9,10 @@ from .params import GameParams
 from .constants import OBJ_MAP, AGENT_MARKER, BLOCK_SCALE, OBSTACLE_MARKER, \
     RANDOM_COLOR_LIST, RANDOM_OBJ_TYPES, DEFAULT_MAP_SIZE, ALWAYS_RANDOM_AGENT_LOC
 
+# for debug info
+from pyglet.gl import glGetString, GL_VENDOR, GL_RENDERER
+import ctypes
+
 def mat_to_opengl(i, j, num_rows, offset=0.5):
     offset *= BLOCK_SCALE
     return (j + offset, i + offset)
@@ -95,6 +99,9 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
 
         if visit_only:
             self.action_space = spaces.Discrete(self.Actions.move_back + 1)
+        
+        print("Renderer Vendor:", ctypes.string_at(glGetString(GL_VENDOR)).decode())
+        print("Renderer Hardware:", ctypes.string_at(glGetString(GL_RENDERER)).decode())
 
 
     def _gen_world(self):

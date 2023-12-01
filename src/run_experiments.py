@@ -158,7 +158,7 @@ if __name__ == "__main__":
                         help='This parameter indicated the dataset to read tasks from')
     parser.add_argument('--device', default="cpu", type=str, choices=['cpu', 'cuda'], 
                         help='The device to run Neural Network computations.')
-    parser.add_argument('--alpha', default=0.05, type=float,
+    parser.add_argument('--alpha', default=None, type=float,
                         help='The temperature for exploration / exploitation tradeoff.')
     parser.add_argument('--resume', default=False, action="store_true",
                         help='Whether to resume from a checkpoint or not.')

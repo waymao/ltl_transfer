@@ -151,7 +151,7 @@ def _run_LPOPL(
         policy_bank: PolicyBank, 
         tester: Tester, curriculum: CurriculumLearner, 
         replay_buffer, show_print, 
-        do_render=True
+        do_render=False
     ):
     MAX_EPS = 1000
     # Initializing parameters

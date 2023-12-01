@@ -161,8 +161,8 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
 
         # q target and loss
         # back propagate q loss
-        q_loss1 = torch.mean(F.mse_loss(q1_val_N, y_N))
-        q_loss2 = torch.mean(F.mse_loss(q2_val_N, y_N))
+        q_loss1 = F.mse_loss(q1_val_N, y_N, reduction="mean")
+        q_loss2 = F.mse_loss(q2_val_N, y_N, reduction="mean")
         self.q_optim.zero_grad(set_to_none=True)
         q_loss1.backward()
         q_loss2.backward()

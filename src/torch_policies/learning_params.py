@@ -55,11 +55,23 @@ class LearningParameters:
 
 def get_learning_parameters(policy_name, game_name, **kwargs):
     if policy_name == "dsac":
-        return LearningParameters(**kwargs)
+        if 'alpha' in kwargs and kwargs['alpha'] == None:
+            del kwargs['alpha']
+        if game_name == "miniworld":
+            return LearningParameters(
+                gamma=0.99,
+                alpha=0.1,
+                tau=0.01,
+                lr=1e-5,
+                pi_lr=1e-6,
+                **kwargs
+            )
+        else:
+            return LearningParameters(**kwargs)
     elif policy_name == "dqn":
         if game_name == "miniworld":
             return LearningParameters(
-                lr=1e-3,
+                lr=3e-4,
                 max_timesteps_per_task=50000,
                 buffer_size=25000,
                 train_freq=1,
