@@ -17,7 +17,8 @@ class SuccEntry:
     final_ltl: list = ""
     epi_len: int = -1
     global_step: int = -1
-    time: time = -1
+    time: float = -1
+    ltl_deadend: bool = False
     saved: bool = False
 
     def __init__(self, *args, **kwargs):
@@ -30,6 +31,7 @@ class SuccEntry:
             self.init_x, self.init_y, 
             self.success, 
             "\"" + str(self.final_ltl) + "\"", 
+            self.ltl_deadend,
             self.epi_len, 
             self.global_step, self.time]
 
@@ -40,7 +42,7 @@ class SuccLogger:
         self.log_file = log_path + os.sep + "success_map.csv"
         self.db: List[SuccEntry] = []
         with open(self.log_file, 'w') as f:
-            f.write("task,x,y,success,final_ltl,len,global_step,time\n")
+            f.write("task,x,y,success,final_ltl,ltl_deadend,len,global_step,time\n")
 
     def new_epi(self):
         pass

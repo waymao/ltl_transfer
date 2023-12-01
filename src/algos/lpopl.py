@@ -290,6 +290,7 @@ def _run_LPOPL(
             epi_info.epi_len = t - epi_begin_t
             epi_info.global_step = curriculum.get_current_step()
             epi_info.time = time.time()
+            epi_info.ltl_deadend = (game.dfa.state == -1)
             succ_logger.report_result(epi_info)
             succ_logger.save()
 

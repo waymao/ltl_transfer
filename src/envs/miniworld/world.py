@@ -17,6 +17,12 @@ def mat_to_opengl(i, j, num_rows, offset=0.5):
     offset *= BLOCK_SCALE
     return (j + offset, i + offset)
 
+def opengl_to_2dcoord(coord, offset=0.5):
+    # for loging TODO correct the errors
+    x, _, y = coord
+    offset *= BLOCK_SCALE
+    return (x - offset, y - offset)
+
 def get_map_size(map_mat):
     width = 0
     height = 0
@@ -221,8 +227,9 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
         obs = np.transpose(obs, (2, 0, 1))
 
         agent_loc = self.agent.pos # for transfer
+        agent_loc = opengl_to_2dcoord(agent_loc)
         info = {
-            "agent_init_loc": [agent_loc[0], agent_loc[2]],
+            "agent_init_loc": [agent_loc[0], agent_loc[1]],
             "map_size": [self.max_x, self.max_z],
             **info
         }
