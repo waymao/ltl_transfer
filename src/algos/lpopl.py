@@ -19,6 +19,7 @@ from test_utils import Loader, load_pkl
 
 from utils.curriculum import CurriculumLearner
 from test_utils import Tester, Saver
+from succ_logger import SuccLogger, SuccEntry
 from torch.profiler import profile, record_function, ProfilerActivity
 import random
 
@@ -28,7 +29,8 @@ def run_experiments(
         curriculum: CurriculumLearner, 
         saver: Saver, run_id: int, 
         num_times, incremental_steps, show_print, 
-        rl_algo="dqn", resume=False, device="cpu"):
+        rl_algo="dqn", resume=False, device="cpu",
+        succ_log_path=None):
     time_init = time.time()
     tester_original = tester
     curriculum_original = curriculum
@@ -88,6 +90,7 @@ def run_experiments(
 
     # Running the tasks
     num_tasks = 0
+    succ_logger = SuccLogger(log_path=succ_log_path)
     try:
         while not curriculum.stop_learning():
             task = curriculum.get_next_task()
@@ -100,7 +103,7 @@ def run_experiments(
             game.reset(options=dict(task_params=task_params))
 
             # Running the task
-            _run_LPOPL(game, policy_bank, tester, curriculum, replay_buffer, show_print)
+            _run_LPOPL(game, policy_bank, tester, curriculum, replay_buffer, show_print, succ_logger)
             num_tasks += 1
             # # Save 'policy_bank' for incremental training and transfer
             saver.save_policy_bank(policy_bank, run_id)
@@ -151,7 +154,8 @@ def _run_LPOPL(
         policy_bank: PolicyBank, 
         tester: Tester, curriculum: CurriculumLearner, 
         replay_buffer, show_print, 
-        do_render=False
+        succ_logger: SuccLogger,
+        do_render=True,
     ):
     MAX_EPS = 1000
     # Initializing parameters
@@ -171,6 +175,13 @@ def _run_LPOPL(
     curr_eps_step = 0
     if show_print: print("Executing", num_steps, "actions...")
     s1, info = game.reset()
+
+    # logging transfer info
+    epi_info = SuccEntry()
+    epi_info.init_x = info['agent_init_loc'][0]
+    epi_info.init_y = info['agent_init_loc'][1]
+    epi_info.ltl_task = game.dfa.get_LTL()
+
     print("Image shape:", s1.shape)
     print("Action shape:", game.action_space)
     s2 = None
@@ -182,6 +193,7 @@ def _run_LPOPL(
     if do_render:
         game.render()
 
+    epi_begin_t = 0
     for t in range(num_steps):
         # Getting the current state and ltl goal
         ltl_goal = game.get_LTL_goal()
@@ -272,12 +284,28 @@ def _run_LPOPL(
         if game.dfa.is_game_over() or trunc or term or curr_eps_step > learning_params.max_timesteps_per_episode:
             print("game over. Final LTL:", game.dfa.get_LTL())
             curr_eps_step = 0
+
+            epi_info.success = (game.dfa.get_LTL() == "True")
+            epi_info.final_ltl = game.dfa.get_LTL()
+            epi_info.epi_len = t - epi_begin_t
+            epi_info.global_step = curriculum.get_current_step()
+            epi_info.time = time.time()
+            succ_logger.report_result(epi_info)
+            succ_logger.save()
+
             # NOTE: Game over occurs for one of three reasons:
             # 1) DFA reached a terminal state,
             # 2) DFA reached a deadend, or
             # 3) The agent reached an environment deadend (e.g. a PIT)
             # 4) NEW: > episode max time step
             s1, info = game.reset()  # Restarting
+
+            # reset data tracking
+            epi_begin_t = t + 1
+            epi_info = SuccEntry()
+            epi_info.init_x = info['agent_init_loc'][0]
+            epi_info.init_y = info['agent_init_loc'][1]
+            epi_info.ltl_task = game.dfa.get_LTL()
 
             # updating the hit rates
             curriculum.update_succ_rate(t, reward)
@@ -288,6 +316,7 @@ def _run_LPOPL(
         if curriculum.stop_learning():
             break
 
+    succ_logger.save()
     if show_print:
         tester.logger.add_scalar(
             "train/rew",

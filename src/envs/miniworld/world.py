@@ -219,4 +219,11 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
     def reset(self, **kwargs):
         obs, info = super().reset(**kwargs)
         obs = np.transpose(obs, (2, 0, 1))
+
+        agent_loc = self.agent.pos # for transfer
+        info = {
+            "agent_init_loc": [agent_loc[0], agent_loc[2]],
+            "map_size": [self.max_x, self.max_z],
+            **info
+        }
         return obs, info
