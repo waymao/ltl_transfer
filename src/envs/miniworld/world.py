@@ -2,12 +2,13 @@ from gymnasium import utils, spaces
 import numpy as np
 from typing import Optional
 
-from miniworld.entity import Box, Ball, Key
+from miniworld.entity import Box, Ball, Key, Agent
 from miniworld.miniworld import MiniWorldEnv
 
 from .params import GameParams
 from .constants import OBJ_MAP, AGENT_MARKER, BLOCK_SCALE, OBSTACLE_MARKER, \
-    RANDOM_COLOR_LIST, RANDOM_OBJ_TYPES, DEFAULT_MAP_SIZE, ALWAYS_RANDOM_AGENT_LOC
+    RANDOM_COLOR_LIST, RANDOM_OBJ_TYPES, DEFAULT_MAP_SIZE, ALWAYS_RANDOM_AGENT_LOC, \
+    OBJECT_SIZE
 
 # for debug info
 from pyglet.gl import glGetString, GL_VENDOR, GL_RENDERER
@@ -15,13 +16,13 @@ import ctypes
 
 def mat_to_opengl(i, j, num_rows, offset=0.5):
     offset *= BLOCK_SCALE
-    return (j + offset, i + offset)
+    return (j * BLOCK_SCALE + offset, i * BLOCK_SCALE + offset)
 
 def opengl_to_2dcoord(coord, offset=0.5):
     # for loging TODO correct the errors
     x, _, y = coord
     offset *= BLOCK_SCALE
-    return (x - offset, y - offset)
+    return (x / BLOCK_SCALE - offset, y / BLOCK_SCALE - offset)
 
 def get_map_size(map_mat):
     width = 0
@@ -135,9 +136,9 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
             for color in RANDOM_COLOR_LIST:
                 for count in range(self.num_per_objs):
                     if obj_type == Box:
-                        ent = self.place_entity(Box(color=color, size=BLOCK_SCALE))
+                        ent = self.place_entity(Box(color=color, size=OBJECT_SIZE * BLOCK_SCALE))
                     elif obj_type == Ball:
-                        ent = self.place_entity(Ball(color=color, size=BLOCK_SCALE))
+                        ent = self.place_entity(Ball(color=color, size=OBJECT_SIZE * BLOCK_SCALE))
                     elif obj_type == Key:
                         ent = self.place_entity(Key(color=color))
                     else:
@@ -183,11 +184,11 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
 
                     # set obstacle to be static (non-pickable)
                     if e == OBSTACLE_MARKER:
-                        entity = Entity(color=color, size=1.0)
+                        entity = Entity(color=color, size=1.0 * BLOCK_SCALE)
                         entity.static = True
                         entity.color = color
                     else:
-                        entity = Entity(color=color, size=0.5)
+                        entity = Entity(color=color, size=OBJECT_SIZE * BLOCK_SCALE)
                         entity.static = True
                         entity.color = color
                     
@@ -224,6 +225,9 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
     
     def reset(self, **kwargs):
         obs, info = super().reset(**kwargs)
+
+        # change agent size
+        # self.agent.radius /= 2
         obs = np.transpose(obs, (2, 0, 1))
 
         agent_loc = self.agent.pos # for transfer

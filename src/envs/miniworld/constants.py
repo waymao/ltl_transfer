@@ -24,6 +24,7 @@ for key, (Module, color) in OBJ_MAP.items():
 
 AGENT_MARKER = "A"
 OBSTACLE_MARKER = "X"
-BLOCK_SCALE = 1 # in meters
+BLOCK_SCALE = 1 # in meters TODO not working
+OBJECT_SIZE = 0.7
 DEFAULT_MAP_SIZE = 10
 ALWAYS_RANDOM_AGENT_LOC = True
