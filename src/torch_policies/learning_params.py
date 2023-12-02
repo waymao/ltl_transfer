@@ -1,5 +1,5 @@
 class LearningParameters:
-    def __init__(self, lr=1e-4, max_timesteps_per_task=100000, buffer_size=100000,
+    def __init__(self, lr=1e-4, max_timesteps_per_task=100000, buffer_size=10000,
                 print_freq=1000, exploration_fraction=0.2, exploration_final_eps=0.02,
                 train_freq=1, batch_size=32, learning_starts=5000, gamma=0.9,
                 max_timesteps_per_episode=1000,
@@ -60,10 +60,11 @@ def get_learning_parameters(policy_name, game_name, **kwargs):
         if game_name == "miniworld":
             return LearningParameters(
                 gamma=0.99,
-                alpha=0.1,
-                tau=0.01,
+                alpha=0.05,
+                tau=0.005,
                 lr=1e-5,
-                pi_lr=1e-6,
+                pi_lr=1e-5,
+                print_freq=5000,
                 **kwargs
             )
         else:
