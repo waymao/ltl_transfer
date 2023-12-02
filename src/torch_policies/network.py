@@ -99,7 +99,7 @@ def get_CNN_preprocess(in_channels, embed_dim=64, device="cpu"):
     #         nn.Flatten(),
     # )
 
-    # this is using 
+    # this is using https://github.com/ezliu/dream/blob/master/embed.py
     cnn_preprocess = nn.Sequential(
         nn.Conv2d(in_channels, 32, kernel_size=5, stride=2),
         nn.ReLU(),
@@ -112,7 +112,26 @@ def get_CNN_preprocess(in_channels, embed_dim=64, device="cpu"):
 
         nn.Flatten(),
         nn.Linear(32 * 7 * 5, embed_dim),
+        nn.ReLU()
     ) # out: 32 * 7 * 5
+
+    # cnn_preprocess = nn.Sequential(
+    #     nn.Conv2d(in_channels, 32, kernel_size=3, stride=1),
+    #     nn.ReLU(),
+    #     nn.MaxPool2d(2),
+        
+    #     nn.Conv2d(32, 64, kernel_size=3, stride=1),
+    #     nn.ReLU(),
+    #     nn.MaxPool2d(2),
+        
+    #     nn.Conv2d(64, 128, kernel_size=3, stride=1),
+    #     nn.ReLU(),
+    #     nn.MaxPool2d(2),
+        
+    #     nn.Flatten(),
+    #     nn.Linear(5120, embed_dim),
+    #     nn.ReLU()
+    # )
     return cnn_preprocess.to(device)
 
 class CNNDense(nn.Module):
@@ -123,14 +142,15 @@ class CNNDense(nn.Module):
         self.out_dim = out_dim
         if fc_layers is None:
             self.fc_layers = nn.Sequential(
-                cnn_init_weights(nn.Linear(fc_in_dim, 64)),
+                nn.Linear(fc_in_dim, 64),
                 nn.ReLU(inplace=True),
-                cnn_init_weights(nn.Linear(64, out_dim)),
+                nn.Linear(64, out_dim),
             )
         else:
             self.fc_layers = fc_layers
     
     def forward(self, x):
+        x = x / 255.
         z = self.preprocess_net(x)
         return self.fc_layers(z)
     
@@ -142,3 +162,6 @@ class CNNDense(nn.Module):
 def get_CNN_Dense(preprocess_net, in_dim, out_dim, device="cpu"):
     return CNNDense(preprocess_net, in_dim, out_dim).to(device)
 
+def get_whole_CNN(in_channels, out_dim, embed_dim=256, device="cpu"):
+    cnn_preprocess = get_CNN_preprocess(in_channels, embed_dim, device)
+    return CNNDense(cnn_preprocess, embed_dim, out_dim,).to(device)

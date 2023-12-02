@@ -155,7 +155,7 @@ def _run_LPOPL(
         tester: Tester, curriculum: CurriculumLearner, 
         replay_buffer, show_print, 
         succ_logger: SuccLogger,
-        do_render=True,
+        do_render=False,
     ):
     MAX_EPS = 1000
     # Initializing parameters
@@ -283,12 +283,15 @@ def _run_LPOPL(
         new_ltl_goal = game.get_LTL_goal()
         if new_ltl_goal != ltl_goal:
             curr_eps_step = 0
+            print("    ", curriculum.get_current_step(), ":     progressed to", new_ltl_goal)
         else:
             curr_eps_step += 1
 
         # Restarting the environment (Game Over)
         if game.dfa.is_game_over() or trunc or term or curr_eps_step > learning_params.max_timesteps_per_episode:
-            print("game over. Final LTL:", game.dfa.get_LTL())
+            print("    ", curriculum.get_current_step(), 
+                  ": game over. Final LTL:", game.dfa.get_LTL(), 
+                  "; deadend:", (game.dfa.state == -1))
             curr_eps_step = 0
 
             epi_info.success = (game.dfa.get_LTL() == "True")

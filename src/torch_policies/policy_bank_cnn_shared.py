@@ -14,7 +14,7 @@ from .policy_base import Policy
 from .policy_constant import ConstantPolicy
 from .policy_bank import PolicyBank
 from .rl_logger import RLLogger
-from .network import get_CNN_Dense, get_CNN_preprocess, get_MLP, get_whole_CNN
+from .network import get_CNN_Dense, get_CNN_preprocess, get_MLP
 
 POLICY_MODULES: Mapping[str, Policy] = {
     "dqn": DQN,
@@ -43,20 +43,35 @@ class PolicyBankCNN(PolicyBank):
         if ltl in self.policy2id:
             return
         # CNN shared preprocess net
+        if self.cnn_preprocess is None:
+            self.cnn_preprocess = get_CNN_preprocess(3, device=self.device)
+            self.cnn_preprocess_target = deepcopy(self.cnn_preprocess)
+            self.cnn_preprocess_target.eval()
+            self.preprocess_out_dim = 64
         if self.rl_algo == "dsac":
-            # pi
-            pi_module = get_whole_CNN(3, self.num_actions, device=self.device)
+            pi_module = get_CNN_Dense(
+                self.cnn_preprocess,
+                self.preprocess_out_dim,
+                out_dim=self.num_actions,
+                device=self.device
+            )
             actor_module = DiscreteSoftActor(
                 self.num_features, self.num_actions,
                 pi_module,
                 device=self.device
             )
-            critic_module = get_whole_CNN(3, self.num_actions, device=self.device)
-            critic1_tgt = deepcopy(critic_module)
-            critic1_tgt.eval()
-            critic2_module = get_whole_CNN(3, self.num_actions, device=self.device)
-            critic2_tgt = deepcopy(critic2_module)
-            critic2_tgt.eval()
+            critic_module = get_CNN_Dense(
+                self.cnn_preprocess,
+                self.preprocess_out_dim,
+                out_dim=self.num_actions,
+                device=self.device)
+            critic1_tgt = critic_module.deepcopy_w_preprocess(self.cnn_preprocess_target)
+            critic2_module = get_CNN_Dense(
+                self.cnn_preprocess,
+                self.preprocess_out_dim,
+                out_dim=self.num_actions,
+                device=self.device)
+            critic2_tgt = critic2_module.deepcopy_w_preprocess(self.cnn_preprocess_target)
             policy = DiscreteSAC(
                 ltl,
                 f_task, # full task
@@ -146,7 +161,7 @@ class PolicyBankCNN(PolicyBank):
             if ltl not in checkpoint['policies']: continue # skip unsaved policies
             policy: Policy = self.policies[policy_id]
             policy.restore_from_state_dict(checkpoint['policies'][ltl])
-        # self.cnn_preprocess.load_state_dict(checkpoint['cnn_preprocess'])
+        self.cnn_preprocess.load_state_dict(checkpoint['cnn_preprocess'])
         print("loaded policy bank from", checkpoint_path)
 
 
