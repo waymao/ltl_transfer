@@ -30,7 +30,7 @@ def run_experiment(
     tester = Tester(learning_params, testing_params, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, edge_matcher, rl_alg, save_dpath, logger)
 
     # Setting the curriculum learner
-    curriculum = CurriculumLearner(tester.tasks, r_good=r_good, total_steps=total_steps)
+    curriculum = CurriculumLearner(tester.tasks, r_good=r_good, min_steps=learning_params.learning_starts, total_steps=total_steps)
 
     # Setting up the saver
     saver = Saver(alg_name, tester)
