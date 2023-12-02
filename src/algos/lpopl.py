@@ -279,8 +279,14 @@ def _run_LPOPL(
         # if testing_params.test and curriculum.get_current_step() % testing_params.test_freq == 0:
         #     tester.run_test(curriculum.get_current_step(), game_name, _test_LPOPL, policy_bank, num_features)
 
+        # reset truncate counter if LTL was progressed. Otherwise, increment the counter
+        new_ltl_goal = game.get_LTL_goal()
+        if new_ltl_goal != ltl_goal:
+            curr_eps_step = 0
+        else:
+            curr_eps_step += 1
+
         # Restarting the environment (Game Over)
-        curr_eps_step += 1
         if game.dfa.is_game_over() or trunc or term or curr_eps_step > learning_params.max_timesteps_per_episode:
             print("game over. Final LTL:", game.dfa.get_LTL())
             curr_eps_step = 0
