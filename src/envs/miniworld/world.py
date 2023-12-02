@@ -8,7 +8,7 @@ from miniworld.miniworld import MiniWorldEnv
 from .params import GameParams
 from .constants import OBJ_MAP, AGENT_MARKER, BLOCK_SCALE, OBSTACLE_MARKER, \
     RANDOM_COLOR_LIST, RANDOM_OBJ_TYPES, DEFAULT_MAP_SIZE, ALWAYS_RANDOM_AGENT_LOC, \
-    OBJECT_SIZE
+    OBJECT_SIZE, DEFAULT_GAME_PARAMS
 
 # for debug info
 from pyglet.gl import glGetString, GL_VENDOR, GL_RENDERER
@@ -101,7 +101,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
             self.num_per_objs = getattr(params, 'num_per_objs', 2) if params is not None else 2
             self._map_mat = None
 
-        MiniWorldEnv.__init__(self, max_episode_steps=1500, **kwargs)
+        MiniWorldEnv.__init__(self, max_episode_steps=9000, params=DEFAULT_GAME_PARAMS, **kwargs)
         utils.EzPickle.__init__(self, self.size, self._map_mat, **kwargs)
 
         if visit_only:
@@ -161,7 +161,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
             min_z=0,
             max_z=self.size,
             wall_tex="brick_wall",
-            floor_tex="asphalt",
+            floor_tex="floor_tiles_bw",
             no_ceiling=True,
         )
 
