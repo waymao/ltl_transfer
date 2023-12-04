@@ -80,12 +80,9 @@ class PolicyBankCNN(PolicyBank):
                 device=self.device
             )
         else:
-            nn_module = get_CNN_Dense(
-                self.cnn_preprocess,
-                self.preprocess_out_dim,
-                out_dim=self.num_actions,
-                device=self.device)
-            nn_module_tgt = nn_module.deepcopy_w_preprocess(self.cnn_preprocess_target)
+            nn_module = get_whole_CNN(3, self.num_actions, device=self.device)
+            nn_module_tgt = deepcopy(nn_module)
+            nn_module_tgt.eval()
 
             # initialize and add the policy module
             policy = DQN(ltl, f_task, dfa, nn_module, 
