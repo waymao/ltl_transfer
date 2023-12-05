@@ -15,7 +15,7 @@ from utils.replay_buffer import ReplayBuffer
 from ltl.dfa import *
 from envs.game_creator import get_game
 from envs.game_base import BaseGame
-from test_utils import Loader, load_pkl
+from test_utils import Loader, TestingParameters, load_pkl
 
 from utils.curriculum import CurriculumLearner
 from test_utils import Tester, Saver
@@ -252,9 +252,10 @@ def _run_LPOPL(
             # Update target network periodically.
             policy_bank.update_target_network()
 
-        # Printing
+        # Printing and testing
         global_step = curriculum.get_current_step() + 1
         if global_step % learning_params.print_freq == 0:
+            # logging training data
             if show_print:
                 print("Step:", curriculum.get_current_step()+1, "\tTotal reward:", training_reward, "\tSucc rate:", "%0.3f"%curriculum.get_succ_rate())
             tester.logger.add_scalar(
@@ -275,9 +276,27 @@ def _run_LPOPL(
                         global_step=curriculum.get_current_step() + 1
                     )
 
-        # Testing
-        # if testing_params.test and curriculum.get_current_step() % testing_params.test_freq == 0:
-        #     tester.run_test(curriculum.get_current_step(), game_name, _test_LPOPL, policy_bank, num_features)
+            # logging testing data
+            # if testing_params.test and curriculum.get_current_step() % testing_params.test_freq == 0:
+            #     tester.run_test(curriculum.get_current_step(), game_name, _test_LPOPL, policy_bank, num_features)
+            r_mean, len_mean, succ_rate = _test_LPOPL(game, learning_params, testing_params, policy_bank)
+            tester.logger.add_scalar(
+                "test/r_mean",
+                r_mean,
+                global_step=curriculum.get_current_step() + 1
+            )
+            tester.logger.add_scalar(
+                "test/len_mean",
+                len_mean,
+                global_step=curriculum.get_current_step() + 1
+            )
+            tester.logger.add_scalar(
+                "test/succ_rate",
+                succ_rate,
+                global_step=curriculum.get_current_step() + 1
+            )
+            if show_print:
+                print("      Rollout mean_len: {}; succ_rate: {}".format(len_mean, succ_rate))
 
         # reset truncate counter if LTL was progressed. Otherwise, increment the counter
         new_ltl_goal = game.get_LTL_goal()
@@ -341,22 +360,29 @@ def _run_LPOPL(
         print("Done! Total reward:", training_reward)
 
 
-def _test_LPOPL(game_name, task_params, learning_params, testing_params, policy_bank, num_features):
-    # Initializing parameters
-    task = get_game(game_name, task_params)
-    s1, info = task.reset()
+def _test_LPOPL(task, learning_params: LearningParameters, testing_params: TestingParameters, policy_bank):
+    r_sum = 0
+    len_sum = 0
+    succ_count = 0
+    for epi in range(testing_params.test_epis):
+        r_total = 0
+        t = 0
+        s1, info = task.reset()
+        for t in range(learning_params.max_timesteps_per_episode):
+            
+            # Choosing an action to perform
+            ltl_goal = task.get_LTL_goal()
+            a = policy_bank.get_best_action(ltl_goal, np.expand_dims(s1, axis=0))
 
-    # Starting interaction with the environment
-    r_total = 0
-    for t in range(testing_params.num_steps):
-        # Choosing an action to perform
-        a = policy_bank.get_best_action(task.get_LTL_goal(), s1.reshape((1, num_features)))
+            # Executing the action
+            s1, r, term, trunc, info = task.step(a)
+            r_total += r
 
-        # Executing the action
-        s1, r, term, trunc, info = task.step(a)
-        r_total += r * learning_params.gamma**t
-
-        # Restarting the environment (Game Over)
-        if task.dfa.is_game_over() or task.env_game_over:
-            break
-    return r_total
+            # Restarting the environment (Game Over)
+            if task.dfa.is_game_over() or trunc or term or t > learning_params.max_timesteps_per_episode:
+                if task.get_LTL_goal() == "True":
+                    succ_count += 1
+                break
+        r_sum += r_total
+        len_sum += t
+    return r_sum / testing_params.test_epis, len_sum / testing_params.test_epis, succ_count / testing_params.test_epis

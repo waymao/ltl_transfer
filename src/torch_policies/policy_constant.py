@@ -31,6 +31,9 @@ class ConstantPolicy(nn.Module, metaclass=Policy):
         # nothing to save
         return {}
     
+    def get_best_action(self, s):
+        return 0
+    
     def restore_from_state_dict(self, state_dict):
         # nothing to restore
         pass
