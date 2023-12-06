@@ -69,7 +69,7 @@ def get_MLP(
 
         return network.to(device)
 
-def get_CNN_preprocess(in_channels, embed_dim=64, device="cpu"):
+def get_CNN_preprocess(in_channels, out_dim=64, device="cpu"):
     # https://github.com/ezliu/dream/blob/d52204c94067641df6e6649b19abb359b87ff028/embed.py#L773
     # cnn_preprocess = nn.Sequential(
     #     nn.Conv2d(3, 32, kernel_size=8, stride=4),
@@ -100,20 +100,20 @@ def get_CNN_preprocess(in_channels, embed_dim=64, device="cpu"):
     # )
 
     # this is using https://github.com/ezliu/dream/blob/master/embed.py
-    cnn_preprocess = nn.Sequential(
-        nn.Conv2d(in_channels, 32, kernel_size=5, stride=2),
-        nn.ReLU(),
+    # cnn_preprocess = nn.Sequential(
+    #     nn.Conv2d(in_channels, 32, kernel_size=5, stride=2),
+    #     nn.ReLU(),
 
-        nn.Conv2d(32, 32, kernel_size=5, stride=2),
-        nn.ReLU(),
+    #     nn.Conv2d(32, 32, kernel_size=5, stride=2),
+    #     nn.ReLU(),
 
-        nn.Conv2d(32, 32, kernel_size=4, stride=2),
-        nn.ReLU(),
+    #     nn.Conv2d(32, 32, kernel_size=4, stride=2),
+    #     nn.ReLU(),
 
-        nn.Flatten(),
-        nn.Linear(32 * 7 * 5, embed_dim),
-        nn.ReLU()
-    ) # out: 32 * 7 * 5
+    #     nn.Flatten(),
+    #     nn.Linear(32 * 7 * 5, out_dim),
+    #     nn.ReLU()
+    # ) # out: 32 * 7 * 5
 
     # cnn_preprocess = nn.Sequential(
     #     nn.Conv2d(in_channels, 32, kernel_size=3, stride=1),
@@ -129,30 +129,49 @@ def get_CNN_preprocess(in_channels, embed_dim=64, device="cpu"):
     #     nn.MaxPool2d(2),
         
     #     nn.Flatten(),
-    #     nn.Linear(5120, embed_dim),
+    #     nn.Linear(5120, out_dim),
     #     nn.ReLU()
     # )
+    # natural CNN
+    cnn_preprocess = nn.Sequential(
+                    nn.Conv2d(in_channels, 32, kernel_size=8, stride=4, padding=0),
+                    nn.ReLU(),
+                    nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+                    nn.ReLU(),
+                    nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+                    nn.ReLU(),
+                    nn.Flatten(),
+                    nn.Linear(1536, out_dim),
+                    nn.ReLU()
+                )
     return cnn_preprocess.to(device)
 
 class CNNDense(nn.Module):
-    def __init__(self, preprocess_net, fc_in_dim, out_dim, fc_layers=None):
+    def __init__(self, preprocess_net, fc_in_dim, out_dim, fc_layers=None, feature_dim=512):
         super().__init__()
         self.preprocess_net = preprocess_net
         self.fc_in_dim = fc_in_dim
         self.out_dim = out_dim
-        if fc_layers is None:
+        if fc_layers == "default" or fc_layers == "auto":
             self.fc_layers = nn.Sequential(
-                nn.Linear(fc_in_dim, 64),
-                nn.ReLU(inplace=True),
+                nn.Linear(feature_dim, 64),
+                nn.ReLU(),
                 nn.Linear(64, out_dim),
             )
+        elif fc_layers is None:
+            self.fc_layers = None
         else:
             self.fc_layers = fc_layers
     
     def forward(self, x):
-        x = x / 255.
+        # print(x.shape)
+        # x = x.permute((0, 3, 1, 2)) # weird torch transpose
+        x = x / 255.0
         z = self.preprocess_net(x)
-        return self.fc_layers(z)
+        if self.fc_layers is None:
+            return z
+        else:
+            return self.fc_layers(z)
     
     def deepcopy_w_preprocess(self, new_preprocess_net):
         copied_fc = deepcopy(self.fc_layers)
@@ -162,6 +181,9 @@ class CNNDense(nn.Module):
 def get_CNN_Dense(preprocess_net, in_dim, out_dim, device="cpu"):
     return CNNDense(preprocess_net, in_dim, out_dim).to(device)
 
-def get_whole_CNN(in_channels, out_dim, embed_dim=256, device="cpu"):
-    cnn_preprocess = get_CNN_preprocess(in_channels, embed_dim, device)
-    return CNNDense(cnn_preprocess, embed_dim, out_dim,).to(device)
+def get_whole_CNN(in_channels, out_dim, embed_dim=512, fc_layers="auto", device="cpu"):
+    if fc_layers is None:
+        return get_CNN_preprocess(in_channels, out_dim, device)
+    else:
+        cnn_preprocess = get_CNN_preprocess(in_channels, embed_dim, device)
+    return CNNDense(cnn_preprocess, embed_dim, out_dim, fc_layers=fc_layers).to(device)

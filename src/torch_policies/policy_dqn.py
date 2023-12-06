@@ -50,7 +50,9 @@ def compute_dqn_loss(
     # target and loss
     q_values_hat_N = r_N + gamma * max_q_values_next_N * ~terminated_N
     # dqn_loss = F.mse_loss(q_values_N, q_values_hat_N, reduction="mean")
-    dqn_loss = torch.mean(torch.square(q_values_hat_N - q_values_N))
+    # dqn_loss = torch.mean(torch.square(q_values_hat_N - q_values_N))
+    # less sensitive to outliers according to stable baselines
+    dqn_loss = F.smooth_l1_loss(q_values_hat_N, q_values_N, reduction="mean")
 
     return dqn_loss
 
@@ -68,6 +70,7 @@ class DQN(nn.Module, metaclass=Policy):
             learning_params: LearningParameters,
             logger,
             nn_module_tgt=None,
+            max_grad_norm=10,
             device="cpu"
         ):
         super().__init__()
@@ -100,6 +103,7 @@ class DQN(nn.Module, metaclass=Policy):
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.t = -1
+        self.max_grad_norm = max_grad_norm
         self.training = False # used to distinguish training vs testing
         self.optim = torch.optim.Adam(self.model.parameters(), lr=learning_params.lr, eps=1e-7)
     
@@ -150,6 +154,8 @@ class DQN(nn.Module, metaclass=Policy):
         q_curr_val = self.model(s1_NS)
         loss = compute_dqn_loss(self.gamma, q_curr_val, s1_NS, a_N, s2_NS, r_N, terminated_N, next_q_index_N, next_q_values_CNA)
         loss.backward()
+        if self.max_grad_norm is not None:
+            nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
         self.optim.step()
         return {"q_loss": loss.item()}
     

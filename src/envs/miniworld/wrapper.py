@@ -18,7 +18,7 @@ def get_ent_str(ent):
         return OBJ_REV_MAP.get(f"{ent.__class__.__name__}_{ent.color}", "")
 
 class MiniWorldLTLWrapper(gym.Wrapper):
-    def __init__(self, env: MiniWorldEnv, params: GameParams):
+    def __init__(self, env: MiniWorldEnv, params: GameParams, do_transpose=False):
         """
         Wraps around the miniworld env, adding necessary LTL-related func.
         """
@@ -26,6 +26,7 @@ class MiniWorldLTLWrapper(gym.Wrapper):
         self.params = params
         self.prob = self.params.prob
         self.env = env
+        self.do_transpose = do_transpose
 
         # DFA / LTL
         self.dfa = DFA(self.params.ltl_task, self.params.init_dfa_state)
@@ -34,7 +35,10 @@ class MiniWorldLTLWrapper(gym.Wrapper):
         self.dfa = DFA(self.params.ltl_task, self.params.init_dfa_state)
         self.env_game_over = False
         self.ltl_game_over = False
-        return super().reset(seed=seed, options=options)
+        obs, info = super().reset(seed=seed, options=options)
+        if self.do_transpose:
+            obs = np.transpose(obs, (2, 0, 1))
+        return obs, info
     
     def step(self, action):
         obs, rew, ter, trunc, info = self.env.step(action)
@@ -43,6 +47,8 @@ class MiniWorldLTLWrapper(gym.Wrapper):
         rew = 1 if self.dfa.in_terminal_state() else 0
         self.ltl_game_over = self.dfa.is_game_over()
         self.env_game_over = ter
+        if self.do_transpose:
+            obs = np.transpose(obs, (2, 0, 1))
         return obs, rew, self.ltl_game_over or ter, trunc, info
 
     def get_true_propositions(self):

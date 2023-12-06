@@ -64,6 +64,7 @@ class CurriculumLearner:
         self.last_restart = step
 
     def stop_task(self, step):
+        return False
         return self.min_steps <= step and self.r_good < self.get_succ_rate()
 
     def get_succ_rate(self):

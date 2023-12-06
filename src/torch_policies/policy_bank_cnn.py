@@ -23,6 +23,7 @@ POLICY_MODULES: Mapping[str, Policy] = {
 }
 
 HIDDEN_LAYER_SIZE = [64, 64]
+REWARD_SCALE = 10
 
 class PolicyBankCNN(PolicyBank):
     """
@@ -34,7 +35,7 @@ class PolicyBankCNN(PolicyBank):
     
     def _add_true_false_policy(self, gamma):
         self._add_constant_policy("False", 0.0)
-        self._add_constant_policy("True", 10/gamma)  # this ensures that reaching 'True' gives reward of 1
+        self._add_constant_policy("True", REWARD_SCALE/gamma)  # this ensures that reaching 'True' gives reward of 1
 
     def add_LTL_policy(self, ltl, f_task, dfa, load_tf=True):
         """
@@ -51,10 +52,10 @@ class PolicyBankCNN(PolicyBank):
                 pi_module,
                 device=self.device
             )
-            critic_module = get_whole_CNN(3, self.num_actions, device=self.device)
+            critic_module = get_whole_CNN(3, self.num_actions, device=self.device, fc_layers="auto")
             critic1_tgt = deepcopy(critic_module)
             critic1_tgt.eval()
-            critic2_module = get_whole_CNN(3, self.num_actions, device=self.device)
+            critic2_module = get_whole_CNN(3, self.num_actions, device=self.device, fc_layers="auto")
             critic2_tgt = deepcopy(critic2_module)
             critic2_tgt.eval()
             policy = DiscreteSAC(
@@ -80,7 +81,7 @@ class PolicyBankCNN(PolicyBank):
                 device=self.device
             )
         else:
-            nn_module = get_whole_CNN(3, self.num_actions, device=self.device)
+            nn_module = get_whole_CNN(3, self.num_actions, device=self.device, fc_layers=None)
             nn_module_tgt = deepcopy(nn_module)
             nn_module_tgt.eval()
 
@@ -106,7 +107,7 @@ class PolicyBankCNN(PolicyBank):
         if r is None:
             r_N = torch.zeros((N,), dtype=torch.float32, device=self.device)
         else:
-            r_N = torch.tensor(r, dtype=torch.float32, device=self.device)
+            r_N = torch.tensor(r, dtype=torch.float32, device=self.device) * REWARD_SCALE
         if terminated is None:
             terminated_N = torch.zeros((N,), dtype=torch.bool, device=self.device)
         else:

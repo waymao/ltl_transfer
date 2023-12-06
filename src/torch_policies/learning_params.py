@@ -1,5 +1,5 @@
 class LearningParameters:
-    def __init__(self, lr=1e-4, max_timesteps_per_task=100000, buffer_size=10000,
+    def __init__(self, lr=1e-4, max_timesteps_per_task=100000, buffer_size=int(2e5),
                 print_freq=1000, exploration_fraction=0.2, exploration_final_eps=0.02,
                 train_freq=1, batch_size=32, learning_starts=5000, gamma=0.9,
                 max_timesteps_per_episode=1000,
@@ -53,6 +53,8 @@ class LearningParameters:
         self.alpha = alpha
         self.tau = tau
 
+        print("Using Learn parameters:", str(self))
+
 def get_learning_parameters(policy_name, game_name, **kwargs):
     if policy_name == "dsac":
         if 'alpha' in kwargs and kwargs['alpha'] == None:
@@ -60,11 +62,14 @@ def get_learning_parameters(policy_name, game_name, **kwargs):
         if game_name == "miniworld":
             return LearningParameters(
                 gamma=0.99,
-                alpha=0.05,
+                alpha=0.1,
+                batch_size=256,
                 tau=0.005,
-                lr=1e-5,
-                pi_lr=1e-5,
+                lr=3e-4,
+                pi_lr=3e-4,
                 print_freq=5000,
+                learning_starts=50000,
+                target_network_update_freq=1,
                 **kwargs
             )
         else:
@@ -72,15 +77,16 @@ def get_learning_parameters(policy_name, game_name, **kwargs):
     elif policy_name == "dqn":
         if game_name == "miniworld":
             return LearningParameters(
-                lr=3e-4,
-                max_timesteps_per_task=50000,
-                buffer_size=25000,
-                train_freq=1,
-                batch_size=64,
-                learning_starts=1000,
-                exploration_fraction=0.2,
-                target_network_update_freq=50,
+                lr=1e-4,
+                max_timesteps_per_task=200000,
+                train_freq=4,
+                batch_size=32,
+                learning_starts=50000,
+                exploration_fraction=0.1,
+                exploration_final_eps=0.05,
+                target_network_update_freq=10000,
                 gamma=0.99,
+                print_freq=5000,
                 **kwargs
             )
         else:

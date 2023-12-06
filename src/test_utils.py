@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 
 class TestingParameters:
-    def __init__(self, test=True, test_freq=1000, num_steps=100):
+    def __init__(self, test=True, test_freq=1000, num_steps=1000, test_epis=20):
         """Parameters
         -------
         test: bool
@@ -26,6 +26,7 @@ class TestingParameters:
         self.test = test
         self.test_freq = test_freq
         self.num_steps = num_steps
+        self.test_epis = test_epis
 
 
 class Tester:

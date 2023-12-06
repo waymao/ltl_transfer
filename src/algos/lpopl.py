@@ -194,6 +194,7 @@ def _run_LPOPL(
         game.render()
 
     epi_begin_t = 0
+    active_policy_metrics = None # for logging loss
     for t in range(num_steps):
         # Getting the current state and ltl goal
         ltl_goal = game.get_LTL_goal()
@@ -230,9 +231,9 @@ def _run_LPOPL(
 
         # Learning
         step = curriculum.get_current_step()
-        active_policy_metrics = None # for logging loss
 
-        if step > learning_params.learning_starts and step % learning_params.train_freq == 0:
+        # 20000 / 4
+        if (step + 1) >= learning_params.learning_starts and (step + 1) % learning_params.train_freq == 0:
             # Minimize the error in Bellman's equation on a batch sampled from replay buffer.
             S1, A, S2, Goal = replay_buffer.sample(learning_params.batch_size)
 
@@ -241,14 +242,12 @@ def _run_LPOPL(
             #     policy_bank.learn(S1, A, S2, Goal, active_policy=curriculum.current_task)
             # # prof.export_chrome_trace("profile_trace.json")
             # print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=20))
-
             active_policy_metrics = policy_bank.learn(S1, A, S2, Goal, active_policy=curriculum.current_task)
-            if step % learning_params.target_network_update_freq == 0:
-                # print("step", step, "; loss", loss.cpu().item())
-                pass
+
 
         # Updating the target network
-        if curriculum.get_current_step() > learning_params.learning_starts and curriculum.get_current_step() % learning_params.target_network_update_freq == 0:
+        if curriculum.get_current_step() + 1 > learning_params.learning_starts and \
+            (curriculum.get_current_step() + 1) % learning_params.target_network_update_freq == 0:
             # Update target network periodically.
             policy_bank.update_target_network()
 
@@ -257,7 +256,7 @@ def _run_LPOPL(
         if global_step % learning_params.print_freq == 0:
             # logging training data
             if show_print:
-                print("Step:", curriculum.get_current_step()+1, "\tTotal reward:", training_reward, "\tSucc rate:", "%0.3f"%curriculum.get_succ_rate())
+                print("Training Step:", curriculum.get_current_step()+1, "\t cum_rew:", training_reward, "\tsucc_rate:", "%0.3f"%curriculum.get_succ_rate())
             tester.logger.add_scalar(
                 "train/rew",
                 training_reward,
@@ -275,11 +274,14 @@ def _run_LPOPL(
                         val,
                         global_step=curriculum.get_current_step() + 1
                     )
+                if show_print:
+                    print("    last training metrics:", "; ".join([f"{key}: {val}" for key, val in active_policy_metrics.items()]))
 
             # logging testing data
             # if testing_params.test and curriculum.get_current_step() % testing_params.test_freq == 0:
             #     tester.run_test(curriculum.get_current_step(), game_name, _test_LPOPL, policy_bank, num_features)
-            r_mean, len_mean, succ_rate = _test_LPOPL(game, learning_params, testing_params, policy_bank)
+            with torch.no_grad():
+                r_mean, len_mean, succ_rate = _test_LPOPL(game, learning_params, testing_params, policy_bank)
             tester.logger.add_scalar(
                 "test/r_mean",
                 r_mean,
@@ -296,7 +298,10 @@ def _run_LPOPL(
                 global_step=curriculum.get_current_step() + 1
             )
             if show_print:
-                print("      Rollout mean_len: {}; succ_rate: {}".format(len_mean, succ_rate))
+                print("Testing @ Step: {}\t mean_rew: {}\t succ_rate: {}\t mean_len: {}".format(
+                    curriculum.get_current_step()+1, 
+                    r_mean, succ_rate, len_mean
+                ))
 
         # reset truncate counter if LTL was progressed. Otherwise, increment the counter
         new_ltl_goal = game.get_LTL_goal()
@@ -384,5 +389,5 @@ def _test_LPOPL(task, learning_params: LearningParameters, testing_params: Testi
                     succ_count += 1
                 break
         r_sum += r_total
-        len_sum += t
+        len_sum += t + 1
     return r_sum / testing_params.test_epis, len_sum / testing_params.test_epis, succ_count / testing_params.test_epis

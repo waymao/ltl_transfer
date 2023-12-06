@@ -6,9 +6,9 @@ class GameParams:
                  map_fpath, 
                  prob, 
                  ltl_task, 
-                 consider_night, 
-                 init_dfa_state, 
-                 init_loc,
+                 consider_night=False, 
+                 init_dfa_state=0, 
+                 init_loc=None,
         ):
         self.map_fpath = map_fpath
         self.prob = prob

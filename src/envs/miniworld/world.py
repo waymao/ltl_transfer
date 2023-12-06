@@ -88,7 +88,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
 
     """
 
-    def __init__(self, params: Optional[GameParams] = None, visit_only=True, **kwargs):
+    def __init__(self, params: Optional[GameParams] = None, visit_only=True, max_episode_steps=9000, **kwargs):
         if params is not None and params.map_fpath is not None:
             with open(params.map_fpath, 'r') as f:
                 self._map_mat = f.readlines()
@@ -101,11 +101,12 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
             self.num_per_objs = getattr(params, 'num_per_objs', 2) if params is not None else 2
             self._map_mat = None
 
-        MiniWorldEnv.__init__(self, max_episode_steps=9000, params=DEFAULT_GAME_PARAMS, **kwargs)
+        MiniWorldEnv.__init__(self, max_episode_steps=max_episode_steps, params=DEFAULT_GAME_PARAMS, **kwargs)
         utils.EzPickle.__init__(self, self.size, self._map_mat, **kwargs)
 
         if visit_only:
             self.action_space = spaces.Discrete(self.Actions.move_back + 1)
+        # self.observation_space = spaces.Box()
         
         print("Renderer Vendor:", ctypes.string_at(glGetString(GL_VENDOR)).decode())
         print("Renderer Hardware:", ctypes.string_at(glGetString(GL_RENDERER)).decode())
@@ -161,7 +162,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
             min_z=0,
             max_z=self.size,
             wall_tex="brick_wall",
-            floor_tex="floor_tiles_bw",
+            floor_tex="asphalt",
             no_ceiling=True,
         )
 
@@ -211,7 +212,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
 
     def step(self, action):
         obs, reward, termination, truncation, info = super().step(action)
-        obs = np.transpose(obs, (2, 0, 1))
+        # obs = np.transpose(obs, (2, 0, 1))
 
         # carrying
         # if self.agent.carrying:
@@ -228,7 +229,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
 
         # change agent size
         # self.agent.radius /= 2
-        obs = np.transpose(obs, (2, 0, 1))
+        # obs = np.transpose(obs, (2, 0, 1))
 
         agent_loc = self.agent.pos # for transfer
         agent_loc = opengl_to_2dcoord(agent_loc)
