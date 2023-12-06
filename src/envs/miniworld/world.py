@@ -222,7 +222,11 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
 
         #     if self.num_picked_up == self.num_per_objs:
         #         termination = True
-        return obs, reward, termination, truncation, info
+        return obs, reward, termination, truncation, {
+            "agent_init_loc": [None, None],
+            "map_size": [None, None],
+            **info
+        }
     
     def reset(self, **kwargs):
         obs, info = super().reset(**kwargs)
