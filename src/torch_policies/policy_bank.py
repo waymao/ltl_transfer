@@ -103,7 +103,9 @@ class PolicyBank:
                     f_task, # full task
                     dfa,
                     q1=critic_module,
+                    q1_target=None,
                     q2=critic2_module,
+                    q2_target=None,
                     pi=actor_module,
                     auto_alpha=False,
                     lr_q=self.learning_params.lr, 

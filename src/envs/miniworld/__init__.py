@@ -1,6 +1,7 @@
 from gymnasium import register
 from .world import NavigateEnv
 from .wrapper import MiniWorldLTLWrapper
+from .non_visual_wrapper import NonVisualWrapper
 
 register(
     id="LTLTransfer-Navigate-v0",
@@ -8,5 +9,5 @@ register(
 )
 
 __all__ = [
-    'NavigateEnv', 'MiniWorldLTLWrapper'
+    'NavigateEnv', 'MiniWorldLTLWrapper', 'NonVisualWrapper'
 ]

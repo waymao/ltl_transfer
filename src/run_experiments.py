@@ -162,7 +162,7 @@ if __name__ == "__main__":
                         help='The temperature for exploration / exploitation tradeoff.')
     parser.add_argument('--resume', default=False, action="store_true",
                         help='Whether to resume from a checkpoint or not.')
-    parser.add_argument('--game_name', default="grid", type=str, choices=['grid', 'miniworld'],
+    parser.add_argument('--game_name', default="grid", type=str, choices=['grid', 'miniworld', 'miniworld_no_vis'],
                         help='Name of the game.')
     args = parser.parse_args()
     if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")

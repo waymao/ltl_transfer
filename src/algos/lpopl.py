@@ -129,7 +129,7 @@ def _initialize_policy_bank(game_name, learning_params, curriculum: CurriculumLe
     task_aux = get_game(game_name, tester.get_task_params(curriculum.get_current_task()))
     num_actions = task_aux.action_space.n
     num_features = task_aux.observation_space.shape[0]
-    if game_name == "grid":
+    if game_name != "miniworld":
         policy_bank = PolicyBank(num_actions, num_features, learning_params, policy_type=rl_algo, device=device)
     else:
         policy_bank = PolicyBankCNN(num_actions, num_features, learning_params, policy_type=rl_algo, device=device)
@@ -178,9 +178,13 @@ def _run_LPOPL(
 
     # logging transfer info
     epi_info = SuccEntry()
-    epi_info.init_x = info['agent_init_loc'][0]
-    epi_info.init_y = info['agent_init_loc'][1]
-    epi_info.ltl_task = game.dfa.get_LTL()
+    # log the starting point from which the agent is successful
+    try:
+        epi_info.init_x = info['agent_init_loc'][0]
+        epi_info.init_y = info['agent_init_loc'][1]
+        epi_info.ltl_task = game.dfa.get_LTL()
+    except:
+        epi_info = None
 
     print("Image shape:", s1.shape)
     print("Action shape:", game.action_space)
@@ -205,14 +209,18 @@ def _run_LPOPL(
             else: a = policy_bank.get_best_action(ltl_goal, np.expand_dims(s1, axis=0))
         else:
             a = policy_bank.get_best_action(ltl_goal, np.expand_dims(s1, axis=0))
-        if do_render:
-            # print("action:", a, "true propositions:", task.get_true_propositions())
-            game.render()
+        # print(s1)
+        # print(a)
+        # a = int(input("action: "))
+        
         # updating the curriculum
         curriculum.add_step()
 
         # Executing the action
         s2, reward, term, trunc, info = game.step(a)
+        if do_render:
+            # print("action:", a, "true propositions:", task.get_true_propositions())
+            game.render()
         training_reward += reward
         true_props = game.get_true_propositions()
 
@@ -318,14 +326,15 @@ def _run_LPOPL(
                   "; deadend:", (game.dfa.state == -1))
             curr_eps_step = 0
 
-            epi_info.success = (game.dfa.get_LTL() == "True")
-            epi_info.final_ltl = game.dfa.get_LTL()
-            epi_info.epi_len = t - epi_begin_t
-            epi_info.global_step = curriculum.get_current_step()
-            epi_info.time = time.time()
-            epi_info.ltl_deadend = (game.dfa.state == -1)
-            succ_logger.report_result(epi_info)
-            succ_logger.save()
+            if epi_info is not None:
+                epi_info.success = (game.dfa.get_LTL() == "True")
+                epi_info.final_ltl = game.dfa.get_LTL()
+                epi_info.epi_len = t - epi_begin_t
+                epi_info.global_step = curriculum.get_current_step()
+                epi_info.time = time.time()
+                epi_info.ltl_deadend = (game.dfa.state == -1)
+                succ_logger.report_result(epi_info)
+                succ_logger.save()
 
             # NOTE: Game over occurs for one of three reasons:
             # 1) DFA reached a terminal state,
@@ -335,11 +344,12 @@ def _run_LPOPL(
             s1, info = game.reset()  # Restarting
 
             # reset data tracking
-            epi_begin_t = t + 1
-            epi_info = SuccEntry()
-            epi_info.init_x = info['agent_init_loc'][0]
-            epi_info.init_y = info['agent_init_loc'][1]
-            epi_info.ltl_task = game.dfa.get_LTL()
+            if epi_info is not None:
+                epi_begin_t = t + 1
+                epi_info = SuccEntry()
+                epi_info.init_x = info['agent_init_loc'][0]
+                epi_info.init_y = info['agent_init_loc'][1]
+                epi_info.ltl_task = game.dfa.get_LTL()
 
             # updating the hit rates
             curriculum.update_succ_rate(t, reward)

@@ -1,21 +1,14 @@
 import gymnasium as gym
 import numpy as np
 from miniworld.miniworld import MiniWorldEnv
-from miniworld.entity import COLOR_NAMES, Ball, Box, Key, Entity
 
 from ltl.dfa import *
 from .params import GameParams
-from .constants import OBJ_REV_MAP
+from .constants import OBJ_REV_MAP, get_ent_str
 
 class MiniWorldDistObsWrapper(gym.Wrapper):
     pass
 
-
-def get_ent_str(ent):
-    if not isinstance(ent, Entity):
-        return ""
-    else:
-        return OBJ_REV_MAP.get(f"{ent.__class__.__name__}_{ent.color}", "")
 
 class MiniWorldLTLWrapper(gym.Wrapper):
     def __init__(self, env: MiniWorldEnv, params: GameParams, do_transpose=False):

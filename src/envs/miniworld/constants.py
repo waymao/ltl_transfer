@@ -1,4 +1,4 @@
-from miniworld.entity import COLOR_NAMES, Ball, Box, Entity
+from miniworld.entity import COLOR_NAMES, Ball, Box, Entity, Agent
 from miniworld.params import DomainParams, DEFAULT_PARAMS
 from copy import deepcopy
 from .entity import Key
@@ -40,3 +40,12 @@ DEFAULT_GAME_PARAMS = deepcopy(DEFAULT_PARAMS)
 DEFAULT_GAME_PARAMS.set("forward_step", 0.12, 0.12, 0.12)
 DEFAULT_GAME_PARAMS.set("forward_drift", 0, 0.0, 0.0)
 DEFAULT_GAME_PARAMS.set("turn_step", 15, 15, 15)
+
+
+def get_ent_str(ent):
+    if not isinstance(ent, Entity):
+        return ""
+    elif isinstance(ent, Agent):
+        return "A"
+    else:
+        return OBJ_REV_MAP.get(f"{ent.__class__.__name__}_{ent.color}", "")

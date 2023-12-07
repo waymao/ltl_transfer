@@ -67,7 +67,6 @@ class PolicyBankCNN(PolicyBank):
                 q1_target=critic1_tgt,
                 q2_target=critic2_tgt,
                 pi=actor_module,
-                auto_alpha=False,
                 lr_q=self.learning_params.lr, 
                 lr_pi=self.learning_params.pi_lr, 
                 # lr_alpha=1e-2,
@@ -78,6 +77,9 @@ class PolicyBankCNN(PolicyBank):
                 state_dim=self.num_features,
                 action_dim=self.num_actions,
                 start_steps=self.learning_params.learning_starts,
+                target_entropy=self.learning_params.target_entropy,
+                auto_alpha=self.learning_params.auto_alpha,
+                # TODO dsac random steps
                 device=self.device
             )
         else:

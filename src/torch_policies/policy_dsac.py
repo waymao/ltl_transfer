@@ -89,7 +89,7 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
         self.log_alpha = torch.tensor(np.log(alpha), device=device)
         if auto_alpha:
             self.log_alpha.requires_grad = True
-            self.target_entropy = target_entropy or -0.98 * np.log(1 / action_dim)
+            self.target_entropy = target_entropy or -0.98 * np.log(1.0 / action_dim)
             self.alpha_optim = torch.optim.Adam([self.log_alpha], lr=lr_alpha)
         # hyperparams
         self.gamma = gamma
@@ -195,6 +195,7 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
                     alpha_loss.backward()
                     metrics['alpha_loss'] = alpha_loss.item()
                     self.alpha_optim.step()
+                    metrics['alpha'] = self.log_alpha
                     # print(np.exp(self.log_alpha.item()))
             # print("    pi loss", pi_loss)
             # print("alpha_loss", alpha_loss)
