@@ -32,13 +32,13 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
             action_dim, 
             lr_q=1e-3, 
             lr_pi=1e-4, 
-            lr_alpha=1e-2,
+            lr_alpha=1e-4,
             gamma=0.99, 
             alpha=0.01, # trade off coeff
             policy_update_freq=1, # policy network update frequency
             target_update_freq=10, # target network update frequency
             tau=0.005, # soft update ratio
-            start_steps=1000, # initial exploration phase, per spinning up
+            start_steps=5000, # initial exploration phase, per spinning up
             target_entropy=None,
             auto_alpha=True,
             device="cpu"
@@ -186,8 +186,9 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
                 metrics['pi_loss'] = pi_loss.item()
                 self.pi_optim.step()
                 
-                # entropy = torch.mean(-log_pi_NA).detach()
-                # print("entropy:", entropy.item(), "; alpha:", self.log_alpha.exp().item())
+                with torch.no_grad():
+                    entropy = torch.mean(-log_pi_NA * action_probs_NA).detach()
+                metrics['pi_entropy'] = entropy
                 if self.auto_alpha and is_active and self.step >= self.start_steps:
                     alpha_loss = torch.mean(
                             action_probs_NA.detach() * \
@@ -195,9 +196,9 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
                             torch.exp(self.log_alpha))
                     self.alpha_optim.zero_grad()
                     alpha_loss.backward()
-                    metrics['alpha_loss'] = alpha_loss.item()
                     self.alpha_optim.step()
-                    metrics['alpha'] = self.log_alpha
+                    metrics['alpha_loss'] = alpha_loss.item()
+                metrics['alpha'] = torch.exp(self.log_alpha).item()
                     # print(np.exp(self.log_alpha.item()))
             # print("    pi loss", pi_loss)
             # print("alpha_loss", alpha_loss)

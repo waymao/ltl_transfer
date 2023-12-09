@@ -23,7 +23,7 @@ def run_experiment(
         resume=False,
         device="cpu"):
     # Setting the proper logger
-    tb_log_path = os.path.join(save_dpath, "results", f"{game_name}_{dataset_name}", f"{train_type}_p{prob}", f"{alg_name}_{rl_alg}", f"map{map_id}", str(run_id))
+    tb_log_path = os.path.join(save_dpath, "results", f"{game_name}_{dataset_name}", f"{train_type}_p{prob}", f"{alg_name}_{rl_alg}", f"map{map_id}", str(run_id), f"alpha={learning_params.alpha}")
     logger = SummaryWriter(log_dir=tb_log_path)
 
     # Setting the experiment
@@ -158,7 +158,7 @@ if __name__ == "__main__":
                         help='This parameter indicated the dataset to read tasks from')
     parser.add_argument('--device', default="cpu", type=str, choices=['cpu', 'cuda'], 
                         help='The device to run Neural Network computations.')
-    parser.add_argument('--alpha', default=None, type=float,
+    parser.add_argument('--alpha', default=0.1, type=float,
                         help='The temperature for exploration / exploitation tradeoff.')
     parser.add_argument('--resume', default=False, action="store_true",
                         help='Whether to resume from a checkpoint or not.')
@@ -174,6 +174,7 @@ if __name__ == "__main__":
     tasks_id = train_types.index(args.train_type)
     map_id = args.map
     learning_params = get_learning_parameters(policy_name=args.rl_algo, game_name=args.game_name, alpha=args.alpha)
+    print("Initialized Learning Params:", learning_params)
     if map_id != -1:
         run_single_experiment(args.game_name, 
                               args.algo, args.rl_algo, map_id, args.prob, tasks_id, args.domain_name, args.train_type, args.train_size, args.test_type,
