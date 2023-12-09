@@ -190,7 +190,9 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
                 # print("entropy:", entropy.item(), "; alpha:", self.log_alpha.exp().item())
                 if self.auto_alpha and is_active and self.step >= self.start_steps:
                     alpha_loss = torch.mean(
-                        (-log_pi_NA - self.target_entropy)).detach() * torch.exp(self.log_alpha)
+                            action_probs_NA.detach() * \
+                            (-log_pi_NA - self.target_entropy).detach() * \
+                            torch.exp(self.log_alpha))
                     self.alpha_optim.zero_grad()
                     alpha_loss.backward()
                     metrics['alpha_loss'] = alpha_loss.item()
