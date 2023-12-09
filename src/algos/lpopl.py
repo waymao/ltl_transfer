@@ -5,6 +5,7 @@ from typing import Union
 import gymnasium
 import numpy as np
 import torch
+from tqdm import tqdm
 # import tensorflow as tf
 
 from torch_policies.policy_bank import PolicyBank, LearningParameters
@@ -264,23 +265,23 @@ def _run_LPOPL(
         if global_step % learning_params.print_freq == 0:
             # logging training data
             if show_print:
-                print("Training Step:", curriculum.get_current_step()+1, "\t cum_rew:", training_reward, "\tsucc_rate:", "%0.3f"%curriculum.get_succ_rate())
+                print("Training Step:", global_step, "\t cum_rew:", training_reward, "\tsucc_rate:", "%0.3f"%curriculum.get_succ_rate())
             tester.logger.add_scalar(
                 "train/rew",
                 training_reward,
-                global_step=curriculum.get_current_step() + 1
+                global_step=global_step
             )
             tester.logger.add_scalar(
                 "train/succ_rate",
                 curriculum.get_succ_rate(),
-                global_step=curriculum.get_current_step() + 1
+                global_step=global_step
             )
             if active_policy_metrics is not None:
                 for key, val in active_policy_metrics.items():
                     tester.logger.add_scalar(
                         f"train/active/{key}",
                         val,
-                        global_step=curriculum.get_current_step() + 1
+                        global_step=global_step
                     )
                 if show_print:
                     print("    last training metrics:", "; ".join([f"{key}: {val}" for key, val in active_policy_metrics.items()]))
@@ -288,28 +289,29 @@ def _run_LPOPL(
             # logging testing data
             # if testing_params.test and curriculum.get_current_step() % testing_params.test_freq == 0:
             #     tester.run_test(curriculum.get_current_step(), game_name, _test_LPOPL, policy_bank, num_features)
-            with torch.no_grad():
-                r_mean, len_mean, succ_rate = _test_LPOPL(game, learning_params, testing_params, policy_bank)
-            tester.logger.add_scalar(
-                "test/r_mean",
-                r_mean,
-                global_step=curriculum.get_current_step() + 1
-            )
-            tester.logger.add_scalar(
-                "test/len_mean",
-                len_mean,
-                global_step=curriculum.get_current_step() + 1
-            )
-            tester.logger.add_scalar(
-                "test/succ_rate",
-                succ_rate,
-                global_step=curriculum.get_current_step() + 1
-            )
-            if show_print:
-                print("Testing @ Step: {}\t mean_rew: {}\t succ_rate: {}\t mean_len: {}".format(
-                    curriculum.get_current_step()+1, 
-                    r_mean, succ_rate, len_mean
-                ))
+            if global_step >= learning_params.learning_starts:
+                with torch.no_grad():
+                    r_mean, len_mean, succ_rate = _test_LPOPL(game, learning_params, testing_params, policy_bank)
+                tester.logger.add_scalar(
+                    "test/r_mean",
+                    r_mean,
+                    global_step=global_step
+                )
+                tester.logger.add_scalar(
+                    "test/len_mean",
+                    len_mean,
+                    global_step=global_step
+                )
+                tester.logger.add_scalar(
+                    "test/succ_rate",
+                    succ_rate,
+                    global_step=global_step
+                )
+                if show_print:
+                    print("Testing @ Step: {}\t mean_rew: {}\t succ_rate: {}\t mean_len: {}".format(
+                        global_step, 
+                        r_mean, succ_rate, len_mean
+                    ))
 
         # reset truncate counter if LTL was progressed. Otherwise, increment the counter
         new_ltl_goal = game.get_LTL_goal()
@@ -379,7 +381,7 @@ def _test_LPOPL(task, learning_params: LearningParameters, testing_params: Testi
     r_sum = 0
     len_sum = 0
     succ_count = 0
-    for epi in range(testing_params.test_epis):
+    for epi in tqdm(range(testing_params.test_epis), desc="Testing...", leave=False, ascii=True):
         r_total = 0
         t = 0
         s1, info = task.reset()
