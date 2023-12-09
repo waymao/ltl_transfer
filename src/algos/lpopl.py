@@ -1,7 +1,7 @@
 import os
 import random
 import time
-from typing import Union
+from typing import Optional, Union
 import gymnasium
 import numpy as np
 import torch
@@ -44,6 +44,7 @@ def run_experiments(
     np.random.seed(run_id)
     torch.manual_seed(run_id)
     game = get_game(game_name, tester.get_task_params(curriculum.get_current_task()))
+    testing_game = get_game(game_name, tester.get_task_params(curriculum.get_current_task()))
     game.reset(seed=run_id)
 
     # Running the tasks 'num_times'
@@ -104,7 +105,7 @@ def run_experiments(
             game.reset(options=dict(task_params=task_params))
 
             # Running the task
-            _run_LPOPL(game, policy_bank, tester, curriculum, replay_buffer, show_print, succ_logger)
+            _run_LPOPL(game, testing_game, policy_bank, tester, curriculum, replay_buffer, show_print, succ_logger)
             num_tasks += 1
             # # Save 'policy_bank' for incremental training and transfer
             saver.save_policy_bank(policy_bank, run_id)
@@ -152,12 +153,15 @@ def _initialize_policy_bank(game_name, learning_params, curriculum: CurriculumLe
 
 def _run_LPOPL(
         game: BaseGame, 
+        testing_game: Optional[BaseGame],
         policy_bank: PolicyBank, 
         tester: Tester, curriculum: CurriculumLearner, 
         replay_buffer, show_print, 
         succ_logger: SuccLogger,
         do_render=False,
     ):
+    if testing_game is None:
+        testing_game = game # if no specific testing game, use the same game for training and testing
     MAX_EPS = 1000
     # Initializing parameters
     learning_params: LearningParameters = tester.learning_params
@@ -291,7 +295,7 @@ def _run_LPOPL(
             #     tester.run_test(curriculum.get_current_step(), game_name, _test_LPOPL, policy_bank, num_features)
             if global_step >= learning_params.learning_starts:
                 with torch.no_grad():
-                    r_mean, len_mean, succ_rate = _test_LPOPL(game, learning_params, testing_params, policy_bank)
+                    r_mean, len_mean, succ_rate = _test_LPOPL(testing_game, learning_params, testing_params, policy_bank)
                 tester.logger.add_scalar(
                     "test/r_mean",
                     r_mean,
@@ -324,7 +328,8 @@ def _run_LPOPL(
         # Restarting the environment (Game Over)
         if game.dfa.is_game_over() or trunc or term or curr_eps_step > learning_params.max_timesteps_per_episode:
             print("    ", curriculum.get_current_step(), 
-                  ": game over. Final LTL:", game.dfa.get_LTL(), 
+                  ": train game over. Len:", curr_eps_step,
+                  "Final LTL:", game.dfa.get_LTL(), 
                   "; deadend:", (game.dfa.state == -1))
             curr_eps_step = 0
 
@@ -378,6 +383,7 @@ def _run_LPOPL(
 
 
 def _test_LPOPL(task, learning_params: LearningParameters, testing_params: TestingParameters, policy_bank):
+    task.reset(seed=testing_params.test_seed) # deterministic
     r_sum = 0
     len_sum = 0
     succ_count = 0
