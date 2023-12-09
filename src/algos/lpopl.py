@@ -2,7 +2,7 @@ import os
 import random
 import time
 from typing import Optional, Union
-import gymnasium
+import gymnasium as gym
 import numpy as np
 import torch
 from tqdm import tqdm
@@ -44,7 +44,10 @@ def run_experiments(
     np.random.seed(run_id)
     torch.manual_seed(run_id)
     game = get_game(game_name, tester.get_task_params(curriculum.get_current_task()))
-    testing_game = get_game(game_name, tester.get_task_params(curriculum.get_current_task()))
+    # testing_games = gym.vector.AsyncVectorEnv(
+    #     lambda: [get_game(game_name, tester.get_task_params(curriculum.get_current_task())) for _ in range(8)]
+    # )
+    testing_games = get_game(game_name, tester.get_task_params(curriculum.get_current_task()))
     game.reset(seed=run_id)
 
     # Running the tasks 'num_times'
@@ -105,7 +108,7 @@ def run_experiments(
             game.reset(options=dict(task_params=task_params))
 
             # Running the task
-            _run_LPOPL(game, testing_game, policy_bank, tester, curriculum, replay_buffer, show_print, succ_logger)
+            _run_LPOPL(game, testing_games, policy_bank, tester, curriculum, replay_buffer, show_print, succ_logger)
             num_tasks += 1
             # # Save 'policy_bank' for incremental training and transfer
             saver.save_policy_bank(policy_bank, run_id)
@@ -320,16 +323,15 @@ def _run_LPOPL(
         # reset truncate counter if LTL was progressed. Otherwise, increment the counter
         new_ltl_goal = game.get_LTL_goal()
         if new_ltl_goal != ltl_goal:
+            print("    ", curriculum.get_current_step(), ":     progressed to", new_ltl_goal, ". len:", curr_eps_step)
             curr_eps_step = 0
-            print("    ", curriculum.get_current_step(), ":     progressed to", new_ltl_goal)
         else:
             curr_eps_step += 1
 
         # Restarting the environment (Game Over)
         if game.dfa.is_game_over() or trunc or term or curr_eps_step > learning_params.max_timesteps_per_episode:
             print("    ", curriculum.get_current_step(), 
-                  ": train game over. Len:", curr_eps_step,
-                  "Final LTL:", game.dfa.get_LTL(), 
+                  ": train game over. Final LTL:", game.dfa.get_LTL(), 
                   "; deadend:", (game.dfa.state == -1))
             curr_eps_step = 0
 
