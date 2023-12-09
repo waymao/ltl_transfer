@@ -14,6 +14,9 @@ from .constants import OBJ_MAP, AGENT_MARKER, BLOCK_SCALE, OBSTACLE_MARKER, \
 from pyglet.gl import glGetString, GL_VENDOR, GL_RENDERER
 import ctypes
 
+print("Renderer Vendor:", ctypes.string_at(glGetString(GL_VENDOR)).decode())
+print("Renderer Hardware:", ctypes.string_at(glGetString(GL_RENDERER)).decode())
+
 def mat_to_opengl(i, j, num_rows, offset=0.5):
     offset *= BLOCK_SCALE
     return (j * BLOCK_SCALE + offset, i * BLOCK_SCALE + offset)
@@ -107,9 +110,6 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
         if visit_only:
             self.action_space = spaces.Discrete(self.Actions.move_back + 1)
         # self.observation_space = spaces.Box()
-        
-        print("Renderer Vendor:", ctypes.string_at(glGetString(GL_VENDOR)).decode())
-        print("Renderer Hardware:", ctypes.string_at(glGetString(GL_RENDERER)).decode())
 
 
     def _gen_world(self):
