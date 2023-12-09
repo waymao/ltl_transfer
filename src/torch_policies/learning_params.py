@@ -1,41 +1,36 @@
 import numpy as np
+from dataclasses import dataclass
 
+@dataclass(init=True, repr=True)
 class LearningParameters:
-    def __init__(self, lr=1e-4, max_timesteps_per_task=100000, buffer_size=int(2e5),
-                print_freq=5000, exploration_fraction=0.2, exploration_final_eps=0.02,
-                train_freq=1, batch_size=32, learning_starts=5000, gamma=0.9,
-                max_timesteps_per_episode=1000,
-                # SAC related
-                target_network_update_freq=4,
-                pi_lr=1e-4,
-                alpha=0.05,
-                tau=0.005,
-                auto_alpha=False,
-                target_entropy=-.3, # target entropy for SAC, used to compute alpha
-                dsac_random_steps=0 # take random actions for this amount of time
-        ):
-        self.lr = lr
-        self.max_timesteps_per_task = max_timesteps_per_task
-        self.buffer_size = buffer_size
-        self.print_freq = print_freq
-        self.exploration_fraction = exploration_fraction
-        self.exploration_final_eps = exploration_final_eps
-        self.train_freq = train_freq
-        self.batch_size = batch_size
-        self.learning_starts = learning_starts
-        self.gamma = gamma
-        self.max_timesteps_per_episode = max_timesteps_per_episode
+    lr: float = 1e-4
+    max_timesteps_per_task: int = 100000
+    buffer_size: int = int(2e5)
+    print_freq: int = 5000
+    train_freq: int = 1
+    batch_size: int = 32
+    learning_starts: int = 5000
+    gamma: int = 0.9
+    max_timesteps_per_episode: int = 1000
 
-        # SAC related
-        self.target_network_update_freq = target_network_update_freq
-        self.pi_lr = pi_lr
-        self.alpha = alpha
-        self.tau = tau
-        self.auto_alpha = auto_alpha
-        self.target_entropy = target_entropy
-        self.dsac_random_steps = dsac_random_steps
+    # DQN
+    exploration_fraction: int = 0.2
+    exploration_final_eps: int = 0.02
+    
 
-        print("Using Learn parameters:", str(self))
+    # SAC related
+    target_network_update_freq: int = 4
+    pi_lr: float = 1e-4
+    alpha: float = 0.05
+    tau: float = 0.005
+    auto_alpha: bool = False
+    target_entropy: float = -.3 # target entropy for SAC, used to compute alpha
+    dsac_random_steps: int = 0 # take random actions for this amount of time
+
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     print("Using Learn parameters:", str(self))
+
 
 def get_learning_parameters(policy_name, game_name, **kwargs):
     if policy_name == "dsac":
@@ -43,17 +38,19 @@ def get_learning_parameters(policy_name, game_name, **kwargs):
             del kwargs['alpha']
         if game_name == "miniworld":
             return LearningParameters(
-                gamma=0.99,
-                alpha=0.2,
-                batch_size=256,
+                gamma=0.999,
+                # alpha=0.1,
+                batch_size=32,
                 tau=0.005,
-                lr=1e-4,
-                pi_lr=1e-5,
+                lr=3e-4,
+                pi_lr=3e-4,
                 print_freq=5000,
-                learning_starts=10000,
-                auto_alpha=True,
-                target_entropy=0.98 * -np.log(1.0 / 4),
+                learning_starts=50000,
+                auto_alpha=False,
+                target_entropy=0.3 * 0.98 * -np.log(1.0 / 4),
                 target_network_update_freq=1,
+                max_timesteps_per_episode=1000,
+                max_timesteps_per_task=500000,
                 **kwargs
             )
         else:
