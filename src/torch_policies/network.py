@@ -89,15 +89,15 @@ def get_CNN_preprocess(in_channels, out_dim=64, device="cpu"):
     # in: 3 * 60 * 80
     # 
     # out: 64
-    cnn_preprocess = nn.Sequential(
-            cnn_init_weights(nn.Conv2d(in_channels, 24, kernel_size=8, stride=4)), # out: 14 * 19
-            nn.ReLU(inplace=True),
-            cnn_init_weights(nn.Conv2d(24, 32, kernel_size=4, stride=2)), # out: 6 * 8
-            nn.ReLU(inplace=True),
-            cnn_init_weights(nn.Conv2d(32, 32, kernel_size=3, stride=1)), # 4 * 6
-            nn.ReLU(inplace=True),
-            nn.Flatten(),
-    )
+    # cnn_preprocess = nn.Sequential(
+    #         cnn_init_weights(nn.Conv2d(in_channels, 24, kernel_size=8, stride=4)), # out: 14 * 19
+    #         nn.ReLU(inplace=True),
+    #         cnn_init_weights(nn.Conv2d(24, 32, kernel_size=4, stride=2)), # out: 6 * 8
+    #         nn.ReLU(inplace=True),
+    #         cnn_init_weights(nn.Conv2d(32, 32, kernel_size=3, stride=1)), # 4 * 6
+    #         nn.ReLU(inplace=True),
+    #         nn.Flatten(),
+    # )
 
     # this is using https://github.com/ezliu/dream/blob/master/embed.py
     # cnn_preprocess = nn.Sequential(
@@ -133,17 +133,15 @@ def get_CNN_preprocess(in_channels, out_dim=64, device="cpu"):
     #     nn.ReLU()
     # )
     # natural CNN
-    # cnn_preprocess = nn.Sequential(
-    #                 nn.Conv2d(in_channels, 32, kernel_size=8, stride=4, padding=0),
-    #                 nn.ReLU(inplace=True),
-    #                 nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
-    #                 nn.ReLU(inplace=True),
-    #                 nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
-    #                 nn.ReLU(inplace=True),
-    #                 nn.Flatten(),
-    #                 nn.Linear(1536, out_dim),
-    #                 nn.ReLU(inplace=True)
-    #             )
+    cnn_preprocess = nn.Sequential(
+                    nn.Conv2d(in_channels, 32, kernel_size=8, stride=4, padding=0),
+                    nn.ReLU(inplace=True),
+                    nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+                    nn.ReLU(inplace=True),
+                    nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+                    nn.ReLU(inplace=True),
+                    nn.Flatten(),
+                )
     return cnn_preprocess.to(device)
 
 class CNNDense(nn.Module):
@@ -181,7 +179,7 @@ class CNNDense(nn.Module):
 def get_CNN_Dense(preprocess_net, in_dim, out_dim, device="cpu"):
     return CNNDense(preprocess_net, in_dim, out_dim).to(device)
 
-def get_whole_CNN(in_channels, out_dim, embed_dim=768, fc_layers="auto", device="cpu"):
+def get_whole_CNN(in_channels, out_dim, embed_dim=1536, fc_layers="auto", device="cpu"):
     if fc_layers is None:
         return get_CNN_preprocess(in_channels, out_dim, device)
     else:
