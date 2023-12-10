@@ -4,7 +4,7 @@
 from .game_base import BaseGame
 from gymnasium.wrappers import GrayScaleObservation, FrameStack
 
-def get_game(name, params, render_mode=None, max_episode_steps=None, do_transpose=True) -> BaseGame:
+def get_game(name, params, render_mode=None, max_episode_steps=None, do_transpose=True, reward_scale=1) -> BaseGame:
     if name == "grid":
         from .grid.game import Game as GridGame
         return GridGame(params)
@@ -16,7 +16,7 @@ def get_game(name, params, render_mode=None, max_episode_steps=None, do_transpos
             env = NavigateEnv(params, render_mode="human", view="top")
         # env = GrayScaleObservation(env, keep_dim=False)
         # env = FrameStack(env, num_stack=4)
-        env = MiniWorldLTLWrapper(env, params, do_transpose=do_transpose)
+        env = MiniWorldLTLWrapper(env, params, do_transpose=do_transpose, reward_scale=reward_scale)
         if name == "miniworld_no_vis":
             env = NonVisualWrapper(env)
         return env         
