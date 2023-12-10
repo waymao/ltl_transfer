@@ -298,10 +298,15 @@ def _run_LPOPL(
             #     tester.run_test(curriculum.get_current_step(), game_name, _test_LPOPL, policy_bank, num_features)
             if global_step >= learning_params.learning_starts:
                 with torch.no_grad():
-                    r_mean, len_mean, succ_rate = _test_LPOPL(testing_game, learning_params, testing_params, policy_bank)
+                    r_mean, r_std, len_mean, len_std, succ_rate = _test_LPOPL(testing_game, learning_params, testing_params, policy_bank)
                 tester.logger.add_scalar(
                     "test/r_mean",
                     r_mean,
+                    global_step=global_step
+                )
+                tester.logger.add_scalar(
+                    "test/r_std",
+                    r_std,
                     global_step=global_step
                 )
                 tester.logger.add_scalar(
@@ -310,14 +315,19 @@ def _run_LPOPL(
                     global_step=global_step
                 )
                 tester.logger.add_scalar(
+                    "test/len_std",
+                    len_std,
+                    global_step=global_step
+                )
+                tester.logger.add_scalar(
                     "test/succ_rate",
                     succ_rate,
                     global_step=global_step
                 )
                 if show_print:
-                    print("Testing @ Step: {}\t mean_rew: {}\t succ_rate: {}\t mean_len: {}".format(
+                    print("Testing @ Step: {}\t mean_rew: {}\t succ_rate: {}\t mean_len: {}\t len_std: {}".format(
                         global_step, 
-                        r_mean, succ_rate, len_mean
+                        r_mean, succ_rate, len_mean, len_std
                     ))
 
         # reset truncate counter if LTL was progressed. Otherwise, increment the counter
@@ -386,8 +396,8 @@ def _run_LPOPL(
 
 def _test_LPOPL(task, learning_params: LearningParameters, testing_params: TestingParameters, policy_bank):
     task.reset(seed=testing_params.test_seed) # deterministic
-    r_sum = 0
-    len_sum = 0
+    r_hist = []
+    len_hist = []
     succ_count = 0
     for epi in tqdm(range(testing_params.test_epis), desc="Testing...", leave=False, ascii=True):
         r_total = 0
@@ -408,6 +418,6 @@ def _test_LPOPL(task, learning_params: LearningParameters, testing_params: Testi
                 if task.get_LTL_goal() == "True":
                     succ_count += 1
                 break
-        r_sum += r_total
-        len_sum += t + 1
-    return r_sum / testing_params.test_epis, len_sum / testing_params.test_epis, succ_count / testing_params.test_epis
+        r_hist.append(r_total)
+        len_hist.append(t + 1)
+    return np.mean(r_hist), np.std(r_hist), np.mean(len_hist), np.std(len_hist), succ_count / testing_params.test_epis
