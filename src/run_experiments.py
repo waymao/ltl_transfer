@@ -23,7 +23,10 @@ def run_experiment(
         resume=False,
         device="cpu"):
     # Setting the proper logger
-    tb_log_path = os.path.join(save_dpath, "results", f"{game_name}_{dataset_name}", f"{train_type}_p{prob}", f"{alg_name}_{rl_alg}", f"map{map_id}", str(run_id), f"alpha={learning_params.alpha}")
+    tb_log_path = os.path.join(
+        save_dpath, "results", f"{game_name}_{dataset_name}", f"{train_type}_p{prob}", 
+        f"{alg_name}_{rl_alg}", f"map{map_id}", str(run_id), 
+        f"alpha={'auto' if learning_params.auto_alpha else learning_params.alpha}")
     logger = SummaryWriter(log_dir=tb_log_path)
 
     # Setting the experiment
@@ -160,6 +163,8 @@ if __name__ == "__main__":
                         help='The device to run Neural Network computations.')
     parser.add_argument('--alpha', default=0.1, type=float,
                         help='The temperature for exploration / exploitation tradeoff.')
+    parser.add_argument('--auto_alpha', default=False, action="store_true",
+                        help='Whether to auto tune alpha based on entropy.')
     parser.add_argument('--resume', default=False, action="store_true",
                         help='Whether to resume from a checkpoint or not.')
     parser.add_argument('--game_name', default="grid", type=str, choices=['grid', 'miniworld', 'miniworld_no_vis'],
@@ -173,7 +178,9 @@ if __name__ == "__main__":
     # Running the experiment
     tasks_id = train_types.index(args.train_type)
     map_id = args.map
-    learning_params = get_learning_parameters(policy_name=args.rl_algo, game_name=args.game_name, alpha=args.alpha)
+
+    # learning params
+    learning_params = get_learning_parameters(policy_name=args.rl_algo, game_name=args.game_name, alpha=args.alpha, auto_alpha=args.auto_alpha)
     print("Initialized Learning Params:", learning_params)
     if map_id != -1:
         run_single_experiment(args.game_name, 

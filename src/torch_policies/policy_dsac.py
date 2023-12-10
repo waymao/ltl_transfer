@@ -68,8 +68,14 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
             self.q2_target = deepcopy(q2).to(device)
             self.q2_target.eval()
         # q optim
-        self.q_optim = torch.optim.Adam(
-            list(self.q1.parameters()) + list(self.q2.parameters()), 
+        self.q1_optim = torch.optim.Adam(
+            self.q1.parameters(), 
+            lr=lr_q, 
+            eps=1e-4,
+            fused=True if self.device == "cuda" else None
+        )
+        self.q2_optim = torch.optim.Adam(
+            self.q2.parameters(), 
             lr=lr_q, 
             eps=1e-4,
             fused=True if self.device == "cuda" else None
@@ -163,14 +169,16 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
         # back propagate q loss
         q_loss1 = F.mse_loss(q1_val_N, y_N, reduction="mean")
         q_loss2 = F.mse_loss(q2_val_N, y_N, reduction="mean")
-        self.q_optim.zero_grad(set_to_none=True)
+        self.q1_optim.zero_grad(set_to_none=True)
+        self.q2_optim.zero_grad(set_to_none=True)
         q_loss1.backward()
         q_loss2.backward()
         # print("    q1 loss", q_loss1.item())
         # print("    q2 loss", q_loss2.item())
         metrics['q1_loss'] = q_loss1.item()
         metrics['q2_loss'] = q_loss2.item()
-        self.q_optim.step()
+        self.q1_optim.step()
+        self.q2_optim.step()
 
         # pi loss
         if self.update_count % self.policy_update_freq == 0:
@@ -180,7 +188,7 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
                     q1_NA = self.q1(s1_NS)
                     q2_NA = self.q2(s1_NS)
                     min_q_NA = torch.min(q1_NA, q2_NA)
-                pi_loss = -torch.mean((min_q_NA - alpha * log_pi_NA) * action_probs_NA)
+                pi_loss = -((min_q_NA - alpha * log_pi_NA) * action_probs_NA).sum(dim=-1).mean()
                 self.pi_optim.zero_grad(set_to_none=True)
                 pi_loss.backward()
                 metrics['pi_loss'] = pi_loss.item()
