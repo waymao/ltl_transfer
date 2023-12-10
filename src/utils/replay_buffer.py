@@ -24,15 +24,15 @@ class ReplayBuffer(object):
     def __len__(self):
         return len(self._storage)
 
-    def add(self, s1: np.ndarray, a, s2: np.ndarray, next_goal: np.ndarray):
+    def add(self, s1: np.ndarray, a: np.ndarray, s2: np.ndarray, next_goal: np.ndarray):
         if self._s1_storage is None:
             s_shape = s1.shape
             a_shape = np.array(a).shape
             next_goal_shape = next_goal.shape
-            self._s1_storage = np.zeros((self._maxsize, *s_shape))
-            self._s2_storage = np.zeros((self._maxsize, *s_shape))
+            self._s1_storage = np.zeros((self._maxsize, *s_shape), dtype=s1.dtype)
+            self._s2_storage = np.zeros((self._maxsize, *s_shape), dtype=s2.dtype)
             self._a_storage = np.zeros((self._maxsize, *a_shape))
-            self._next_goal_storage = np.zeros((self._maxsize, *next_goal_shape))
+            self._next_goal_storage = np.zeros((self._maxsize, *next_goal_shape), dtype=np.int64)
 
         self._s1_storage[self._next_idx] = s1
         self._a_storage[self._next_idx] = np.array(a)
