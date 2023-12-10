@@ -38,17 +38,16 @@ def get_learning_parameters(policy_name, game_name, **kwargs):
             del kwargs['alpha']
         if game_name == "miniworld":
             return LearningParameters(
-                gamma=0.999,
+                gamma=0.99,
                 # alpha=0.1,
-                batch_size=32,
+                batch_size=64,
                 tau=0.005,
-                lr=3e-4,
-                pi_lr=3e-4,
+                lr=1e-4,
+                pi_lr=1e-5,
                 print_freq=5000,
                 learning_starts=50000,
-                auto_alpha=False,
-                target_entropy=0.3 * 0.98 * -np.log(1.0 / 4),
-                target_network_update_freq=1,
+                target_entropy=0.98 * -np.log(1.0 / 4),
+                target_network_update_freq=4,
                 max_timesteps_per_episode=1000,
                 max_timesteps_per_task=500000,
                 **kwargs

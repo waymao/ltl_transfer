@@ -77,18 +77,19 @@ def get_CNN_preprocess_ts(num_channels, output_dim, device="cuda"):
 preprocess_net_actor = get_CNN_preprocess_ts(3, 1536, "cuda")
 preprocess_net_critic1 = get_CNN_preprocess_ts(3, 1536, "cuda")
 preprocess_net_critic2 = get_CNN_preprocess_ts(3, 1536, "cuda")
-actor = Actor(preprocess_net_actor, 4, [256, 64], preprocess_net_output_dim=1536, device="cuda")
+actor = Actor(preprocess_net_actor, 4, [256, 256], preprocess_net_output_dim=1536, device="cuda")
 actor_optim = Adam(actor.parameters(), lr=1e-5)
-critic1 = Critic(preprocess_net_critic1, hidden_sizes=[256, 64], last_size=4, preprocess_net_output_dim=1536, device="cuda")
+critic1 = Critic(preprocess_net_critic1, hidden_sizes=[256, 256], last_size=4, preprocess_net_output_dim=1536, device="cuda")
 critic1_optim = Adam(critic1.parameters(), lr=1e-4)
-critic2 = Critic(preprocess_net_critic2, hidden_sizes=[256, 64], last_size=4, preprocess_net_output_dim=1536, device="cuda")
+critic2 = Critic(preprocess_net_critic2, hidden_sizes=[256, 256], last_size=4, preprocess_net_output_dim=1536, device="cuda")
 critic2_optim = Adam(critic2.parameters(), lr=1e-4)
 
 policy = DiscreteSACPolicy(
     actor, actor_optim, 
     critic1, critic1_optim, 
     critic2, critic2_optim,
-    alpha=0.05
+    alpha=0.01,
+    gamma=0.99
 ).to("cuda")
 
 # logger
