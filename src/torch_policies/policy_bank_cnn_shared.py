@@ -23,6 +23,7 @@ POLICY_MODULES: Mapping[str, Policy] = {
 }
 
 HIDDEN_LAYER_SIZE = [64, 64]
+REWARD_SCALE = 10
 
 class PolicyBankCNN(PolicyBank):
     """
@@ -34,7 +35,7 @@ class PolicyBankCNN(PolicyBank):
     
     def _add_true_false_policy(self, gamma):
         self._add_constant_policy("False", 0.0)
-        self._add_constant_policy("True", 10/gamma)  # this ensures that reaching 'True' gives reward of 1
+        self._add_constant_policy("True", REWARD_SCALE/gamma)  # this ensures that reaching 'True' gives reward of 1
 
     def add_LTL_policy(self, ltl, f_task, dfa, load_tf=True):
         """
@@ -47,7 +48,7 @@ class PolicyBankCNN(PolicyBank):
             self.cnn_preprocess = get_CNN_preprocess(3, device=self.device)
             self.cnn_preprocess_target = deepcopy(self.cnn_preprocess)
             self.cnn_preprocess_target.eval()
-            self.preprocess_out_dim = 64
+            self.preprocess_out_dim = 1536
         if self.rl_algo == "dsac":
             pi_module = get_CNN_Dense(
                 self.cnn_preprocess,
@@ -81,7 +82,6 @@ class PolicyBankCNN(PolicyBank):
                 q1_target=critic1_tgt,
                 q2_target=critic2_tgt,
                 pi=actor_module,
-                auto_alpha=False,
                 lr_q=self.learning_params.lr, 
                 lr_pi=self.learning_params.pi_lr, 
                 # lr_alpha=1e-2,
@@ -92,6 +92,9 @@ class PolicyBankCNN(PolicyBank):
                 state_dim=self.num_features,
                 action_dim=self.num_actions,
                 start_steps=self.learning_params.learning_starts,
+                target_entropy=self.learning_params.target_entropy,
+                auto_alpha=self.learning_params.auto_alpha,
+                # TODO dsac random steps
                 device=self.device
             )
         else:
@@ -124,7 +127,7 @@ class PolicyBankCNN(PolicyBank):
         if r is None:
             r_N = torch.zeros((N,), dtype=torch.float32, device=self.device)
         else:
-            r_N = torch.tensor(r, dtype=torch.float32, device=self.device)
+            r_N = torch.tensor(r, dtype=torch.float32, device=self.device) * REWARD_SCALE
         if terminated is None:
             terminated_N = torch.zeros((N,), dtype=torch.bool, device=self.device)
         else:
@@ -137,10 +140,7 @@ class PolicyBankCNN(PolicyBank):
         q_targets_CN = torch.zeros((C, N), device=self.device, requires_grad=False)
         with torch.no_grad():
             for i, policy in enumerate(self.policies):
-                if type(policy) == DiscreteSAC:
-                    q_targets_CN[i, :] = policy.calc_q_target(s2_NS, r_N, terminated_N)
-                else:
-                    q_targets_CN[i, :] = policy.get_v(s2_NS)
+                q_targets_CN[i, :] = policy.get_v(s2_NS)
         
         # learn every policy except for true, false
         active_policy_metrics = None
@@ -161,7 +161,7 @@ class PolicyBankCNN(PolicyBank):
             if ltl not in checkpoint['policies']: continue # skip unsaved policies
             policy: Policy = self.policies[policy_id]
             policy.restore_from_state_dict(checkpoint['policies'][ltl])
-        self.cnn_preprocess.load_state_dict(checkpoint['cnn_preprocess'])
+        # self.cnn_preprocess.load_state_dict(checkpoint['cnn_preprocess'])
         print("loaded policy bank from", checkpoint_path)
 
 

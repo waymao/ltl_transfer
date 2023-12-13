@@ -17,7 +17,7 @@ The set of propositional symbols are {a,b,c,d,e,f,g,h,n,s}:
 def get_sequence_of_subtasks():
     # Experiment 1: Sequences of Sub-Tasks (Section 5.2 in paper)
     tasks = [
-        _get_sequence('a'),
+        _get_sequence('ba'),
         # _get_sequence('ac'),
         # _get_sequence('de'),
         # _get_sequence('db'),

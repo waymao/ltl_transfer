@@ -41,9 +41,9 @@ def get_learning_parameters(policy_name, game_name, **kwargs):
                 gamma=0.99,
                 # alpha=0.1d,
                 batch_size=64,
-                tau=0.005,
+                tau=0.05, # TODO this is per 12 steps, so it's actually 0.005
                 lr=1e-4,
-                pi_lr=1e-5,
+                pi_lr=1e-4,
                 print_freq=5000,
                 learning_starts=10000,
                 train_freq=12,

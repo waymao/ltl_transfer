@@ -179,7 +179,7 @@ class CNNDense(nn.Module):
         return CNNDense(new_preprocess_net, self.fc_in_dim, self.out_dim, copied_fc)
 
 def get_CNN_Dense(preprocess_net, in_dim, out_dim, device="cpu"):
-    return CNNDense(preprocess_net, in_dim, out_dim).to(device)
+    return CNNDense(preprocess_net, in_dim, out_dim, fc_layers="auto").to(device)
 
 def get_whole_CNN(in_channels, out_dim, embed_dim=1536, fc_layers="auto", device="cpu"):
     if fc_layers is None:

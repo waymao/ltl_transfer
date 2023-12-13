@@ -109,7 +109,7 @@ class PolicyBankCNN(PolicyBank):
         if r is None:
             r_N = torch.zeros((N,), dtype=torch.float32, device=self.device)
         else:
-            r_N = torch.tensor(r, dtype=torch.float32, device=self.device) # * REWARD_SCALE
+            r_N = torch.tensor(r, dtype=torch.float32, device=self.device) * REWARD_SCALE
         if terminated is None:
             terminated_N = torch.zeros((N,), dtype=torch.bool, device=self.device)
         else:

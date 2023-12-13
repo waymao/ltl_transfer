@@ -57,7 +57,7 @@ class CurriculumLearner:
     def update_succ_rate(self, step, reward):
         t = self.get_current_task()
         hits, total = self.succ_rate[t]
-        if reward == 1 and (step-self.last_restart) <= self.num_steps:
+        if reward > 0 and (step-self.last_restart) <= self.num_steps:
             hits += 1.0
         total += 1.0
         self.succ_rate[t] = (hits, total)
