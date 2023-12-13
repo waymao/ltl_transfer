@@ -4,7 +4,7 @@
 from .game_base import BaseGame
 from gymnasium.wrappers import GrayScaleObservation, FrameStack
 
-def get_game(name, params, render_mode=None, max_episode_steps=None, do_transpose=True, reward_scale=1) -> BaseGame:
+def get_game(name, params, render_mode=None, max_episode_steps=None, do_transpose=True, reward_scale=10) -> BaseGame:
     if name == "grid":
         from .grid.game import Game as GridGame
         return GridGame(params)

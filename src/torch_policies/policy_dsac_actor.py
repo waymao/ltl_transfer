@@ -15,6 +15,7 @@ class DiscreteSoftActor(nn.Module):
                  pi_module,
                  device="cpu",
         ):
+        # note: do not use soft_max in pi_module
         super().__init__()
         self.device = device
         self.pi = pi_module
@@ -22,13 +23,19 @@ class DiscreteSoftActor(nn.Module):
     def forward(self, x):
         return self.pi(x)
 
-    def get_action(self, x):
+    def get_action(self, x, deterministic=False):
         # taken directly from cleanrl/cleanrl/sac_continuous_action.py
         # i don't think the logprob part is intuitive
+        # logits_NA = F.softmax(self(x), dim=1)
         logits_NA = self(x)
         policy_dist = Categorical(logits=logits_NA)
-        action_N = policy_dist.sample()
+        if deterministic:
+            # use argmax for deterministic action during eval.
+            action_N = logits_NA.argmax(dim=1)
+        else:
+            # use sampling for stochastic action during training.
+            action_N = policy_dist.sample()
         # Action probabilities for calculating the adapted soft-Q loss
         action_probs_NA = policy_dist.probs
-        log_prob = F.log_softmax(logits_NA, dim=-1)
-        return action_N, log_prob, action_probs_NA
+        entropy = policy_dist.entropy()
+        return action_N, entropy, action_probs_NA

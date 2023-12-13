@@ -187,10 +187,7 @@ class PolicyBank:
         q_targets_CN = torch.zeros((C, N), device=self.device, requires_grad=False)
         with torch.no_grad():
             for i, policy in enumerate(self.policies):
-                if type(policy) == DiscreteSAC:
-                    q_targets_CN[i, :] = policy.calc_q_target(s2_NS, r_N, terminated_N)
-                else:
-                    q_targets_CN[i, :] = policy.get_v(s2_NS)
+                q_targets_CN[i, :] = policy.get_v(s2_NS)
         
         # learn every policy except for true, false
         active_policy_metrics = None

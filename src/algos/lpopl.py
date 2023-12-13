@@ -159,7 +159,8 @@ def _run_LPOPL(
         testing_game: Optional[BaseGame],
         policy_bank: PolicyBank, 
         tester: Tester, curriculum: CurriculumLearner, 
-        replay_buffer, show_print, 
+        replay_buffer: ReplayBuffer, 
+        show_print: bool, 
         succ_logger: SuccLogger,
         do_render=False,
     ):
@@ -236,7 +237,7 @@ def _run_LPOPL(
         next_goals = np.zeros((policy_bank.get_number_LTL_policies(),), dtype=np.float64)
         for ltl in policy_bank.get_LTL_policies():
             ltl_id = policy_bank.get_id(ltl)
-            if term:
+            if term and reward == 0:
                 ltl_next_id = policy_bank.get_id("False")  # env deadends are equal to achive the 'False' formula
             else:
                 ltl_next_id = policy_bank.get_id(policy_bank.get_policy_next_LTL(ltl, true_props))
@@ -407,6 +408,7 @@ def _test_LPOPL(task, learning_params: LearningParameters, testing_params: Testi
             
             # Choosing an action to perform
             ltl_goal = task.get_LTL_goal()
+            # TODO deterministic evaluation
             a = policy_bank.get_best_action(ltl_goal, np.expand_dims(s1, axis=0))
 
             # Executing the action

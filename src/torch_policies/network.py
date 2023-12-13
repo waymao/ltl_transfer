@@ -152,9 +152,11 @@ class CNNDense(nn.Module):
         self.out_dim = out_dim
         if fc_layers == "default" or fc_layers == "auto":
             self.fc_layers = nn.Sequential(
-                nn.Linear(fc_in_dim, 64),
+                nn.Linear(fc_in_dim, 256),
                 nn.ReLU(inplace=True),
-                nn.Linear(64, out_dim),
+                nn.Linear(256, 256),
+                nn.ReLU(inplace=True),
+                nn.Linear(256, out_dim),
             )
         elif fc_layers is None:
             self.fc_layers = None

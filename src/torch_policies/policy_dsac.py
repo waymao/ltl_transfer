@@ -129,16 +129,14 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
             for param, target_param in zip(self.q2.parameters(), self.q2_target.parameters()):
                 target_param.copy_(self.tau * param + (1 - self.tau) * target_param)
     
-    def calc_q_target(self, s2_NS, r_N, ter_N):
+    def get_v(self, s2_NS):
         alpha = torch.exp(self.log_alpha)
-        _, log_prob_NA, prob_NA = self.pi.get_action(s2_NS)
+        _, entropy_N, prob_NA = self.pi.get_action(s2_NS)
         q1_next_NA = self.q1_target(s2_NS)
         q2_next_NA = self.q2_target(s2_NS)
-        # print(torch.min(q1_next_NA, q2_next_NA).mean(), alpha * log_prob_NA.mean())
-        q_min_next_NA = torch.min(q1_next_NA, q2_next_NA) - alpha * log_prob_NA
-        q_next_weighed_N = (prob_NA * q_min_next_NA).sum(dim=-1)
-        y_N = r_N + self.gamma * ~ter_N * q_next_weighed_N
-        return y_N
+        q_min_next_NA = torch.min(q1_next_NA, q2_next_NA)
+        q_next_N = (prob_NA * q_min_next_NA).sum(dim=-1) + alpha * entropy_N
+        return q_next_N
 
     def learn(
             self, 
@@ -147,13 +145,11 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
             s2_NS,
             r_N,
             ter_N,
-            next_y_id_N,
-            next_y_vals_CN,
+            next_id_N,
+            next_v_vals_CN,
             is_active=False
         ):
         metrics = {}
-
-        self.update_count += 1
         alpha = torch.exp(self.log_alpha).detach()
 
         # q for current state
@@ -162,7 +158,8 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
 
         # q for next state using newly sampled actions.
         with torch.no_grad():
-            y_N = torch.gather(next_y_vals_CN, 0, next_y_id_N.view(1, -1)).squeeze()
+            return_N = torch.gather(next_v_vals_CN, 0, next_id_N.view(1, -1)).squeeze()
+            y_N = r_N + self.gamma * ~ter_N * return_N
             # y_N = next_y_vals_CN[next_y_id_N]
 
         # q target and loss
@@ -181,40 +178,37 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
         self.q2_optim.step()
 
         # pi loss
-        if self.update_count % self.policy_update_freq == 0:
-            for _ in range(self.policy_update_freq):
-                _, log_pi_NA, action_probs_NA = self.pi.get_action(s1_NS)
-                with torch.no_grad():
-                    q1_NA = self.q1(s1_NS)
-                    q2_NA = self.q2(s1_NS)
-                    min_q_NA = torch.min(q1_NA, q2_NA)
-                pi_loss = -((min_q_NA - alpha * log_pi_NA) * action_probs_NA).sum(dim=-1).mean()
-                self.pi_optim.zero_grad(set_to_none=True)
-                pi_loss.backward()
-                metrics['pi_loss'] = pi_loss.item()
-                self.pi_optim.step()
-                
-                with torch.no_grad():
-                    entropy = torch.mean(-log_pi_NA * action_probs_NA).detach()
-                metrics['pi_entropy'] = entropy
-                if self.auto_alpha and is_active and self.step >= self.start_steps:
-                    alpha_loss = torch.mean(
-                            action_probs_NA.detach() * \
-                            (-log_pi_NA - self.target_entropy).detach() * \
-                            torch.exp(self.log_alpha))
-                    self.alpha_optim.zero_grad()
-                    alpha_loss.backward()
-                    self.alpha_optim.step()
-                    metrics['alpha_loss'] = alpha_loss.item()
-                metrics['alpha'] = torch.exp(self.log_alpha).item()
-                    # print(np.exp(self.log_alpha.item()))
-            # print("    pi loss", pi_loss)
-            # print("alpha_loss", alpha_loss)
+        _, entropy_N, action_probs_NA = self.pi.get_action(s1_NS)
+        with torch.no_grad():
+            q1_NA = self.q1(s1_NS)
+            q2_NA = self.q2(s1_NS)
+            min_q_NA = torch.min(q1_NA, q2_NA)
+        # pi_loss = -((min_q_NA - alpha * log_pi_NA) * action_probs_NA).sum(dim=-1).mean()
+        pi_loss = -(torch.sum(min_q_NA * action_probs_NA, axis=-1) + alpha * entropy_N).mean()
+        self.pi_optim.zero_grad(set_to_none=True)
+        pi_loss.backward()
+        metrics['pi_loss'] = pi_loss.item()
+        self.pi_optim.step()
+        metrics['pi_entropy'] = entropy_N.mean().item()
 
-            # update target network if necessary
-            # handled by policy bank already
-            # if self.update_count % self.target_update_freq == 0:
-            #     self.sync_weight()
+        if self.auto_alpha and is_active and self.step >= self.start_steps:
+            alpha_loss = torch.mean(
+                    action_probs_NA.detach().mean() * \
+                    (entropy_N - self.target_entropy).detach() * \
+                    torch.exp(self.log_alpha))
+            self.alpha_optim.zero_grad()
+            alpha_loss.backward()
+            self.alpha_optim.step()
+            metrics['alpha_loss'] = alpha_loss.item()
+        metrics['alpha'] = torch.exp(self.log_alpha).item()
+                # print(np.exp(self.log_alpha.item()))
+        # print("    pi loss", pi_loss)
+        # print("alpha_loss", alpha_loss)
+
+        # update target network if necessary
+        # handled by policy bank already
+        # if self.update_count % self.target_update_freq == 0:
+        #     self.sync_weight()
         return metrics
     
     def get_edge_labels(self):

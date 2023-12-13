@@ -109,7 +109,7 @@ class PolicyBankCNN(PolicyBank):
         if r is None:
             r_N = torch.zeros((N,), dtype=torch.float32, device=self.device)
         else:
-            r_N = torch.tensor(r, dtype=torch.float32, device=self.device) * REWARD_SCALE
+            r_N = torch.tensor(r, dtype=torch.float32, device=self.device) # * REWARD_SCALE
         if terminated is None:
             terminated_N = torch.zeros((N,), dtype=torch.bool, device=self.device)
         else:
@@ -122,10 +122,7 @@ class PolicyBankCNN(PolicyBank):
         q_targets_CN = torch.zeros((C, N), device=self.device, requires_grad=False)
         with torch.no_grad():
             for i, policy in enumerate(self.policies):
-                if type(policy) == DiscreteSAC:
-                    q_targets_CN[i, :] = policy.calc_q_target(s2_NS, r_N, terminated_N)
-                else:
-                    q_targets_CN[i, :] = policy.get_v(s2_NS)
+                q_targets_CN[i, :] = policy.get_v(s2_NS)
         
         # learn every policy except for true, false
         active_policy_metrics = None
