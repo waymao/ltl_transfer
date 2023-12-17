@@ -32,7 +32,7 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
             action_dim, 
             lr_q=1e-3, 
             lr_pi=1e-4, 
-            lr_alpha=1e-4,
+            lr_alpha=1e-3,
             gamma=0.99, 
             alpha=0.01, # trade off coeff
             policy_update_freq=1, # policy network update frequency
@@ -221,14 +221,16 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
         return {
             "state": self.state_dict(),
             "optim": {
-                "q": self.q_optim.state_dict(),
+                "q1": self.q1_optim.state_dict(),
+                "q2": self.q2_optim.state_dict(),
                 "pi": self.pi_optim.state_dict()
             }
         }
     
     def restore_from_state_dict(self, state_dict):
         self.load_state_dict(state_dict['state'])
-        self.q_optim.load_state_dict(state_dict['optim']['q'])
+        self.q1_optim.load_state_dict(state_dict['optim']['q1'])
+        self.q2_optim.load_state_dict(state_dict['optim']['q2'])
         self.pi_optim.load_state_dict(state_dict['optim']['pi'])
 
     # def add_initiation_set_classifier(self, edge, classifier):

@@ -1,7 +1,7 @@
 XXXXXXX
-X    AX
+Xe    X
 X     X
+X    aX
 X     X
-X     X
-Xa    X
+Xe    X
 XXXXXXX
