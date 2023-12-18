@@ -24,7 +24,7 @@ def init_weights_fanin(m, b_init_val=0.1):
             m.bias.data.fill_(b_init_val)
 
 def cnn_init_weights(layer: nn.Module, std: float = np.sqrt(2), bias_const: float = 0.0) -> nn.Module:
-    torch.nn.init.orthogonal_(layer.weight, std)
+    torch.nn.init.kaiming_normal_(layer.weight)
     torch.nn.init.constant_(layer.bias, bias_const)
     return layer
 
@@ -109,10 +109,7 @@ def get_CNN_preprocess(in_channels, out_dim=64, device="cpu"):
 
     #     nn.Conv2d(32, 32, kernel_size=4, stride=2),
     #     nn.ReLU(),
-
-    #     nn.Flatten(),
-    #     nn.Linear(32 * 7 * 5, out_dim),
-    #     nn.ReLU()
+    #     nn.Flatten()
     # ) # out: 32 * 7 * 5
 
     # cnn_preprocess = nn.Sequential(
@@ -134,11 +131,11 @@ def get_CNN_preprocess(in_channels, out_dim=64, device="cpu"):
     # )
     # natural CNN
     cnn_preprocess = nn.Sequential(
-                    nn.Conv2d(in_channels, 32, kernel_size=8, stride=4, padding=0),
+                    cnn_init_weights(nn.Conv2d(in_channels, 32, kernel_size=8, stride=4, padding=0)),
                     nn.ReLU(inplace=True),
-                    nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+                    cnn_init_weights(nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0)),
                     nn.ReLU(inplace=True),
-                    nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+                    cnn_init_weights(nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0)),
                     nn.ReLU(inplace=True),
                     nn.Flatten(),
                 )
@@ -152,11 +149,11 @@ class CNNDense(nn.Module):
         self.out_dim = out_dim
         if fc_layers == "default" or fc_layers == "auto":
             self.fc_layers = nn.Sequential(
-                nn.Linear(fc_in_dim, 256),
+                cnn_init_weights(nn.Linear(fc_in_dim, 256)),
                 nn.ReLU(inplace=True),
-                nn.Linear(256, 256),
+                cnn_init_weights(nn.Linear(256, 256)),
                 nn.ReLU(inplace=True),
-                nn.Linear(256, out_dim),
+                cnn_init_weights(nn.Linear(256, out_dim)),
             )
         elif fc_layers is None:
             self.fc_layers = None

@@ -25,6 +25,7 @@ class LearningParameters:
     tau: float = 0.005
     auto_alpha: bool = False
     target_entropy: float = -.3 # target entropy for SAC, used to compute alpha
+    non_active_target_entropy: float = -.3 # target entropy for non-active SAC policies
     dsac_random_steps: int = 0 # take random actions for this amount of time
 
     # CNN related
@@ -48,9 +49,10 @@ def get_learning_parameters(policy_name, game_name, **kwargs):
                 lr=1e-4,
                 pi_lr=1e-5,
                 print_freq=5000,
-                learning_starts=10000,
+                learning_starts=30000,
                 train_freq=12,
-                target_entropy=0.89 * -np.log(1.0 / 4),
+                target_entropy=0.2 * -np.log(1.0 / 4),
+                non_active_target_entropy=0.2 * -np.log(1.0 / 4),
                 target_network_update_freq=12,
                 max_timesteps_per_episode=1000,
                 max_timesteps_per_task=500000,

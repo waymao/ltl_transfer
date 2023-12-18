@@ -194,6 +194,8 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
         pi_loss = -(torch.sum(min_q_NA * action_probs_NA, axis=-1) + alpha * entropy_N).mean()
         self.pi_optim.zero_grad(set_to_none=True)
         pi_loss.backward()
+        # norm_pi = torch.nn.utils.clip_grad_norm_(self.pi.parameters(), 1).detach()
+        # print(norm_pi)
         metrics['pi_loss'] = pi_loss.item()
         self.pi_optim.step()
         metrics['pi_entropy'] = entropy_N.mean().item()

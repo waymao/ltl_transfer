@@ -33,6 +33,8 @@ class ReplayBuffer(object):
             self._s2_storage = np.zeros((self._maxsize, *s_shape), dtype=s2.dtype)
             self._a_storage = np.zeros((self._maxsize, *a_shape))
             self._next_goal_storage = np.zeros((self._maxsize, *next_goal_shape), dtype=np.int64)
+            # self._rew_storage = np.zeros(self._maxsize, dtype=np.float32)
+            # self._terminated_storage = np.zeros(self._maxsize, dtype=np.float32)
 
         self._s1_storage[self._next_idx] = s1
         self._a_storage[self._next_idx] = np.array(a)
