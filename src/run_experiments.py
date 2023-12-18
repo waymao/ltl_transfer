@@ -199,6 +199,7 @@ if __name__ == "__main__":
         }
     )
     print("Initialized Learning Params:", learning_params)
+
     if map_id != -1:
         run_single_experiment(args.game_name, 
                               args.algo, args.rl_algo, map_id, args.prob, tasks_id, args.domain_name, args.train_type, args.train_size, args.test_type,
