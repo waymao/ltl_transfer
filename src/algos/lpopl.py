@@ -346,16 +346,16 @@ def _run_LPOPL(
         # reset truncate counter if LTL was progressed. Otherwise, increment the counter
         new_ltl_goal = game.get_LTL_goal()
         if new_ltl_goal != ltl_goal:
-            print("    ", curriculum.get_current_step(), ":     progressed to", new_ltl_goal, ". len:", curr_eps_step)
+            # print("    ", curriculum.get_current_step(), ":     progressed to", new_ltl_goal, ". len:", curr_eps_step)
             curr_eps_step = 0
         else:
             curr_eps_step += 1
 
         # Restarting the environment (Game Over)
         if game.dfa.is_game_over() or trunc or term or curr_eps_step > learning_params.max_timesteps_per_episode:
-            print("    ", curriculum.get_current_step(), 
-                  ": train game over. Final LTL:", game.dfa.get_LTL(), 
-                  "; deadend:", (game.dfa.state == -1))
+            # print("    ", curriculum.get_current_step(), 
+            #       ": train game over. Final LTL:", game.dfa.get_LTL(), 
+            #       "; deadend:", (game.dfa.state == -1))
             curr_eps_step = 0
 
             if epi_info is not None:
