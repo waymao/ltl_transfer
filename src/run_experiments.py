@@ -6,7 +6,7 @@ from algos import transfer
 # from algos import random_transfer
 from test_utils import TestingParameters, Tester, Saver
 from utils.curriculum import CurriculumLearner
-from torch_policies.learning_params import LearningParameters, get_learning_parameters
+from torch_policies.learning_params import LearningParameters, add_fields_to_parser, get_learning_parameters
 from torch.utils.tensorboard import SummaryWriter
 import os
 import cProfile
@@ -26,7 +26,10 @@ def run_experiment(
     tb_log_path = os.path.join(
         save_dpath, "results", f"{game_name}_{dataset_name}", f"{train_type}_p{prob}", 
         f"{alg_name}_{rl_alg}", f"map{map_id}", str(run_id), 
-        f"alpha={'auto' if learning_params.auto_alpha else learning_params.alpha}")
+        f"alpha={'auto' if learning_params.auto_alpha else learning_params.alpha}",
+    )
+    if testing_params.custom_metric_folder is not None:
+        tb_log_path = os.path.join(tb_log_path, testing_params.custom_metric_folder)
     logger = SummaryWriter(log_dir=tb_log_path)
 
     # Setting the experiment
@@ -161,14 +164,20 @@ if __name__ == "__main__":
                         help='This parameter indicated the dataset to read tasks from')
     parser.add_argument('--device', default="cpu", type=str, choices=['cpu', 'cuda'], 
                         help='The device to run Neural Network computations.')
-    parser.add_argument('--alpha', default=0.1, type=float,
-                        help='The temperature for exploration / exploitation tradeoff.')
-    parser.add_argument('--auto_alpha', default=False, action="store_true",
-                        help='Whether to auto tune alpha based on entropy.')
+    # parser.add_argument('--alpha', default=0.1, type=float,
+    #                     help='The temperature for exploration / exploitation tradeoff.')
+    # parser.add_argument('--auto_alpha', default=False, action="store_true",
+    #                     help='Whether to auto tune alpha based on entropy.')
     parser.add_argument('--resume', default=False, action="store_true",
                         help='Whether to resume from a checkpoint or not.')
     parser.add_argument('--game_name', default="grid", type=str, choices=['grid', 'miniworld', 'miniworld_no_vis'],
                         help='Name of the game.')
+    parser.add_argument('--run_subfolder', default=None, required=False, type=str,
+                        help='Name of the run. Used to save the results in a separate sub folder.')
+
+    # add all fields of Learning Parameters to parser
+    LEARNING_ARGS_PREFIX = "lp."
+    add_fields_to_parser(parser, LearningParameters, prefix=LEARNING_ARGS_PREFIX)
     args = parser.parse_args()
     if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")
     if args.train_type not in train_types: raise NotImplementedError("Training tasks " + str(args.train_type) + " hasn't been defined yet")
@@ -180,7 +189,15 @@ if __name__ == "__main__":
     map_id = args.map
 
     # learning params
-    learning_params = get_learning_parameters(policy_name=args.rl_algo, game_name=args.game_name, alpha=args.alpha, auto_alpha=args.auto_alpha)
+    learning_params = get_learning_parameters(
+        policy_name=args.rl_algo, 
+        game_name=args.game_name,
+        **{
+            key.removeprefix(LEARNING_ARGS_PREFIX): val 
+            for (key, val) in args._get_kwargs() 
+            if key.startswith(LEARNING_ARGS_PREFIX)
+        }
+    )
     print("Initialized Learning Params:", learning_params)
     if map_id != -1:
         run_single_experiment(args.game_name, 
@@ -188,7 +205,7 @@ if __name__ == "__main__":
                               args.total_steps, args.incremental_steps, args.run_id,
                               args.relabel_method, args.transfer_num_times, args.edge_matcher, args.save_dpath, 
                               learning_params,
-                              TestingParameters(),
+                              TestingParameters(custom_metric_folder=args.run_subfolder),
                               args.resume,
                               args.device)
     else:
@@ -197,6 +214,6 @@ if __name__ == "__main__":
                                  args.total_steps, args.incremental_steps, args.run_id,
                                  args.relabel_method, args.transfer_num_times, args.edge_matcher, args.save_dpath, 
                                  learning_params,
-                                 TestingParameters(),
+                                 TestingParameters(custom_metric_folder=args.run_subfolder),
                                  args.resume,
                                  args.device)

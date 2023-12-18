@@ -43,6 +43,39 @@ class ReplayBuffer(object):
         self._next_idx = (self._next_idx + 1) % self._maxsize
         if self.size < self._maxsize:
             self.size += 1
+    
+    def to_dict(self):
+        return {
+            "s1": self._s1_storage,
+            "s2": self._s2_storage,
+            "a": self._a_storage,
+            "next_goals": self._next_goal_storage,
+            "max_size": self._maxsize,
+            "next_idx": self._next_idx,
+            "size": self.size
+        }
+    
+    def from_dict(self, dict):
+        self._s1_storage = dict["s1"]
+        self._s2_storage = dict["s2"]
+        self._a_storage = dict["a"]
+        self._next_goal_storage = dict["next_goals"]
+        self._maxsize = dict["max_size"]
+        self._next_idx = dict["next_idx"]
+        self.size = dict["size"]
+        # sanity check
+        assert type(self._s1_storage) == np.ndarray
+        assert type(self._s2_storage) == np.ndarray
+        assert type(self._a_storage) == np.ndarray
+        assert type(self._next_goal_storage) == np.ndarray
+        assert type(self._maxsize) == int
+        assert type(self._next_idx) == int
+        assert type(self.size) == int
+        assert self._s1_storage.shape == self._s2_storage.shape
+        assert self._s1_storage[0] == self._s2_storage[0] == self._a_storage[0] == self._next_goal_storage[0] == self.size
+        assert self._next_idx < self._maxsize
+        assert self.size <= self._maxsize
+
 
     def _encode_sample(self, idxes):
         return self._s1_storage[idxes], self._a_storage[idxes], self._s2_storage[idxes], self._next_goal_storage[idxes]

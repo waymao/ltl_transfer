@@ -1,11 +1,13 @@
+from typing import Type
 import numpy as np
-from dataclasses import dataclass
+import dataclasses
+import argparse
 
-@dataclass(init=True, repr=True)
+@dataclasses.dataclass(init=True, repr=True)
 class LearningParameters:
     lr: float = 1e-4
     max_timesteps_per_task: int = 100000
-    buffer_size: int = int(2e5)
+    buffer_size: int = int(5e5)
     print_freq: int = 5000
     train_freq: int = 1
     batch_size: int = 32
@@ -29,11 +31,28 @@ class LearningParameters:
     dsac_random_steps: int = 0 # take random actions for this amount of time
 
     # CNN related
-    cnn_shared_net = False # use shared CNNs for all policies' actor and critics
+    cnn_shared_net: bool = False # use shared CNNs for all policies' actor and critics
 
     # def __init__(self, *args, **kwargs):
     #     super().__init__(*args, **kwargs)
     #     print("Using Learn parameters:", str(self))
+
+
+def add_fields_to_parser(parser: argparse.ArgumentParser, DataClass: Type[LearningParameters], prefix=""):
+    for field in dataclasses.fields(DataClass):
+        # if field.type == bool and field.default == False:
+        #     parser.add_argument(
+        #         f"--{field.name}", 
+        #         action="store_true", 
+        #         help=f"type: {field.type.__name__}, auto added from: {DataClass.__name__}")
+        # else:
+        parser.add_argument(
+            f"--{prefix}{field.name}", 
+            type=field.type, 
+            required=False,
+            default=None,
+            help=f"type: {field.type.__name__}; orig default: {field.default}; auto added from: {DataClass.__name__}")
+
 
 
 def get_learning_parameters(policy_name, game_name, **kwargs):
@@ -41,9 +60,9 @@ def get_learning_parameters(policy_name, game_name, **kwargs):
         if 'alpha' in kwargs and kwargs['alpha'] == None:
             del kwargs['alpha']
         if game_name == "miniworld":
-            return LearningParameters(
+            params = LearningParameters(
                 gamma=0.99,
-                # alpha=0.1d,
+                alpha=0.03,
                 batch_size=512,
                 tau=0.05, # TODO this is per 12 steps, so it's actually 0.004
                 lr=1e-4,
@@ -56,13 +75,12 @@ def get_learning_parameters(policy_name, game_name, **kwargs):
                 target_network_update_freq=12,
                 max_timesteps_per_episode=1000,
                 max_timesteps_per_task=500000,
-                **kwargs
             )
         else:
-            return LearningParameters(**kwargs)
+            params = LearningParameters(**kwargs)
     elif policy_name == "dqn":
         if game_name == "miniworld":
-            return LearningParameters(
+            params = LearningParameters(
                 lr=1e-4,
                 max_timesteps_per_task=200000,
                 train_freq=4,
@@ -73,10 +91,9 @@ def get_learning_parameters(policy_name, game_name, **kwargs):
                 target_network_update_freq=10000,
                 gamma=0.99,
                 print_freq=5000,
-                **kwargs
             )
         elif game_name == "miniworld_no_vis":
-            return LearningParameters(
+            params = LearningParameters(
                 lr=1e-4,
                 max_timesteps_per_task=300000,
                 buffer_size=25000,
@@ -85,10 +102,9 @@ def get_learning_parameters(policy_name, game_name, **kwargs):
                 learning_starts=10000,
                 exploration_fraction=0.3,
                 target_network_update_freq=100,
-                **kwargs
             )
         else:
-            return LearningParameters(
+            params = LearningParameters(
                 lr=1e-4,
                 max_timesteps_per_task=50000,
                 buffer_size=25000,
@@ -97,5 +113,8 @@ def get_learning_parameters(policy_name, game_name, **kwargs):
                 learning_starts=1000,
                 exploration_fraction=0.15,
                 target_network_update_freq=100,
-                **kwargs
             )
+    for key, val in kwargs.items():
+        if hasattr(params, key) and val is not None:
+            setattr(params, key, val)
+    return params

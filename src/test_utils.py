@@ -10,10 +10,13 @@ from exp_dataset_creator import read_train_test_formulas
 from torch.utils.tensorboard import SummaryWriter
 import ltl.tasks as tasks
 from tqdm import tqdm
+import h5py
+
+from utils.replay_buffer import ReplayBuffer
 
 
 class TestingParameters:
-    def __init__(self, test=True, test_freq=1000, num_steps=1000, test_epis=20, test_seed=5):
+    def __init__(self, test=True, test_freq=1000, num_steps=1000, test_epis=20, test_seed=5, custom_metric_folder=None):
         """Parameters
         -------
         test: bool
@@ -29,6 +32,7 @@ class TestingParameters:
         self.test_epis = test_epis
         self.test_seed = test_seed
         self.test_env_instances = 8
+        self.custom_metric_folder = custom_metric_folder
 
 
 class Tester:
@@ -221,6 +225,17 @@ class Saver:
             "results": dict([(str(t), self.tester.results[t]) for t in self.tester.results])
         }
         save_json(self.file_out, results)
+    
+    def save_buffer(self, replay_buffer: ReplayBuffer):
+        data_dict = replay_buffer.to_dict()
+        f = h5py.File(self.train_dpath + os.sep + 'buffer.hdf5', 'w')
+        for grp_name in data_dict:
+            grp = f.create_group(grp_name)
+            for dset_name in data_dict[grp_name]:
+                dset = grp.create_dataset(dset_name, data = data_dict[grp_name][dset_name])
+                print(grp_name, dset_name, data_dict[grp_name][dset_name])
+        f.close()
+
 
     def save_transfer_data(self, task_aux, id2ltls):
         """
