@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from torch_policies.policy_bank import PolicyBank, LearningParameters
 from torch_policies.policy_bank_cnn import PolicyBankCNN
+from torch_policies.policy_bank_cnn_shared import PolicyBankCNNShared
 
 from utils.schedules import LinearSchedule
 from utils.replay_buffer import ReplayBuffer
@@ -130,14 +131,18 @@ def run_experiments(
     print("Time:", "%0.2f" % ((time.time() - time_init)/60), "mins")
 
 
-def _initialize_policy_bank(game_name, learning_params, curriculum: CurriculumLearner, tester: Tester, load_tf=True, rl_algo="dqn", device="cpu"):
+def _initialize_policy_bank(game_name, learning_params: LearningParameters, curriculum: CurriculumLearner, tester: Tester, load_tf=True, rl_algo="dqn", device="cpu"):
     task_aux = get_game(game_name, tester.get_task_params(curriculum.get_current_task()))
     num_actions = task_aux.action_space.n
     num_features = task_aux.observation_space.shape[0]
     if game_name != "miniworld":
         policy_bank = PolicyBank(num_actions, num_features, learning_params, policy_type=rl_algo, device=device)
     else:
-        policy_bank = PolicyBankCNN(num_actions, num_features, learning_params, policy_type=rl_algo, device=device)
+        # tasks requiring visual observation
+        if learning_params.cnn_shared_net:
+            policy_bank = PolicyBankCNNShared(num_actions, num_features, learning_params, policy_type=rl_algo, device=device)
+        else:
+            policy_bank = PolicyBankCNN(num_actions, num_features, learning_params, policy_type=rl_algo, device=device)
     for idx, f_task in enumerate(tester.get_LTL_tasks()[:tester.train_size]):  # only load first 'train_size' policies
         # start_time = time.time()
         dfa = DFA(f_task)
@@ -259,7 +264,7 @@ def _run_LPOPL(
             #     policy_bank.learn(S1, A, S2, Goal, active_policy=curriculum.current_task)
             # # prof.export_chrome_trace("profile_trace.json")
             # print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=20))
-            active_policy_metrics = policy_bank.learn(S1, A, S2, Goal, active_policy=curriculum.current_task)
+            active_policy_metrics, policy_metrics = policy_bank.learn(S1, A, S2, Goal, active_policy=curriculum.current_task)
 
 
         # Updating the target network
@@ -292,7 +297,11 @@ def _run_LPOPL(
                         global_step=global_step
                     )
                 if show_print:
-                    print("    last training metrics:", "; ".join([f"{key}: {val}" for key, val in active_policy_metrics.items()]))
+                    print("    last training policy metrics:")
+                    print("       ", "; ".join([f"{key}: {val}" for key, val in active_policy_metrics.items()]))
+                    print("    last all policy metrics:")
+                    for i, metric in enumerate(policy_metrics):
+                        print("       ", i, ":", "; ".join([f"{key}: {val}" for key, val in metric.items()]))
 
             # logging testing data
             # if testing_params.test and curriculum.get_current_step() % testing_params.test_freq == 0:
@@ -395,7 +404,7 @@ def _run_LPOPL(
         print("Done! Total reward:", training_reward)
 
 
-def _test_LPOPL(task, learning_params: LearningParameters, testing_params: TestingParameters, policy_bank):
+def _test_LPOPL(task, learning_params: LearningParameters, testing_params: TestingParameters, policy_bank: PolicyBank):
     task.reset(seed=testing_params.test_seed) # deterministic
     r_hist = []
     len_hist = []
@@ -409,7 +418,7 @@ def _test_LPOPL(task, learning_params: LearningParameters, testing_params: Testi
             # Choosing an action to perform
             ltl_goal = task.get_LTL_goal()
             # TODO deterministic evaluation
-            a = policy_bank.get_best_action(ltl_goal, np.expand_dims(s1, axis=0))
+            a = policy_bank.get_best_action(ltl_goal, np.expand_dims(s1, axis=0), deterministic=True)
 
             # Executing the action
             s1, r, term, trunc, info = task.step(a)

@@ -12,7 +12,7 @@ from .policy_dsac import DiscreteSAC
 from .policy_dsac_actor import DiscreteSoftActor
 from .policy_base import Policy
 from .policy_constant import ConstantPolicy
-from .policy_bank import PolicyBank
+from .policy_bank_cnn import PolicyBankCNN
 from .rl_logger import RLLogger
 from .network import get_CNN_Dense, get_CNN_preprocess, get_MLP
 
@@ -25,17 +25,17 @@ POLICY_MODULES: Mapping[str, Policy] = {
 HIDDEN_LAYER_SIZE = [64, 64]
 REWARD_SCALE = 10
 
-class PolicyBankCNN(PolicyBank):
+class PolicyBankCNNShared(PolicyBankCNN):
     """
     This class includes a list of policies (a.k.a neural nets) for achieving different LTL goals
     """
-    def __init__(self, num_actions, num_features, learning_params: LearningParameters, policy_type="dqn", device="cpu"):
+    def __init__(self, 
+                 num_actions, num_features, 
+                 learning_params: LearningParameters, 
+                 policy_type="dqn", share_cnn="across_policies", 
+                 device="cpu"):
         super().__init__(num_actions, num_features, learning_params, policy_type, device)
         self.cnn_preprocess = None
-    
-    def _add_true_false_policy(self, gamma):
-        self._add_constant_policy("False", 0.0)
-        self._add_constant_policy("True", REWARD_SCALE/gamma)  # this ensures that reaching 'True' gives reward of 1
 
     def add_LTL_policy(self, ltl, f_task, dfa, load_tf=True):
         """
@@ -113,46 +113,6 @@ class PolicyBankCNN(PolicyBank):
                                 device=self.device)
         self._add_policy(ltl, policy)
 
-    def learn(self, s1, a, s2, next_goals, r=None, terminated=None, active_policy=None):
-        """
-        given the sampled batch, computes the loss and learns the policy
-        next goals is a list of next goals for each item.
-        """
-        C = len(self.policies)
-        N = s1.shape[0]
-        A = self.num_actions
-        s1_NS = torch.tensor(s1, dtype=torch.float32, device=self.device)
-        a_N = torch.tensor(a, dtype=torch.int64, device=self.device)
-        s2_NS = torch.tensor(s2, dtype=torch.float32, device=self.device)
-        if r is None:
-            r_N = torch.zeros((N,), dtype=torch.float32, device=self.device)
-        else:
-            r_N = torch.tensor(r, dtype=torch.float32, device=self.device) * REWARD_SCALE
-        if terminated is None:
-            terminated_N = torch.zeros((N,), dtype=torch.bool, device=self.device)
-        else:
-            terminated_N = torch.tensor(terminated, dtype=torch.bool, device=self.device)
-        # N * (C-2)
-        next_goal_NC = torch.tensor(next_goals, dtype=torch.int64, device=self.device)
-        
-        # C * N
-        # compute target
-        q_targets_CN = torch.zeros((C, N), device=self.device, requires_grad=False)
-        with torch.no_grad():
-            for i, policy in enumerate(self.policies):
-                q_targets_CN[i, :] = policy.get_v(s2_NS)
-        
-        # learn every policy except for true, false
-        active_policy_metrics = None
-        for i, policy in enumerate(self.policies[2:]): 
-            is_active = (i == active_policy)
-            metrics = policy.learn(
-                s1_NS, a_N, s2_NS, r_N, terminated_N, 
-                next_goal_NC[:, i], 
-                q_targets_CN, is_active=is_active)
-            if is_active:
-                active_policy_metrics = metrics
-        return active_policy_metrics
         
     def load_bank(self, policy_bank_prefix):
         checkpoint_path = os.path.join(policy_bank_prefix, "policy_bank.pth")

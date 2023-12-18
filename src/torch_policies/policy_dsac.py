@@ -40,7 +40,9 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
             tau=0.005, # soft update ratio
             start_steps=5000, # initial exploration phase, per spinning up
             target_entropy=None,
+            secondary_target_entropy=None,
             auto_alpha=True,
+            auto_alpha_active_only=False,
             device="cpu"
         ):
         super().__init__()
@@ -92,6 +94,8 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
 
         # alpha and autotuning
         self.auto_alpha = auto_alpha
+        self.auto_alpha_active_only = auto_alpha_active_only
+        self.secondary_target_entropy = secondary_target_entropy
         self.log_alpha = torch.tensor(np.log(alpha), device=device)
         if auto_alpha:
             self.log_alpha.requires_grad = True
@@ -109,17 +113,17 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
         self.start_steps = start_steps
         self.step = 0
     
-    def forward(self, x):
+    def forward(self, x, deterministic=False):
         if self.step <= self.start_steps:
             self.step += 1
             return int(np.floor(np.random.rand() * self.action_dim))
         else:
-            return self.pi.get_action(x)[0][0].item()
+            return self.pi.get_action(x, deterministic=deterministic)[0][0].item()
     
-    def get_best_action(self, x):
+    def get_best_action(self, x, deterministic=False):
         if type(x) != torch.Tensor:
             x = torch.Tensor(x).to(self.device)
-        return self(x)
+        return self(x, deterministic=deterministic)
     
     def update_target_network(self) -> None:
         """Synchronize the weight for the target network."""
@@ -170,6 +174,9 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
         self.q2_optim.zero_grad(set_to_none=True)
         q_loss1.backward()
         q_loss2.backward()
+        # norm1 = torch.nn.utils.clip_grad_norm_(self.q1.parameters(), 100)
+        # norm2 = torch.nn.utils.clip_grad_norm_(self.q2.parameters(), 100)
+        # print(norm1, norm2)
         # print("    q1 loss", q_loss1.item())
         # print("    q2 loss", q_loss2.item())
         metrics['q1_loss'] = q_loss1.item()
@@ -191,11 +198,11 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
         self.pi_optim.step()
         metrics['pi_entropy'] = entropy_N.mean().item()
 
-        if self.auto_alpha and is_active and self.step >= self.start_steps:
+        if self.auto_alpha and (not self.auto_alpha_active_only or is_active) and self.step >= self.start_steps:
+            target_entropy = self.target_entropy if is_active else self.secondary_target_entropy
             alpha_loss = torch.mean(
-                    action_probs_NA.detach().mean() * \
-                    (entropy_N - self.target_entropy).detach() * \
-                    torch.exp(self.log_alpha))
+                    (-entropy_N + target_entropy).detach() * \
+                    -torch.exp(self.log_alpha))
             self.alpha_optim.zero_grad()
             alpha_loss.backward()
             self.alpha_optim.step()

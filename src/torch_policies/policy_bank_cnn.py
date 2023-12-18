@@ -78,6 +78,7 @@ class PolicyBankCNN(PolicyBank):
                 action_dim=self.num_actions,
                 start_steps=self.learning_params.learning_starts,
                 target_entropy=self.learning_params.target_entropy,
+                secondary_target_entropy=self.learning_params.non_active_target_entropy,
                 auto_alpha=self.learning_params.auto_alpha,
                 # TODO dsac random steps
                 device=self.device
@@ -96,45 +97,7 @@ class PolicyBankCNN(PolicyBank):
         self._add_policy(ltl, policy)
 
     def learn(self, s1, a, s2, next_goals, r=None, terminated=None, active_policy=None):
-        """
-        given the sampled batch, computes the loss and learns the policy
-        next goals is a list of next goals for each item.
-        """
-        C = len(self.policies)
-        N = s1.shape[0]
-        A = self.num_actions
-        s1_NS = torch.tensor(s1, dtype=torch.float32, device=self.device)
-        a_N = torch.tensor(a, dtype=torch.int64, device=self.device)
-        s2_NS = torch.tensor(s2, dtype=torch.float32, device=self.device)
-        if r is None:
-            r_N = torch.zeros((N,), dtype=torch.float32, device=self.device)
-        else:
-            r_N = torch.tensor(r, dtype=torch.float32, device=self.device) * REWARD_SCALE
-        if terminated is None:
-            terminated_N = torch.zeros((N,), dtype=torch.bool, device=self.device)
-        else:
-            terminated_N = torch.tensor(terminated, dtype=torch.bool, device=self.device)
-        # N * (C-2)
-        next_goal_NC = torch.tensor(next_goals, dtype=torch.int64, device=self.device)
-        
-        # C * N
-        # compute target
-        q_targets_CN = torch.zeros((C, N), device=self.device, requires_grad=False)
-        with torch.no_grad():
-            for i, policy in enumerate(self.policies):
-                q_targets_CN[i, :] = policy.get_v(s2_NS)
-        
-        # learn every policy except for true, false
-        active_policy_metrics = None
-        for i, policy in enumerate(self.policies[2:]): 
-            is_active = (i == active_policy)
-            metrics = policy.learn(
-                s1_NS, a_N, s2_NS, r_N, terminated_N, 
-                next_goal_NC[:, i], 
-                q_targets_CN, is_active=is_active)
-            if is_active:
-                active_policy_metrics = metrics
-        return active_policy_metrics
+        return super().learn(s1, a, s2, next_goals, r, terminated, active_policy)
         
     def load_bank(self, policy_bank_prefix):
         checkpoint_path = os.path.join(policy_bank_prefix, "policy_bank.pth")

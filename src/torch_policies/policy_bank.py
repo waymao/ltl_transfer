@@ -166,7 +166,7 @@ class PolicyBank:
         next goals is a list of next goals for each item.
         """
         C = len(self.policies)
-        N, S = s1.shape
+        N = s1.shape[0]
         A = self.num_actions
         s1_NS = torch.tensor(s1, dtype=torch.float32, device=self.device)
         a_N = torch.tensor(a, dtype=torch.int64, device=self.device)
@@ -191,6 +191,7 @@ class PolicyBank:
         
         # learn every policy except for true, false
         active_policy_metrics = None
+        policy_metrics = []
         for i, policy in enumerate(self.policies[2:]): 
             is_active = (i == active_policy)
             metrics = policy.learn(
@@ -199,10 +200,11 @@ class PolicyBank:
                 q_targets_CN, is_active=is_active)
             if is_active:
                 active_policy_metrics = metrics
-        return active_policy_metrics
+            policy_metrics.append(metrics)
+        return active_policy_metrics, policy_metrics
     
-    def get_best_action(self, ltl, s1):
-        return self.policies[self.policy2id[ltl]].get_best_action(s1)
+    def get_best_action(self, ltl, s1, deterministic=False):
+        return self.policies[self.policy2id[ltl]].get_best_action(s1, deterministic=deterministic)
 
     def update_target_network(self):
         for i in range(self.get_number_LTL_policies()):

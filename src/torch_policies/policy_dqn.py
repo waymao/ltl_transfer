@@ -114,13 +114,13 @@ class DQN(nn.Module, metaclass=Policy):
         curr_q_values_NA = self.model.forward(x)
         return curr_q_values_NA.max(axis=1)[0]
     
-    def get_best_action(self, x, exploration=False):
+    def get_best_action(self, x, deterministic=True):
         """
         Given x, returns the q value of every action.
         """
         if type(x) != torch.Tensor:
             x = torch.Tensor(x).to(self.device)
-        if not exploration:
+        if deterministic:
             return self.target_model(x).argmax().item()
         
         # add exploration
