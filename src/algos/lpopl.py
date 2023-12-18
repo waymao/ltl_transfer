@@ -60,7 +60,10 @@ def run_experiments(
     else:
         tester = tester_original
 
-    learning_params = tester.learning_params
+    # write hyperparams to test result file
+    learning_params: LearningParameters = tester.learning_params
+    tester.logger.add_text("learning_params", str(learning_params))
+    tester.logger.add_text("run_id", str(run_id))
 
     curriculum_fpath = os.path.join(run_dpath, "curriculum.pkl")
     if resume and os.path.exists(run_dpath) and os.path.exists(curriculum_fpath):
