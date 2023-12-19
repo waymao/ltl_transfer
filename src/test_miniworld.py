@@ -41,10 +41,10 @@ def main():
     # view_mode = "top" if args.top_view else "agent"
     view_mode = "top"
 
-    env = gym.make(args.env_name, view=view_mode, render_mode="human")
-
     ltl_formula = ('until', 'True', "a")
-    params = GameParams('../../../experiments/maps/map_0.txt', 1, ltl_formula, False, False, None)
+    params = GameParams('../experiments/maps/map_14.txt', 1, ltl_formula, False, False, None)
+
+    env = gym.make(args.env_name, view=view_mode, render_mode="human", params=params)
     wrapped = MiniWorldLTLWrapper(env, params)
     miniworld_version = miniworld.__version__
 
