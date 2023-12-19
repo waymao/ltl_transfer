@@ -249,7 +249,7 @@ def _run_LPOPL(
         next_goals = np.zeros((policy_bank.get_number_LTL_policies(),), dtype=np.float64)
         for ltl in policy_bank.get_LTL_policies():
             ltl_id = policy_bank.get_id(ltl)
-            if term and reward == 0:
+            if term and reward <= 0:
                 ltl_next_id = policy_bank.get_id("False")  # env deadends are equal to achive the 'False' formula
             else:
                 ltl_next_id = policy_bank.get_id(policy_bank.get_policy_next_LTL(ltl, true_props))
@@ -418,7 +418,7 @@ def _run_LPOPL(
         print("Done! Total reward:", training_reward)
 
 
-def _test_LPOPL(task, learning_params: LearningParameters, testing_params: TestingParameters, policy_bank: PolicyBank):
+def _test_LPOPL(task: gym.Env, learning_params: LearningParameters, testing_params: TestingParameters, policy_bank: PolicyBank, do_render=False):
     task.reset(seed=testing_params.test_seed) # deterministic
     r_hist = []
     len_hist = []
@@ -443,6 +443,10 @@ def _test_LPOPL(task, learning_params: LearningParameters, testing_params: Testi
                 if task.get_LTL_goal() == "True":
                     succ_count += 1
                 break
+            if do_render:
+                task.render()
+        if do_render:
+            time.sleep(0.1)
         r_hist.append(r_total)
         len_hist.append(t + 1)
     return np.mean(r_hist), np.std(r_hist), np.mean(len_hist), np.std(len_hist), succ_count / testing_params.test_epis
