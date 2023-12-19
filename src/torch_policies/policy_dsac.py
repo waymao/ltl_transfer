@@ -174,11 +174,13 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
         self.q2_optim.zero_grad(set_to_none=True)
         q_loss1.backward()
         q_loss2.backward()
+
+        # # gradient clipping
         # norm1 = torch.nn.utils.clip_grad_norm_(self.q1.parameters(), 100)
         # norm2 = torch.nn.utils.clip_grad_norm_(self.q2.parameters(), 100)
-        # print(norm1, norm2)
-        # print("    q1 loss", q_loss1.item())
-        # print("    q2 loss", q_loss2.item())
+        # metrics['q_grad_norm1'] = norm1.item()
+        # metrics['q_grad_norm2'] = norm2.item()
+        # step
         metrics['q1_loss'] = q_loss1.item()
         metrics['q2_loss'] = q_loss2.item()
         self.q1_optim.step()
@@ -194,8 +196,12 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
         pi_loss = -(torch.sum(min_q_NA * action_probs_NA, axis=-1) + alpha * entropy_N).mean()
         self.pi_optim.zero_grad(set_to_none=True)
         pi_loss.backward()
+        
+        # # grad clipping
         # norm_pi = torch.nn.utils.clip_grad_norm_(self.pi.parameters(), 1).detach()
-        # print(norm_pi)
+        # metrics['pi_grad_norm'] = norm_pi.item()
+
+        # loss
         metrics['pi_loss'] = pi_loss.item()
         self.pi_optim.step()
         metrics['pi_entropy'] = entropy_N.mean().item()
