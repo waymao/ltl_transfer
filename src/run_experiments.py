@@ -1,4 +1,5 @@
 import argparse
+import pickle
 # from algos import baseline_dqn
 # from algos import baseline_hrl
 from algos import lpopl
@@ -22,7 +23,7 @@ def run_experiment(
         testing_params: TestingParameters,
         resume=False,
         device="cpu"):
-    # Setting the proper logger
+    # Setting the proper logger and run info
     tb_log_path = os.path.join(
         save_dpath, "results", f"{game_name}_{dataset_name}", f"{train_type}_p{prob}", 
         f"{alg_name}_{rl_alg}", f"map{map_id}", str(run_id), 
@@ -31,6 +32,8 @@ def run_experiment(
     if testing_params.custom_metric_folder is not None:
         tb_log_path = os.path.join(tb_log_path, testing_params.custom_metric_folder)
     logger = SummaryWriter(log_dir=tb_log_path)
+    with open(os.path.join(tb_log_path, "learning_params.pkl"), "wb") as f:
+        pickle.dump(learning_params, f)
 
     # Setting the experiment
     tester = Tester(learning_params, testing_params, map_id, prob, tasks_id, dataset_name, train_type, train_size, test_type, edge_matcher, rl_alg, save_dpath, logger)

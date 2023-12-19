@@ -112,7 +112,7 @@ def run_experiments(
             game.reset(options=dict(task_params=task_params))
 
             # Running the task
-            _run_LPOPL(game, testing_games, policy_bank, tester, curriculum, replay_buffer, show_print, succ_logger)
+            _run_LPOPL(game, testing_games, policy_bank, tester, curriculum, replay_buffer, show_print, succ_logger, succ_log_path)
             num_tasks += 1
             # # Save 'policy_bank' for incremental training and transfer
             saver.save_policy_bank(policy_bank, run_id)
@@ -170,6 +170,7 @@ def _run_LPOPL(
         replay_buffer: ReplayBuffer, 
         show_print: bool, 
         succ_logger: SuccLogger,
+        best_pb_save_dir: str,
         do_render=False,
     ):
     if testing_game is None:
@@ -216,6 +217,9 @@ def _run_LPOPL(
 
     epi_begin_t = 0
     active_policy_metrics = None # for logging loss
+    best_succ_rate = 0
+    best_mean_len = 9999999999
+
     for t in range(num_steps):
         # Getting the current state and ltl goal
         ltl_goal = game.get_LTL_goal()
@@ -342,6 +346,13 @@ def _run_LPOPL(
                         global_step, 
                         r_mean, succ_rate, len_mean, len_std
                     ))
+                # save best policy bank
+                if succ_rate > best_succ_rate or (succ_rate == best_succ_rate and len_mean < best_mean_len):
+                    policy_bank.save_bank(best_pb_save_dir)
+                    print("    saved best policy bank")
+                best_succ_rate = max(best_succ_rate, succ_rate)
+                best_mean_len = min(best_mean_len, len_mean)
+                
 
         # reset truncate counter if LTL was progressed. Otherwise, increment the counter
         new_ltl_goal = game.get_LTL_goal()
