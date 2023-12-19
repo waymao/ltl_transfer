@@ -7,7 +7,7 @@ import argparse
 class LearningParameters:
     lr: float = 1e-4
     max_timesteps_per_task: int = 100000
-    buffer_size: int = int(5e5)
+    buffer_size: int = int(2e5)
     print_freq: int = 5000
     train_freq: int = 1
     batch_size: int = 32
