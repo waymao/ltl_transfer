@@ -38,7 +38,7 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
             policy_update_freq=1, # policy network update frequency
             target_update_freq=10, # target network update frequency
             tau=0.005, # soft update ratio
-            start_steps=5000, # initial exploration phase, per spinning up
+            start_steps=0, # initial exploration phase, per spinning up
             target_entropy=None,
             secondary_target_entropy=None,
             auto_alpha=True,
@@ -114,7 +114,7 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
         self.step = 0
     
     def forward(self, x, deterministic=False):
-        if self.step <= self.start_steps:
+        if self.step <= self.start_steps and not deterministic:
             self.step += 1
             return int(np.floor(np.random.rand() * self.action_dim))
         else:
