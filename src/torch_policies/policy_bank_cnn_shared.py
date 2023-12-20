@@ -32,10 +32,12 @@ class PolicyBankCNNShared(PolicyBankCNN):
     def __init__(self, 
                  num_actions, num_features, 
                  learning_params: LearningParameters, 
-                 policy_type="dqn", share_cnn="across_policies", 
+                 policy_type="dqn", 
+                 separate_cnn_ac=True, # whether to use separate CNN for actor and critic
                  device="cpu"):
         super().__init__(num_actions, num_features, learning_params, policy_type, device)
         self.cnn_preprocess = None
+        self.separate_cnn_ac = separate_cnn_ac
 
     def add_LTL_policy(self, ltl, f_task, dfa, load_tf=True):
         """
@@ -48,6 +50,11 @@ class PolicyBankCNNShared(PolicyBankCNN):
             self.cnn_preprocess = get_CNN_preprocess(3, device=self.device)
             self.cnn_preprocess_target = deepcopy(self.cnn_preprocess)
             self.cnn_preprocess_target.eval()
+            if self.separate_cnn_ac:
+                self.cnn_preprocess_q2 = get_CNN_preprocess(3, device=self.device)
+                self.cnn_preprocess_q2_target = deepcopy(self.cnn_preprocess_q2)
+                self.cnn_preprocess_q2_target.eval()
+                self.cnn_preprocess_pi = get_CNN_preprocess(3, device=self.device)
             self.preprocess_out_dim = 1536
         if self.rl_algo == "dsac":
             pi_module = get_CNN_Dense(
@@ -56,23 +63,46 @@ class PolicyBankCNNShared(PolicyBankCNN):
                 out_dim=self.num_actions,
                 device=self.device
             )
-            actor_module = DiscreteSoftActor(
-                self.num_features, self.num_actions,
-                pi_module,
-                device=self.device
-            )
             critic_module = get_CNN_Dense(
                 self.cnn_preprocess,
                 self.preprocess_out_dim,
                 out_dim=self.num_actions,
                 device=self.device)
             critic1_tgt = critic_module.deepcopy_w_preprocess(self.cnn_preprocess_target)
-            critic2_module = get_CNN_Dense(
-                self.cnn_preprocess,
-                self.preprocess_out_dim,
-                out_dim=self.num_actions,
-                device=self.device)
-            critic2_tgt = critic2_module.deepcopy_w_preprocess(self.cnn_preprocess_target)
+
+            # depending on whether we use separate CNN for actor and critic
+            # we use separate CNN for critic2 and actor
+            if self.separate_cnn_ac:
+                critic2_module = get_CNN_Dense(
+                    self.cnn_preprocess_q2,
+                    self.preprocess_out_dim,
+                    out_dim=self.num_actions,
+                    device=self.device)
+                critic2_tgt = critic2_module.deepcopy_w_preprocess(self.cnn_preprocess_q2_target)
+                pi_module = get_CNN_Dense(
+                    self.cnn_preprocess_pi,
+                    self.preprocess_out_dim,
+                    out_dim=self.num_actions,
+                    device=self.device
+                )
+            else:
+                critic2_module = get_CNN_Dense(
+                    self.cnn_preprocess,
+                    self.preprocess_out_dim,
+                    out_dim=self.num_actions,
+                    device=self.device)
+                critic2_tgt = critic2_module.deepcopy_w_preprocess(self.cnn_preprocess_target)
+                pi_module = get_CNN_Dense(
+                    self.cnn_preprocess,
+                    self.preprocess_out_dim,
+                    out_dim=self.num_actions,
+                    device=self.device
+                )
+            actor_module = DiscreteSoftActor(
+                self.num_features, self.num_actions,
+                pi_module,
+                device=self.device
+            )
             policy = DiscreteSAC(
                 ltl,
                 f_task, # full task
