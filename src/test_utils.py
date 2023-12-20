@@ -78,6 +78,11 @@ class Tester:
                 self.experiment = f"{train_type}/map_{map_id}/prob_{self.prob}"
                 self.experiment_train = f"{train_type}/map_{map_id}/prob_{self.prob}"
                 self.tasks = tasks.get_sequence_of_subtasks()
+            elif train_type == "test_until":
+                # testing use only
+                self.experiment = f"{train_type}/map_{map_id}/prob_{self.prob}"
+                self.experiment_train = f"{train_type}/map_{map_id}/prob_{self.prob}"
+                self.tasks = tasks.get_sequence_of_until()
             # elif train_type == "interleaving":
             #     self.tasks = tasks.get_interleaving_subtasks()
             # elif train_type == "safety":

@@ -30,6 +30,12 @@ def get_sequence_of_subtasks():
     ]
     return tasks
 
+def get_sequence_of_until():
+    tasks = [
+        ('and', ('until', ('not', 'a'), 'b'), ('until', 'True', 'a')),
+    ]
+    return tasks
+
 
 def get_interleaving_subtasks():
     # Experiment 2: Interleaving Sub-Tasks (Section 5.3 in paper)

@@ -112,6 +112,7 @@ if __name__ == "__main__":
     rl_algos = ["dqn", "dsac"]
     train_types = [
         "sequence",
+        'test_until',
         "interleaving",
         "safety",
         "transfer_sequence",
