@@ -57,6 +57,7 @@ class CurriculumLearner:
         self.min_steps = min_steps
         self.total_steps = total_steps
         self.incremental = False
+        self.restart()
 
     def incremental_learning(self, incremental_steps):
         self.incremental = True

@@ -418,7 +418,14 @@ def _run_LPOPL(
         print("Done! Total reward:", training_reward)
 
 
-def _test_LPOPL(task: gym.Env, learning_params: LearningParameters, testing_params: TestingParameters, policy_bank: PolicyBank, do_render=False):
+def _test_LPOPL(
+        task: gym.Env, 
+        learning_params: LearningParameters, 
+        testing_params: TestingParameters, 
+        policy_bank: PolicyBank, 
+        deterministic=True,
+        do_render=False
+    ):
     task.reset(seed=testing_params.test_seed) # deterministic
     r_hist = []
     len_hist = []
@@ -427,12 +434,18 @@ def _test_LPOPL(task: gym.Env, learning_params: LearningParameters, testing_para
         r_total = 0
         t = 0
         s1, info = task.reset()
+        prev_ltl_goal = None
         for t in range(learning_params.max_timesteps_per_episode):
             
             # Choosing an action to perform
             ltl_goal = task.get_LTL_goal()
+
+            if do_render and prev_ltl_goal != ltl_goal:
+                print("    ", t, ":     progressed to", ltl_goal)
+                prev_ltl_goal = ltl_goal
+
             # TODO deterministic evaluation
-            a = policy_bank.get_best_action(ltl_goal, np.expand_dims(s1, axis=0), deterministic=True)
+            a = policy_bank.get_best_action(ltl_goal, np.expand_dims(s1, axis=0), deterministic=deterministic)
 
             # Executing the action
             s1, r, term, trunc, info = task.step(a)
@@ -440,13 +453,19 @@ def _test_LPOPL(task: gym.Env, learning_params: LearningParameters, testing_para
 
             # Restarting the environment (Game Over)
             if task.dfa.is_game_over() or trunc or term or t > learning_params.max_timesteps_per_episode:
+                if do_render:
+                    print("    ", t, ":     game over. Final LTL:", task.dfa.get_LTL(), "; deadend:", (task.dfa.state == -1))
+                
                 if task.get_LTL_goal() == "True":
                     succ_count += 1
                 break
             if do_render:
                 task.render()
         if do_render:
-            time.sleep(0.1)
+            if t == learning_params.max_timesteps_per_episode - 1:
+                print("    ", t, ":     reached max time step")
+            if do_render:
+                time.sleep(0.1)
         r_hist.append(r_total)
         len_hist.append(t + 1)
     return np.mean(r_hist), np.std(r_hist), np.mean(len_hist), np.std(len_hist), succ_count / testing_params.test_epis
