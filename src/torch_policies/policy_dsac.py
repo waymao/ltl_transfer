@@ -118,7 +118,7 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
             self.step += 1
             return int(np.floor(np.random.rand() * self.action_dim))
         else:
-            return self.pi.get_action(x, deterministic=deterministic)[0][0].item()
+            return self.pi.get_action(x, deterministic=False)[0][0].item()
     
     def get_best_action(self, x, deterministic=False):
         if type(x) != torch.Tensor:

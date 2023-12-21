@@ -315,38 +315,21 @@ def _run_LPOPL(
             #     tester.run_test(curriculum.get_current_step(), game_name, _test_LPOPL, policy_bank, num_features)
             if global_step >= learning_params.learning_starts:
                 with torch.no_grad():
-                    r_mean, r_std, len_mean, len_std, succ_rate = _test_LPOPL(testing_game, learning_params, testing_params, policy_bank)
-                tester.logger.add_scalar(
-                    "test/r_mean",
-                    r_mean,
-                    global_step=global_step
-                )
-                tester.logger.add_scalar(
-                    "test/r_std",
-                    r_std,
-                    global_step=global_step
-                )
-                tester.logger.add_scalar(
-                    "test/len_mean",
-                    len_mean,
-                    global_step=global_step
-                )
-                tester.logger.add_scalar(
-                    "test/len_std",
-                    len_std,
-                    global_step=global_step
-                )
-                tester.logger.add_scalar(
-                    "test/succ_rate",
-                    succ_rate,
-                    global_step=global_step
-                )
+                    result_dict = _test_LPOPL(testing_game, learning_params, testing_params, policy_bank)
+                for key, val in result_dict.items():
+                    tester.logger.add_scalar(
+                        f"test/{key}",
+                        val,
+                        global_step=global_step
+                    )
                 if show_print:
-                    print("Testing @ Step: {}\t mean_rew: {}\t succ_rate: {}\t mean_len: {}\t len_std: {}".format(
-                        global_step, 
-                        r_mean, succ_rate, len_mean, len_std
-                    ))
+                    print("Testing @ Step: {}\t ".format(global_step),
+                        " ; ".join([f"{key}: {val}" for key, val in result_dict.items()]),
+                    )
+
                 # save best policy bank
+                succ_rate = result_dict["succ_rate"]
+                len_mean = result_dict["len_mean"]
                 if succ_rate > best_succ_rate or (succ_rate == best_succ_rate and len_mean < best_mean_len):
                     policy_bank.save_bank(best_pb_save_dir)
                     print("    saved best policy bank")
@@ -357,7 +340,7 @@ def _run_LPOPL(
         # reset truncate counter if LTL was progressed. Otherwise, increment the counter
         new_ltl_goal = game.get_LTL_goal()
         if new_ltl_goal != ltl_goal:
-            # print("    ", curriculum.get_current_step(), ":     progressed to", new_ltl_goal, ". len:", curr_eps_step)
+            print("    ", curriculum.get_current_step(), ":     progressed to", new_ltl_goal, ". len:", curr_eps_step)
             curr_eps_step = 0
         else:
             curr_eps_step += 1
@@ -426,22 +409,31 @@ def _test_LPOPL(
         deterministic=True,
         do_render=False
     ):
+    """
+    Runs the policy 'policy' on the task 'task' for 'testing_params.test_epis' episodes.
+    Returns the mean and std of the accumulated rewards episode lengths, success rate, and 
+    the LTL goal progression count.
+    """
     task.reset(seed=testing_params.test_seed) # deterministic
     r_hist = []
     len_hist = []
+    prog_count_hist = []
     succ_count = 0
     for epi in tqdm(range(testing_params.test_epis), desc="Testing...", leave=False, ascii=True):
         r_total = 0
         t = 0
         s1, info = task.reset()
         prev_ltl_goal = None
+        prog_count = 0 # LTL goal progression count
         for t in range(learning_params.max_timesteps_per_episode):
             
             # Choosing an action to perform
             ltl_goal = task.get_LTL_goal()
-
-            if do_render and prev_ltl_goal != ltl_goal:
-                print("    ", t, ":     progressed to", ltl_goal)
+            
+            # check if LTL goal progressed and log results
+            if prev_ltl_goal != ltl_goal:
+                if do_render: print("    ", t, ":     progressed to", ltl_goal)
+                prog_count += 1
                 prev_ltl_goal = ltl_goal
 
             # TODO deterministic evaluation
@@ -453,14 +445,16 @@ def _test_LPOPL(
 
             # Restarting the environment (Game Over)
             if task.dfa.is_game_over() or trunc or term or t > learning_params.max_timesteps_per_episode:
-                if do_render:
-                    print("    ", t, ":     game over. Final LTL:", task.dfa.get_LTL(), "; deadend:", (task.dfa.state == -1))
+                # print the final LTL and deadend
+                if do_render: print("    ", t, ":     game over. Final LTL:", task.dfa.get_LTL(), "; deadend:", (task.dfa.state == -1))
                 
                 if task.get_LTL_goal() == "True":
                     succ_count += 1
+                    prog_count += 1
                 break
-            if do_render:
-                task.render()
+
+            # rendering
+            if do_render: task.render()
         if do_render:
             if t == learning_params.max_timesteps_per_episode - 1:
                 print("    ", t, ":     reached max time step")
@@ -468,4 +462,14 @@ def _test_LPOPL(
                 time.sleep(0.1)
         r_hist.append(r_total)
         len_hist.append(t + 1)
-    return np.mean(r_hist), np.std(r_hist), np.mean(len_hist), np.std(len_hist), succ_count / testing_params.test_epis
+        prog_count_hist.append(prog_count)
+
+    return {
+        "rew_mean": np.mean(r_hist), 
+        "rew_std": np.std(r_hist), 
+        "len_mean": np.mean(len_hist), 
+        "len_std": np.std(len_hist), 
+        "succ_rate": succ_count / testing_params.test_epis,
+        "prog_count_mean": np.mean(prog_count_hist),
+        "prog_count_std": np.std(prog_count_hist)
+    }

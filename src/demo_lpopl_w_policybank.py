@@ -115,7 +115,7 @@ if __name__ == "__main__":
     print("Initialized Learning Params:", learning_params)
 
     # Setting the experiment
-    testing_params = TestingParameters()
+    testing_params = TestingParameters(test_epis=100)
     print(learning_params)
     
 
@@ -137,5 +137,5 @@ if __name__ == "__main__":
     random.seed(1)
     task.render()
     input("Press Enter to begin...")
-    r_mean, r_std, len_mean, len_std, succ_rate = _test_LPOPL(task, learning_params, testing_params, policy_bank, do_render=True)
-    print(r_mean, r_std, len_mean, len_std, succ_rate)
+    result = _test_LPOPL(task, learning_params, testing_params, policy_bank, do_render=True)
+    print(result)
