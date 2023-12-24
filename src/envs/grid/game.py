@@ -69,7 +69,12 @@ class Game(gym.Env):
 
         # we continue playing
         obs = self.get_features()
-        return obs, reward, self.ltl_game_over or self.env_game_over, False, {}
+        info = {
+            "ltl_goal": self.get_LTL_goal(),
+            "dfa_game_over": self.ltl_game_over,
+            "dfa_state": self.dfa.state
+        }
+        return obs, reward, self.ltl_game_over or self.env_game_over, False, info
 
     def reset(self, seed=None, options={}):
         if 'params' in options:
@@ -88,7 +93,12 @@ class Game(gym.Env):
         self.dfa = DFA(self.params.ltl_task, self.params.init_dfa_state)
         reward, self.ltl_game_over, self.env_game_over = self._get_rewards()
         self.agent.update_reward(reward)
-        return self.get_features(), {}
+        info = {
+            "ltl_goal": self.get_LTL_goal(),
+            "dfa_game_over": self.ltl_game_over,
+            "dfa_state": self.dfa.state
+        }
+        return self.get_features(), info
 
     def _get_next_position(self, action):
         """

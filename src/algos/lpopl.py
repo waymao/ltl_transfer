@@ -200,7 +200,7 @@ def _run_LPOPL(
     try:
         epi_info.init_x = info['agent_init_loc'][0]
         epi_info.init_y = info['agent_init_loc'][1]
-        epi_info.ltl_task = game.dfa.get_LTL()
+        epi_info.ltl_task = info["ltl_goal"]
     except:
         epi_info = None
 
@@ -222,7 +222,7 @@ def _run_LPOPL(
 
     for t in range(num_steps):
         # Getting the current state and ltl goal
-        ltl_goal = game.get_LTL_goal()
+        ltl_goal = info['ltl_goal']
 
         # Choosing an action to perform
         if policy_bank.rl_algo == "dqn":
@@ -338,7 +338,7 @@ def _run_LPOPL(
                 
 
         # reset truncate counter if LTL was progressed. Otherwise, increment the counter
-        new_ltl_goal = game.get_LTL_goal()
+        new_ltl_goal = info["ltl_goal"]
         if new_ltl_goal != ltl_goal:
             print("    ", curriculum.get_current_step(), ":     progressed to", new_ltl_goal, ". len:", curr_eps_step)
             curr_eps_step = 0
@@ -346,19 +346,19 @@ def _run_LPOPL(
             curr_eps_step += 1
 
         # Restarting the environment (Game Over)
-        if game.dfa.is_game_over() or trunc or term or curr_eps_step > learning_params.max_timesteps_per_episode:
+        if info['dfa_game_over'] or trunc or term or curr_eps_step > learning_params.max_timesteps_per_episode:
             # print("    ", curriculum.get_current_step(), 
-            #       ": train game over. Final LTL:", game.dfa.get_LTL(), 
-            #       "; deadend:", (game.dfa.state == -1))
+            #       ": train game over. Final LTL:", info['ltl_goal'], 
+            #       "; deadend:", (info['dfa_state'] == -1))
             curr_eps_step = 0
 
             if epi_info is not None:
-                epi_info.success = (game.dfa.get_LTL() == "True")
-                epi_info.final_ltl = game.dfa.get_LTL()
+                epi_info.success = (new_ltl_goal == "True")
+                epi_info.final_ltl = new_ltl_goal
                 epi_info.epi_len = t - epi_begin_t
                 epi_info.global_step = curriculum.get_current_step()
                 epi_info.time = time.time()
-                epi_info.ltl_deadend = (game.dfa.state == -1)
+                epi_info.ltl_deadend = (info['dfa_state'] == -1)
                 succ_logger.report_result(epi_info)
                 succ_logger.save()
 
@@ -375,7 +375,7 @@ def _run_LPOPL(
                 epi_info = SuccEntry()
                 epi_info.init_x = info['agent_init_loc'][0]
                 epi_info.init_y = info['agent_init_loc'][1]
-                epi_info.ltl_task = game.dfa.get_LTL()
+                epi_info.ltl_task = info["ltl_goal"]
 
             # updating the hit rates
             curriculum.update_succ_rate(t, reward)
@@ -428,7 +428,7 @@ def _test_LPOPL(
         for t in range(learning_params.max_timesteps_per_episode):
             
             # Choosing an action to perform
-            ltl_goal = task.get_LTL_goal()
+            ltl_goal = info['ltl_goal']
             
             # check if LTL goal progressed and log results
             if prev_ltl_goal != ltl_goal:
@@ -444,11 +444,11 @@ def _test_LPOPL(
             r_total += r
 
             # Restarting the environment (Game Over)
-            if task.dfa.is_game_over() or trunc or term or t > learning_params.max_timesteps_per_episode:
+            if info['dfa_game_over'] or trunc or term or t > learning_params.max_timesteps_per_episode:
                 # print the final LTL and deadend
-                if do_render: print("    ", t, ":     game over. Final LTL:", task.dfa.get_LTL(), "; deadend:", (task.dfa.state == -1))
+                if do_render: print("    ", t, ":     game over. Final LTL:", info['ltl_goal'], "; deadend:", info['dfa_state'] == -1)
                 
-                if task.get_LTL_goal() == "True":
+                if info['ltl_goal'] == "True":
                     succ_count += 1
                     prog_count += 1
                 break

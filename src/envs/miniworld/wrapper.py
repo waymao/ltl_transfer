@@ -32,6 +32,12 @@ class MiniWorldLTLWrapper(gym.Wrapper):
         obs, info = super().reset(seed=seed, options=options)
         if self.do_transpose:
             obs = np.transpose(obs, (2, 0, 1))
+        info = {
+            **info,
+            "ltl_goal": self.get_LTL_goal(),
+            "dfa_game_over": self.ltl_game_over,
+            "dfa_state": self.dfa.state
+        }
         return obs, info
     
     def step(self, action):
@@ -43,6 +49,14 @@ class MiniWorldLTLWrapper(gym.Wrapper):
         self.env_game_over = ter
         if self.do_transpose:
             obs = np.transpose(obs, (2, 0, 1))
+        
+        # collect LTL related info
+        info = {
+            **info,
+            "ltl_goal": self.get_LTL_goal(),
+            "dfa_game_over": self.ltl_game_over,
+            "dfa_state": self.dfa.state
+        }
         return obs, rew * self.reward_scale, self.ltl_game_over or ter, trunc, info
 
     def get_true_propositions(self):
@@ -51,8 +65,6 @@ class MiniWorldLTLWrapper(gym.Wrapper):
         """
         test_pos = self.unwrapped.agent.pos + self.unwrapped.agent.dir_vec * 1.3 * self.unwrapped.agent.radius
         ent = self.unwrapped.intersect(self.unwrapped.agent, test_pos, 1.3 * self.unwrapped.agent.radius)
-
-        # adding the is_night proposition
         symbol = get_ent_str(ent)
         return symbol.replace("X", "")
 
