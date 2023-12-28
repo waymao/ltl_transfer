@@ -4,6 +4,7 @@ import time
 from typing import Optional, Union
 import gymnasium as gym
 import numpy as np
+from stable_baselines3.common.vec_env import VecEnv
 import torch
 from tqdm import tqdm
 # import tensorflow as tf
@@ -340,7 +341,7 @@ def _run_LPOPL(
         # reset truncate counter if LTL was progressed. Otherwise, increment the counter
         new_ltl_goal = info["ltl_goal"]
         if new_ltl_goal != ltl_goal:
-            print("    ", curriculum.get_current_step(), ":     progressed to", new_ltl_goal, ". len:", curr_eps_step)
+            # print("    ", curriculum.get_current_step(), ":     progressed to", new_ltl_goal, ". len:", curr_eps_step)
             curr_eps_step = 0
         else:
             curr_eps_step += 1
@@ -399,6 +400,84 @@ def _run_LPOPL(
             global_step=curriculum.get_current_step() + 1
         )
         print("Done! Total reward:", training_reward)
+
+
+def _test_LPOPL_parallel(
+        tasks: VecEnv, 
+        learning_params: LearningParameters, 
+        testing_params: TestingParameters, 
+        policy_bank: PolicyBank, 
+        deterministic=True,
+        do_render=False
+    ):
+    """
+    Runs the policy 'policy' on the task 'task' for 'testing_params.test_epis' episodes.
+    Returns the mean and std of the accumulated rewards episode lengths, success rate, and 
+    the LTL goal progression count.
+    """
+    num_parallel_envs = 1
+    r_hist = []
+    len_hist = []
+    prog_count_hist = []
+    succ_count = 0
+    for epi in tqdm(range(testing_params.test_epis), desc="Testing...", leave=False, ascii=True):
+        r_total = 0
+        t = 0
+        s1 = tasks.reset()
+        prev_ltl_goals = [None for _ in range(num_parallel_envs)]
+        prog_count = 0 # LTL goal progression count
+        for t in range(learning_params.max_timesteps_per_episode):
+            
+            # Choosing an action to perform
+            ltl_goals = tasks.env_method("get_LTL_goal")
+            
+            # check if LTL goal progressed and log results
+            for prev_goal, new_goal in zip(prev_ltl_goals, ltl_goals):
+                if prev_goal != new_goal:
+                    if do_render: print("    ", t, ":     progressed to", new_goal)
+                    prog_count += 1
+
+            # TODO!!! parallelize NEXT STEP
+            # change ltl goals to id, then parallelize get best action
+            a = policy_bank.get_best_action(ltl_goals, np.expand_dims(s1, axis=0), deterministic=deterministic)
+
+            # Executing the action
+            s1, r, term, trunc, info = tasks.step(a)
+            r_total += r
+
+            # Restarting the environment (Game Over)
+            new_ltl_goal = tasks.env_method("get_LTL_goal")
+            new_dfa_game_over = tasks.env_method("get_dfa_game_over")
+            new_dfa_state = tasks.env_method("get_dfa_state")
+            if new_dfa_game_over or trunc or term or t > learning_params.max_timesteps_per_episode:
+                # print the final LTL and deadend
+                if do_render: print("    ", t, ":     game over. Final LTL:", new_ltl_goal, "; deadend:", new_dfa_state == -1)
+                
+                if new_ltl_goal == "True":
+                    succ_count += 1
+                    prog_count += 1
+                break
+
+            # rendering
+            if do_render: tasks.render()
+        if do_render:
+            if t == learning_params.max_timesteps_per_episode - 1:
+                print("    ", t, ":     reached max time step")
+            if do_render:
+                time.sleep(0.1)
+        r_hist.append(r_total)
+        len_hist.append(t + 1)
+        prog_count_hist.append(prog_count)
+
+    return {
+        "rew_mean": np.mean(r_hist), 
+        "rew_std": np.std(r_hist), 
+        "len_mean": np.mean(len_hist), 
+        "len_std": np.std(len_hist), 
+        "succ_rate": succ_count / testing_params.test_epis,
+        "prog_count_mean": np.mean(prog_count_hist),
+        "prog_count_std": np.std(prog_count_hist)
+    }
 
 
 def _test_LPOPL(
