@@ -134,9 +134,9 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
             for param, target_param in zip(self.q2.parameters(), self.q2_target.parameters()):
                 target_param.copy_(self.tau * param + (1 - self.tau) * target_param)
     
-    def get_v(self, s2_NS):
+    def get_v(self, s2_NS, **kwargs):
         alpha = torch.exp(self.log_alpha)
-        _, entropy_N, prob_NA = self.forward(s2_NS)
+        _, entropy_N, prob_NA = self.forward(s2_NS, **kwargs)
         q1_next_NA = self.q1_target(s2_NS)
         q2_next_NA = self.q2_target(s2_NS)
         q_min_next_NA = torch.min(q1_next_NA, q2_next_NA)
@@ -152,14 +152,15 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
             ter_N,
             next_id_N,
             next_v_vals_CN,
-            is_active=False
+            is_active=False,
+            **kwargs
         ):
         metrics = {}
         alpha = torch.exp(self.log_alpha).detach()
 
         # q for current state
-        q1_val_N = self.q1(s1_NS).gather(1, a_N.view(-1, 1)).squeeze()
-        q2_val_N = self.q2(s1_NS).gather(1, a_N.view(-1, 1)).squeeze()
+        q1_val_N = self.q1(s1_NS, **kwargs).gather(1, a_N.view(-1, 1)).squeeze()
+        q2_val_N = self.q2(s1_NS, **kwargs).gather(1, a_N.view(-1, 1)).squeeze()
 
         # q for next state using newly sampled actions.
         with torch.no_grad():
@@ -188,10 +189,10 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
         self.q2_optim.step()
 
         # pi loss
-        _, entropy_N, action_probs_NA = self.forward(s1_NS)
+        _, entropy_N, action_probs_NA = self.forward(s1_NS, **kwargs)
         with torch.no_grad():
-            q1_NA = self.q1(s1_NS)
-            q2_NA = self.q2(s1_NS)
+            q1_NA = self.q1(s1_NS, **kwargs)
+            q2_NA = self.q2(s1_NS, **kwargs)
             min_q_NA = torch.min(q1_NA, q2_NA)
         # pi_loss = -((min_q_NA - alpha * log_pi_NA) * action_probs_NA).sum(dim=-1).mean()
         pi_loss = -(torch.sum(min_q_NA * action_probs_NA, axis=-1) + alpha * entropy_N).mean()
