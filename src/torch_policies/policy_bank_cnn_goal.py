@@ -150,24 +150,14 @@ class PolicyBankCNNGoalCond(PolicyBank):
     def load_bank(self, policy_bank_prefix):
         checkpoint_path = os.path.join(policy_bank_prefix, "policy_bank.pth")
         checkpoint = torch.load(checkpoint_path)
-        for ltl, policy_id in self.policy2id.items():
-            if ltl not in checkpoint['policies']: continue # skip unsaved policies
-            policy: Policy = self.policies[policy_id]
-            policy.restore_from_state_dict(checkpoint['policies'][ltl])
+        self.policy.load_state_dict(checkpoint)
         # self.cnn_preprocess.load_state_dict(checkpoint['cnn_preprocess'])
         print("loaded policy bank from", checkpoint_path)
 
 
     def save_bank(self, policy_bank_prefix):
         # TODO
-        save = {}
-        policies_dict = {}
-        for ltl, policy_id in self.policy2id.items():
-            policy: Union[nn.Module, Policy] = self.policies[policy_id]
-            if type(policy) != ConstantPolicy:
-                # only save non-constant policy
-                policies_dict[ltl] = policy.get_state_dict()
-        save['policies'] = policies_dict
+        save = self.policy.state_dict()
         # save['cnn_preprocess'] = self.cnn_preprocess.state_dict()
         checkpoint_path = os.path.join(policy_bank_prefix, "policy_bank.pth")
         if not os.path.exists(policy_bank_prefix):
