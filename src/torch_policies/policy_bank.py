@@ -50,7 +50,7 @@ class PolicyBank:
 
     def _add_true_false_policy(self, gamma):
         self._add_constant_policy("False", 0.0)
-        self._add_constant_policy("True", REWARD_SCALE = 10/gamma)  # this ensures that reaching 'True' gives reward of 1
+        self._add_constant_policy("True", REWARD_SCALE / gamma)  # this ensures that reaching 'True' gives reward of 1
 
     def _add_constant_policy(self, ltl, value):
         policy = ConstantPolicy(
