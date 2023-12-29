@@ -32,6 +32,7 @@ class LearningParameters:
 
     # CNN related
     cnn_shared_net: bool = False # use shared CNNs for all policies' actor and critics
+    goal_conditioned: bool = False # use goal conditioned policies for all policies' actor and critics
 
     # def __init__(self, *args, **kwargs):
     #     super().__init__(*args, **kwargs)

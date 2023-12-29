@@ -137,8 +137,8 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
     def get_v(self, s2_NS, **kwargs):
         alpha = torch.exp(self.log_alpha)
         _, entropy_N, prob_NA = self.forward(s2_NS, **kwargs)
-        q1_next_NA = self.q1_target(s2_NS)
-        q2_next_NA = self.q2_target(s2_NS)
+        q1_next_NA = self.q1_target(s2_NS, **kwargs)
+        q2_next_NA = self.q2_target(s2_NS, **kwargs)
         q_min_next_NA = torch.min(q1_next_NA, q2_next_NA)
         q_next_N = (prob_NA * q_min_next_NA).sum(dim=-1) + alpha * entropy_N
         return q_next_N

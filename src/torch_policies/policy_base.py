@@ -42,7 +42,7 @@ class Policy(ABC, type(torch.nn.Module)):
         pass
 
 
-class DummyPolicy(Policy):
+class DummyPolicy(torch.nn.Module,  metaclass=Policy):
     def __init__(self, ltl, f_task, dfa):
         self.ltl = ltl
         self.f_task = f_task

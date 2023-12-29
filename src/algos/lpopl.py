@@ -11,6 +11,7 @@ from tqdm import tqdm
 from torch_policies.policy_bank import PolicyBank, LearningParameters
 from torch_policies.policy_bank_cnn import PolicyBankCNN
 from torch_policies.policy_bank_cnn_shared import PolicyBankCNNShared
+from torch_policies.policy_bank_cnn_goal import PolicyBankCNNGoalCond
 
 from utils.schedules import LinearSchedule
 from utils.replay_buffer import ReplayBuffer
@@ -148,7 +149,9 @@ def _initialize_policy_bank(game_name, learning_params: LearningParameters, curr
         policy_bank = PolicyBank(num_actions, num_features, learning_params, policy_type=rl_algo, device=device)
     else:
         # tasks requiring visual observation
-        if learning_params.cnn_shared_net:
+        if learning_params.goal_conditioned:
+            policy_bank = PolicyBankCNNGoalCond(num_actions, num_features, learning_params, policy_type=rl_algo, device=device)
+        elif learning_params.cnn_shared_net:
             policy_bank = PolicyBankCNNShared(num_actions, num_features, learning_params, policy_type=rl_algo, device=device)
         else:
             policy_bank = PolicyBankCNN(num_actions, num_features, learning_params, policy_type=rl_algo, device=device)
@@ -162,6 +165,11 @@ def _initialize_policy_bank(game_name, learning_params: LearningParameters, curr
             # this method already checks that the policy is not in the bank and it is not 'True' or 'False'
             policy_bank.add_LTL_policy(ltl, f_task, dfa, load_tf=load_tf)
         # print("took %0.2f mins to add policy" % ((time.time() - start_time)/60))
+    
+    # we need to initialize the entire policy if the policy is goal-conditioned
+    if learning_params.goal_conditioned:
+        policy_bank._init_policies()
+        
     if load_tf:
         policy_bank.reconnect()  # -> creating the connections between the neural nets
     # print("\n", policy_bank.get_number_LTL_policies(), "sub-tasks were extracted!\n")

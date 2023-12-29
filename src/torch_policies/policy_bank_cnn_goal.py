@@ -25,13 +25,13 @@ POLICY_MODULES: Mapping[str, Policy] = {
 HIDDEN_LAYER_SIZE = [64, 64]
 REWARD_SCALE = 10
 
-class PolicyBankCNN(PolicyBank):
+class PolicyBankCNNGoalCond(PolicyBank):
     """
     This class includes a list of policies (a.k.a neural nets) for achieving different LTL goals
     """
     def __init__(self, num_actions, num_features, learning_params: LearningParameters, policy_type="dqn", device="cpu"):
         super().__init__(num_actions, num_features, learning_params, policy_type, device)
-        self.cnn_preprocess = None
+        self.policy = None
     
     def _add_true_false_policy(self, gamma):
         self._add_constant_policy("False", 0.0)
@@ -93,7 +93,7 @@ class PolicyBankCNN(PolicyBank):
 
     def get_best_action(self, ltl, s1, deterministic=False):
         policy_id = self.get_id(ltl)
-        return self.policy.get_best_action(s1, deterministic=deterministic, goal=policy_id)
+        return self.policy.get_best_action(s1, deterministic=deterministic, goal=policy_id - 2)
 
     def update_target_network(self):
         self.policy.update_target_network()
@@ -124,7 +124,12 @@ class PolicyBankCNN(PolicyBank):
 
         q_targets_CN = torch.zeros((C, N), device=self.device, requires_grad=False)
         with torch.no_grad():
-            for i, policy in enumerate(self.policies):
+            # get v for true and false policies
+            q_targets_CN[0, :] = self.policies[0].get_v(s2_NS)
+            q_targets_CN[1, :] = self.policies[1].get_v(s2_NS)
+
+            # v for other policies are in the main policy
+            for i, policy in enumerate(self.policies[2:]):
                 q_targets_CN[i, :] = self.policy.get_v(s2_NS, goal=i)
         
         # learn every policy except for true, false
@@ -132,7 +137,7 @@ class PolicyBankCNN(PolicyBank):
         policy_metrics = []
         for i, policy in enumerate(self.policies[2:]): 
             is_active = (i == active_policy)
-            metrics = policy.learn(
+            metrics = self.policy.learn(
                 s1_NS, a_N, s2_NS, r_NC[:, i], terminated_NC[:, i], 
                 next_goal_NC[:, i], 
                 q_targets_CN, is_active=is_active, goal=i)

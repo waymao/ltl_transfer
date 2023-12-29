@@ -98,7 +98,7 @@ class GoalCondCNNDense(nn.Module):
         else:
             return self.fc_layers(z)
 
-def get_whole_GoalCNN(in_channels, out_dim, fc_layers="auto", device="cpu"):
+def get_whole_GoalCNN(in_channels, out_dim, num_policies, fc_layers="auto", device="cpu"):
     cnn_out_dim = 1536
     preprocess_net = get_CNN_preprocess(in_channels, device=device)
-    return GoalCondCNNDense(preprocess_net, cnn_out_dim, out_dim, fc_layers=fc_layers).to(device)
+    return GoalCondCNNDense(preprocess_net, cnn_out_dim, out_dim, fc_layers=fc_layers, num_policies=num_policies).to(device)
