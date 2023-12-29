@@ -1,11 +1,11 @@
 XXXXXXXXXXX
-X         X
+X        aX
 X a       X
 X     b   X
+Xa        X
+X  a    a X
 X         X
+X     b   X
+X a       X
 X       a X
-X         X
-X     b   X
-X a       X
-X         X
 XXXXXXXXXXX
