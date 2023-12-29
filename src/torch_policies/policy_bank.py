@@ -21,6 +21,7 @@ POLICY_MODULES: Mapping[str, Policy] = {
 }
 
 HIDDEN_LAYER_SIZE = [64, 64]
+REWARD_SCALE = 10
 
 class PolicyBank:
     """
@@ -49,7 +50,7 @@ class PolicyBank:
 
     def _add_true_false_policy(self, gamma):
         self._add_constant_policy("False", 0.0)
-        self._add_constant_policy("True", 10/gamma)  # this ensures that reaching 'True' gives reward of 1
+        self._add_constant_policy("True", REWARD_SCALE = 10/gamma)  # this ensures that reaching 'True' gives reward of 1
 
     def _add_constant_policy(self, ltl, value):
         policy = ConstantPolicy(
@@ -171,15 +172,18 @@ class PolicyBank:
         s1_NS = torch.tensor(s1, dtype=torch.float32, device=self.device)
         a_N = torch.tensor(a, dtype=torch.int64, device=self.device)
         s2_NS = torch.tensor(s2, dtype=torch.float32, device=self.device)
+
+        # all r, ter, next_goal are N * (C-2)
         if r is None:
-            r_N = torch.zeros((N,), dtype=torch.float32, device=self.device)
+            r_NC = torch.zeros((N, C - 2), dtype=torch.float32, device=self.device)
         else:
-            r_N = torch.tensor(r, dtype=torch.float32, device=self.device)
+            r_NC = torch.tensor(r, dtype=torch.float32, device=self.device)
+        r_NC *= REWARD_SCALE
+        # print(r_NC.mean().item(), r_NC.max().item())
         if terminated is None:
-            terminated_N = torch.zeros((N,), dtype=torch.bool, device=self.device)
+            terminated_NC = torch.zeros((N, C - 2), dtype=torch.bool, device=self.device)
         else:
-            terminated_N = torch.tensor(terminated, dtype=torch.bool, device=self.device)
-        # N * (C-2)
+            terminated_NC = torch.tensor(terminated, dtype=torch.bool, device=self.device)
         next_goal_NC = torch.tensor(next_goals, dtype=torch.int64, device=self.device)
         
         # C * N
@@ -195,7 +199,7 @@ class PolicyBank:
         for i, policy in enumerate(self.policies[2:]): 
             is_active = (i == active_policy)
             metrics = policy.learn(
-                s1_NS, a_N, s2_NS, r_N, terminated_N, 
+                s1_NS, a_N, s2_NS, r_NC[:, i], terminated_NC[:, i], 
                 next_goal_NC[:, i], 
                 q_targets_CN, is_active=is_active)
             if is_active:

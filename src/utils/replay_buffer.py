@@ -24,7 +24,11 @@ class ReplayBuffer(object):
     def __len__(self):
         return len(self._storage)
 
-    def add(self, s1: np.ndarray, a: np.ndarray, s2: np.ndarray, next_goal: np.ndarray):
+    def add(self, 
+        s1: np.ndarray, a: np.ndarray, 
+        s2: np.ndarray, next_goal: np.ndarray, 
+        rews: np.ndarray, terminated: np.ndarray
+    ):
         if self._s1_storage is None:
             s_shape = s1.shape
             a_shape = np.array(a).shape
@@ -33,13 +37,16 @@ class ReplayBuffer(object):
             self._s2_storage = np.zeros((self._maxsize, *s_shape), dtype=s2.dtype)
             self._a_storage = np.zeros((self._maxsize, *a_shape))
             self._next_goal_storage = np.zeros((self._maxsize, *next_goal_shape), dtype=np.int64)
-            # self._rew_storage = np.zeros(self._maxsize, dtype=np.float32)
-            # self._terminated_storage = np.zeros(self._maxsize, dtype=np.float32)
+            self._rew_storage = np.zeros((self._maxsize, *next_goal_shape), dtype=np.float32)
+            self._terminated_storage = np.zeros((self._maxsize, *next_goal_shape), dtype=np.float32)
 
         self._s1_storage[self._next_idx] = s1
         self._a_storage[self._next_idx] = np.array(a)
         self._s2_storage[self._next_idx] = s2
         self._next_goal_storage[self._next_idx] = next_goal
+        self._rew_storage[self._next_idx] = rews
+        self._terminated_storage[self._next_idx] = terminated
+        
         self._next_idx = (self._next_idx + 1) % self._maxsize
         if self.size < self._maxsize:
             self.size += 1
@@ -50,6 +57,8 @@ class ReplayBuffer(object):
             "s2": self._s2_storage,
             "a": self._a_storage,
             "next_goals": self._next_goal_storage,
+            "rewards": self._rew_storage,
+            "terminated": self._terminated_storage,
             "max_size": self._maxsize,
             "next_idx": self._next_idx,
             "size": self.size
@@ -62,12 +71,16 @@ class ReplayBuffer(object):
         self._next_goal_storage = dict["next_goals"]
         self._maxsize = dict["max_size"]
         self._next_idx = dict["next_idx"]
+        self._rew_storage = dict["rewards"]
+        self._terminated_storage = dict["terminated"]
         self.size = dict["size"]
         # sanity check
         assert type(self._s1_storage) == np.ndarray
         assert type(self._s2_storage) == np.ndarray
         assert type(self._a_storage) == np.ndarray
         assert type(self._next_goal_storage) == np.ndarray
+        assert type(self._rew_storage) == np.ndarray
+        assert type(self._terminated_storage) == np.ndarray
         assert type(self._maxsize) == int
         assert type(self._next_idx) == int
         assert type(self.size) == int
@@ -78,7 +91,16 @@ class ReplayBuffer(object):
 
 
     def _encode_sample(self, idxes):
-        return self._s1_storage[idxes], self._a_storage[idxes], self._s2_storage[idxes], self._next_goal_storage[idxes]
+        """
+        returns s1, a, next_goal, rew, terminated
+        """
+        return \
+            self._s1_storage[idxes], \
+            self._a_storage[idxes], \
+            self._s2_storage[idxes], \
+            self._next_goal_storage[idxes], \
+            self._rew_storage[idxes], \
+            self._terminated_storage[idxes]
 
     def sample(self, batch_size, random_samples=True):
         """Sample a batch of experiences.

@@ -25,6 +25,11 @@ from succ_logger import SuccLogger, SuccEntry
 from torch.profiler import profile, record_function, ProfilerActivity
 import random
 
+
+PROGRESSION_REW = 1
+FINAL_REW = 1
+STEP_REW = 0
+
 def run_experiments(
         game_name: str,
         tester: Tester, 
@@ -245,17 +250,39 @@ def _run_LPOPL(
         training_reward += reward
         true_props = game.get_true_propositions()
 
-        # Saving this transition
+        # Computing rewards for each policy and saving the reward
         next_goals = np.zeros((policy_bank.get_number_LTL_policies(),), dtype=np.float64)
+        rewards = np.zeros((policy_bank.get_number_LTL_policies(),), dtype=np.float64)
+        terminateds = np.zeros((policy_bank.get_number_LTL_policies(),), dtype=np.float64)
         for ltl in policy_bank.get_LTL_policies():
             ltl_id = policy_bank.get_id(ltl)
             if term and reward <= 0:
-                ltl_next_id = policy_bank.get_id("False")  # env deadends are equal to achive the 'False' formula
+                # env deadend
+                next_goals[ltl_id-2] = policy_bank.get_id("False")  # env deadends are equal to achive the 'False' formula
+                rewards[ltl_id-2] = 0
+                terminateds[ltl_id-2] = 1
             else:
                 ltl_next_id = policy_bank.get_id(policy_bank.get_policy_next_LTL(ltl, true_props))
-            next_goals[ltl_id-2] = ltl_next_id
-        replay_buffer.add(s1, a, s2, next_goals)
+                next_goals[ltl_id-2] = ltl_next_id
+                if ltl_next_id == ltl_id:
+                    # still in the same task
+                    rewards[ltl_id-2] = STEP_REW
+                    terminateds[ltl_id-2] = 0
+                elif ltl_next_id == policy_bank.get_id("True"):
+                    # finished the task
+                    rewards[ltl_id-2] = FINAL_REW
+                    terminateds[ltl_id-2] = 0
+                elif ltl_next_id == policy_bank.get_id("False"):
+                    # ltl deadend
+                    rewards[ltl_id-2] = 0
+                    terminateds[ltl_id-2] = 1
+                else:
+                    # progressed to a sub task
+                    rewards[ltl_id-2] = PROGRESSION_REW
+                    terminateds[ltl_id-2] = 0
+        replay_buffer.add(s1, a, s2, next_goals, rewards, terminateds)
 
+        # update s
         s1 = s2
 
         # Learning
@@ -264,14 +291,15 @@ def _run_LPOPL(
         # 20000 / 4
         if (step + 1) >= learning_params.learning_starts and (step + 1) % learning_params.train_freq == 0:
             # Minimize the error in Bellman's equation on a batch sampled from replay buffer.
-            S1, A, S2, Goal = replay_buffer.sample(learning_params.batch_size)
+            S1, A, S2, Goal, r, terminated = replay_buffer.sample(learning_params.batch_size)
 
             # with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True, profile_memory=True, ) as prof:
             # with profile(activities=[ProfilerActivity.CPU]) as prof:
             #     policy_bank.learn(S1, A, S2, Goal, active_policy=curriculum.current_task)
             # # prof.export_chrome_trace("profile_trace.json")
             # print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=20))
-            active_policy_metrics, policy_metrics = policy_bank.learn(S1, A, S2, Goal, active_policy=curriculum.current_task)
+            active_policy_metrics, policy_metrics = policy_bank.learn(
+                S1, A, S2, Goal, r, terminated, active_policy=curriculum.current_task)
 
 
         # Updating the target network
@@ -340,7 +368,7 @@ def _run_LPOPL(
         # reset truncate counter if LTL was progressed. Otherwise, increment the counter
         new_ltl_goal = info["ltl_goal"]
         if new_ltl_goal != ltl_goal:
-            print("    ", curriculum.get_current_step(), ":     progressed to", new_ltl_goal, ". len:", curr_eps_step)
+            # print("    ", curriculum.get_current_step(), ":     progressed to", new_ltl_goal, ". len:", curr_eps_step)
             curr_eps_step = 0
         else:
             curr_eps_step += 1
