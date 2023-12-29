@@ -115,6 +115,7 @@ def run_experiments(
             # Apply task params
             task_params = tester.get_task_params(task)
             game.reset(options=dict(task_params=task_params))
+            testing_games.reset(options=dict(task_params=task_params))
 
             # Running the task
             _run_LPOPL(game, testing_games, policy_bank, tester, curriculum, replay_buffer, show_print, succ_logger, succ_log_path)
