@@ -20,14 +20,12 @@ class DiscreteSoftActor(nn.Module):
         self.device = device
         self.pi = pi_module
 
-    def forward(self, x):
-        return self.pi(x)
 
-    def get_action(self, x, deterministic=False):
+    def forward(self, x, deterministic=False, **kwargs):
         # taken directly from cleanrl/cleanrl/sac_continuous_action.py
         # i don't think the logprob part is intuitive
         # logits_NA = F.softmax(self(x), dim=1)
-        logits_NA = self(x)
+        logits_NA = self.pi(x, **kwargs)
         policy_dist = Categorical(logits=logits_NA)
         if deterministic:
             # use argmax for deterministic action during eval.
@@ -39,3 +37,8 @@ class DiscreteSoftActor(nn.Module):
         action_probs_NA = policy_dist.probs
         entropy = policy_dist.entropy()
         return action_N, entropy, action_probs_NA
+    
+    def get_action(self, x, deterministic=False, **kwargs):
+        if type(x) != torch.Tensor:
+            x = torch.Tensor(x).to(self.device)
+        return self(x, deterministic=deterministic, **kwargs)[0]

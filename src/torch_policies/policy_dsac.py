@@ -13,6 +13,7 @@ from copy import deepcopy
 from typing import Optional
 
 from .policy_base import Policy
+from .policy_dsac_actor import DiscreteSoftActor
 
 
 class DiscreteSAC(nn.Module, metaclass=Policy):
@@ -27,7 +28,7 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
             q1_target: Optional[nn.Module],
             q2: nn.Module, 
             q2_target: Optional[nn.Module],
-            pi: nn.Module,
+            pi: DiscreteSoftActor,
             state_dim, 
             action_dim, 
             lr_q=1e-3, 
@@ -113,17 +114,17 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
         self.start_steps = start_steps
         self.step = 0
     
-    def forward(self, x, deterministic=False):
+    def forward(self, x, deterministic=False, **kwargs):
+        return self.pi.forward(x, deterministic=deterministic, **kwargs)
+        
+    def get_best_action(self, x, deterministic=False, **kwargs):
+        if type(x) != torch.Tensor:
+            x = torch.Tensor(x).to(self.device)
         if self.step <= self.start_steps and not deterministic:
             self.step += 1
             return int(np.floor(np.random.rand() * self.action_dim))
         else:
-            return self.pi.get_action(x, deterministic=False)[0][0].item()
-    
-    def get_best_action(self, x, deterministic=False):
-        if type(x) != torch.Tensor:
-            x = torch.Tensor(x).to(self.device)
-        return self(x, deterministic=deterministic)
+            return self.forward(x, deterministic=False, **kwargs)[0][0].item()
     
     def update_target_network(self) -> None:
         """Synchronize the weight for the target network."""
@@ -135,7 +136,7 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
     
     def get_v(self, s2_NS):
         alpha = torch.exp(self.log_alpha)
-        _, entropy_N, prob_NA = self.pi.get_action(s2_NS)
+        _, entropy_N, prob_NA = self.forward(s2_NS)
         q1_next_NA = self.q1_target(s2_NS)
         q2_next_NA = self.q2_target(s2_NS)
         q_min_next_NA = torch.min(q1_next_NA, q2_next_NA)
@@ -187,7 +188,7 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
         self.q2_optim.step()
 
         # pi loss
-        _, entropy_N, action_probs_NA = self.pi.get_action(s1_NS)
+        _, entropy_N, action_probs_NA = self.forward(s1_NS)
         with torch.no_grad():
             q1_NA = self.q1(s1_NS)
             q2_NA = self.q2(s1_NS)
