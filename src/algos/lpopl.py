@@ -118,6 +118,9 @@ def run_experiments(
             game.reset(options=dict(task_params=task_params))
             testing_games.reset(options=dict(task_params=task_params))
 
+            # log task
+            tester.logger.add_text("task", str(task), global_step=curriculum.get_current_step())
+
             # Running the task
             _run_LPOPL(game, testing_games, policy_bank, tester, curriculum, replay_buffer, show_print, succ_logger, succ_log_path)
             num_tasks += 1
