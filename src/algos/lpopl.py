@@ -30,6 +30,7 @@ import random
 PROGRESSION_REW = 1
 FINAL_REW = 1
 STEP_REW = 0
+FAIL_REW = -1
 
 def run_experiments(
         game_name: str,
@@ -271,7 +272,7 @@ def _run_LPOPL(
             if term and reward <= 0:
                 # env deadend
                 next_goals[ltl_id-2] = policy_bank.get_id("False")  # env deadends are equal to achive the 'False' formula
-                rewards[ltl_id-2] = 0
+                rewards[ltl_id-2] = FAIL_REW
                 terminateds[ltl_id-2] = 1
             else:
                 ltl_next_id = policy_bank.get_id(policy_bank.get_policy_next_LTL(ltl, true_props))
@@ -286,7 +287,7 @@ def _run_LPOPL(
                     terminateds[ltl_id-2] = 0
                 elif ltl_next_id == policy_bank.get_id("False"):
                     # ltl deadend
-                    rewards[ltl_id-2] = 0
+                    rewards[ltl_id-2] = FAIL_REW
                     terminateds[ltl_id-2] = 1
                 else:
                     # progressed to a sub task
