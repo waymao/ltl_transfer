@@ -38,7 +38,8 @@ class SuccEntry:
 
 
 class SuccLogger:
-    def __init__(self, log_path):
+    def __init__(self, log_path, enabled=False):
+        self.enabled = enabled
         self.log_file = log_path + os.sep + "success_map.csv"
         self.db: List[SuccEntry] = []
         with open(self.log_file, 'w') as f:
@@ -54,6 +55,7 @@ class SuccLogger:
         self.db = []
 
     def save(self):
+        if not self.enabled: return
         with open(self.log_file, 'a') as f:
             for entry in self.db:
                 if not entry.saved:
