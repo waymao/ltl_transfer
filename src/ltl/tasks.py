@@ -14,7 +14,7 @@ The set of propositional symbols are {a,b,c,d,e,f,g,h,n,s}:
 """
 
 
-def get_sequence_of_subtasks():
+def get_sequence_of_subtasks2():
     # Experiment 1: Sequences of Sub-Tasks (Section 5.2 in paper)
     tasks = [
         _get_sequence('ba'),
@@ -31,15 +31,15 @@ def get_sequence_of_subtasks():
     return tasks
 
 
-def get_sequence_of_subtasks2():
+def get_sequence_of_subtasks():
     # Experiment 1: Sequences of Sub-Tasks (Section 5.2 in paper)
     tasks = [
-        _get_sequence('cba'),
-        # _get_sequence('cba'),
-        # _get_sequence('de'),
-        # _get_sequence('db'),
-        # _get_sequence('fae'),
-        # _get_sequence('abdc'),
+        _get_sequence('ba'),
+        _get_sequence('ac'),
+        _get_sequence('de'),
+        _get_sequence('db'),
+        _get_sequence('fae'),
+        _get_sequence('abdc'),
         # _get_sequence('acfb'),
         # _get_sequence('acfc'),
         # _get_sequence('faeg'),
@@ -49,7 +49,12 @@ def get_sequence_of_subtasks2():
 
 def get_sequence_of_until():
     tasks = [
-        ('and', ('until', ('not', 'a'), 'b'), ('until', 'True', 'a')),
+        _get_until('ba'),
+        _get_until('ac'),
+        _get_until('de'),
+        _get_until('db'),
+        _get_until('fae'),
+        _get_until('abdc'),
     ]
     return tasks
 
@@ -100,6 +105,12 @@ def _get_sequence(seq):
     if len(seq) == 1:
         return ('until', 'True', seq)
     return ('until', 'True', ('and', seq[0], _get_sequence(seq[1:])))
+
+
+def _get_until(seq):
+    if len(seq) == 1:
+        return ('until', 'True', seq)
+    return ('and', ('until', ('not', seq[1]), seq[0]), _get_until(seq[1:]))
 
 
 def _sn():
