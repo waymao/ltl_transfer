@@ -26,6 +26,8 @@ class MiniWorldLTLWrapper(gym.Wrapper):
         self.dfa = DFA(self.params.ltl_task, self.params.init_dfa_state)
     
     def reset(self, *, seed=None, options=None):
+        if options is not None and options.get('task_params', None) is not None:
+            self.params = options['task_params']
         self.dfa = DFA(self.params.ltl_task, self.params.init_dfa_state)
         self.env_game_over = False
         self.ltl_game_over = False
