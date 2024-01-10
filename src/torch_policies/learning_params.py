@@ -41,15 +41,18 @@ class LearningParameters:
 
 
 def get_learning_parameters(policy_name, game_name, **kwargs):
+    # remove none items
+    kwargs = {key: val for (key, val) in kwargs.items() if val is not None}
+    
     if policy_name == "dsac":
         if 'alpha' in kwargs and kwargs['alpha'] == None:
             del kwargs['alpha']
-        if game_name == "miniworld":
+        if game_name == "miniworld" or game_name == "miniworld_no_vis":
             params = LearningParameters(
                 gamma=0.99,
                 alpha=0.03,
                 batch_size=512,
-                tau=0.05, # TODO this is per 12 steps, so it's actually 0.004
+                tau=1, # tau per update
                 lr=1e-4,
                 pi_lr=1e-5,
                 print_freq=5000,
@@ -57,9 +60,10 @@ def get_learning_parameters(policy_name, game_name, **kwargs):
                 train_freq=12,
                 target_entropy=0.2 * -np.log(1.0 / 4),
                 non_active_target_entropy=0.2 * -np.log(1.0 / 4),
-                target_network_update_freq=12,
+                target_network_update_freq=1000,
                 max_timesteps_per_episode=1000,
-                max_timesteps_per_task=500000,
+                max_timesteps_per_task=1500000,
+                cnn_shared_net=True
             )
         else:
             params = LearningParameters(**kwargs)
