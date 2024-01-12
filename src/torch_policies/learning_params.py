@@ -23,7 +23,7 @@ class LearningParameters:
     # SAC related
     target_network_update_freq: int = 4
     pi_lr: float = 1e-4
-    alpha: float = 0.05
+    alpha: float = 0.03
     tau: float = 0.005
     auto_alpha: bool = False
     target_entropy: float = -.3 # target entropy for SAC, used to compute alpha
@@ -71,26 +71,26 @@ def get_learning_parameters(policy_name, game_name, **kwargs):
         if game_name == "miniworld":
             params = LearningParameters(
                 lr=1e-4,
-                max_timesteps_per_task=200000,
+                max_timesteps_per_task=2000000,
                 train_freq=4,
                 batch_size=32,
                 learning_starts=50000,
                 exploration_fraction=0.1,
                 exploration_final_eps=0.05,
-                target_network_update_freq=10000,
+                target_network_update_freq=1000,
                 gamma=0.99,
                 print_freq=5000,
             )
         elif game_name == "miniworld_no_vis":
             params = LearningParameters(
                 lr=1e-4,
-                max_timesteps_per_task=300000,
+                max_timesteps_per_task=2000000,
                 buffer_size=25000,
                 train_freq=1,
                 batch_size=32,
                 learning_starts=10000,
                 exploration_fraction=0.3,
-                target_network_update_freq=100,
+                target_network_update_freq=1000,
             )
         else:
             params = LearningParameters(

@@ -30,7 +30,7 @@ import random
 PROGRESSION_REW = 1
 FINAL_REW = 1
 STEP_REW = 0
-FAIL_REW = -1
+FAIL_REW = 0
 
 def run_experiments(
         game_name: str,
