@@ -8,9 +8,12 @@ def get_game(name, params, render_mode=None, max_episode_steps=None, do_transpos
     if name == "grid":
         from .grid.game import Game as GridGame
         return GridGame(params)
-    elif name == "miniworld" or name == "miniworld_no_vis":
-        from .miniworld import NavigateEnv, MiniWorldLTLWrapper, NonVisualWrapper
-        if max_episode_steps is not None:
+    elif name == "miniworld" or name == "miniworld_no_vis" or name == "miniworld_simp_no_vis":
+        from .miniworld import NavigateEnv, MiniWorldLTLWrapper, NonVisualWrapper, NavigateNoVisEnv
+        if name == "miniworld_simp_no_vis":
+            env = NavigateNoVisEnv(params, render_mode="human", view="top")
+            do_transpose = False
+        elif max_episode_steps is not None:
             env = NavigateEnv(params, render_mode="human", view="top", max_episode_steps=max_episode_steps)
         else:
             env = NavigateEnv(params, render_mode="human", view="top")

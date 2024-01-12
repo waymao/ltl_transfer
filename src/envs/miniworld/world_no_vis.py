@@ -1,4 +1,5 @@
 from gymnasium import utils, spaces
+from gymnasium.spaces import Box
 import numpy as np
 from typing import Optional
 
@@ -43,5 +44,6 @@ class NavigateNoVisEnv(NavigateEnv):
         angles = np.mod(angles, 2*np.pi) - np.pi
 
         return np.stack([dist, angles], axis=1).reshape(-1)
-    def render_obs():
-        return None
+    
+    def render_obs(self):
+        return self.observation(None)

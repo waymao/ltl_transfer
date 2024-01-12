@@ -1,5 +1,6 @@
 from gymnasium import register
 from .world import NavigateEnv
+from .world_no_vis import NavigateNoVisEnv
 from .wrapper import MiniWorldLTLWrapper
 from .non_visual_wrapper import NonVisualWrapper
 
