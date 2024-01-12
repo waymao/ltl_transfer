@@ -1,8 +1,11 @@
 #!/bin/bash
-#SBATCH -n 19
-#SBATCH --mem=99G
-#SBATCH -t 199:00:00
+#SBATCH -n 2
+#SBATCH -N 1
+#SBATCH --mem=40G
+#SBATCH -t 48:00:00
 #SBATCH --array=0-3
+#SBATCH -p gpu
+#SBATCH --gres=gpu:1
 
 # Use '%A' for array-job ID, '%J' for job ID and '%a' for task ID
 #SBATCH -e sbatch_out/arrayjob-%A-%a.err
@@ -23,17 +26,17 @@ train_type=${train_types[$i]}
 maps=( 0 1 5 6 )  # 0 1 5 6
 map=${maps[$k]}
 
-probs=( 0.5 )  # 0.9 0.8 0.7 0.6 0.5
+probs=( 0.7 )  # 0.9 0.8 0.7 0.6 0.5
 prob=${probs[$m]}
 
 algo="lpopl"
 train_size=50
 total_steps=800000
 incremental_steps=1200000
-save_dpath="$HOME/data/shared/ltl-transfer"
+save_dpath="$HOME/data/shared/ltl-transfer-pytorch/2"
 
 module load anaconda/2022.05
 source /oscar/runtime/opt/anaconda/2022.05/etc/profile.d/conda.sh
-conda activate ltl_transfer
+conda activate /users/ywei75/anaconda/ltl-pyt
 
-python src/run_experiments.py --algo=$algo --train_type=$train_type --train_size=$train_size --map=$map --prob=$prob --total_steps=$total_steps --incremental_steps=$incremental_steps --save_dpath=$save_dpath
+python src/run_experiments.py --algo=$algo --train_type=$train_type --train_size=$train_size --map=$map --prob=$prob --total_steps=$total_steps --incremental_steps=$incremental_steps --save_dpath=$save_dpath --device=cuda
