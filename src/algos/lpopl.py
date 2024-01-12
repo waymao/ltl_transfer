@@ -465,7 +465,7 @@ def _test_LPOPL(
         t = 0
         s1, info = task.reset()
         prev_ltl_goal = None
-        prog_count = 0 # LTL goal progression count
+        prog_count = -1 # LTL goal progression count
         for t in range(learning_params.max_timesteps_per_episode):
             
             # Choosing an action to perform
