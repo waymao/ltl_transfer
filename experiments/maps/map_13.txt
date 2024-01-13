@@ -1,12 +1,11 @@
-XXXXXXXXXXXX
-X  b a b A X
-X  bb bb   X
-X          X
-X          X
-X          X
-X          X
-X          X
-X          X
-X          X
-X          X
-XXXXXXXXXXXX
+XXXXXXXXXXX
+Xf    d  eX
+X         X
+Xb        X
+X         X
+X a      cX
+X         X
+Xf        X
+X        bX
+X  d  e   X
+XXXXXXXXXXX
