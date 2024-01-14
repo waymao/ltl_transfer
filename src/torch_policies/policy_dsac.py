@@ -116,6 +116,15 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
     
     def forward(self, x, deterministic=False, **kwargs):
         return self.pi.forward(x, deterministic=deterministic, **kwargs)
+
+    def get_best_actions(self, x, deterministic=False, **kwargs):
+        if type(x) != torch.Tensor:
+            x = torch.Tensor(x).to(self.device)
+        if self.step <= self.start_steps and not deterministic:
+            self.step += 1
+            return torch.randint(self.action_dim, (x.shape[0],)).to(self.device)
+        else:
+            return self.forward(x, deterministic=False, **kwargs)[0]
         
     def get_best_action(self, x, deterministic=False, **kwargs):
         if type(x) != torch.Tensor:

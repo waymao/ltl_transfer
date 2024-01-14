@@ -206,6 +206,9 @@ class PolicyBank:
                 active_policy_metrics = metrics
             policy_metrics.append(metrics)
         return active_policy_metrics, policy_metrics
+
+    def get_best_actions(self, ltl, s1, deterministic=False):
+        return self.policies[self.policy2id[ltl]].get_best_actions(s1, deterministic=deterministic)
     
     def get_best_action(self, ltl, s1, deterministic=False):
         return self.policies[self.policy2id[ltl]].get_best_action(s1, deterministic=deterministic)
