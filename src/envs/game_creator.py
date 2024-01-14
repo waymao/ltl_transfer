@@ -3,6 +3,11 @@
 # from typing import Union
 from .game_base import BaseGame
 from gymnasium.wrappers import GrayScaleObservation, FrameStack
+from stable_baselines3.common.vec_env import VecEnv, DummyVecEnv, SubprocVecEnv
+
+
+def get_parallel_games(name, params, render_mode=None, max_episode_steps=None, do_transpose=True, reward_scale=1) -> VecEnv:
+    return SubprocVecEnv([lambda: get_game(name, params, render_mode, max_episode_steps, do_transpose, reward_scale)])
 
 def get_game(name, params, render_mode=None, max_episode_steps=None, do_transpose=True, reward_scale=1) -> BaseGame:
     if name == "grid":

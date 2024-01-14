@@ -113,6 +113,24 @@ class DQN(nn.Module, metaclass=Policy):
     def get_v(self, x):
         curr_q_values_NA = self.model.forward(x)
         return curr_q_values_NA.max(axis=1)[0]
+
+    def get_best_actions(self, x, deterministic=True):
+        """
+        Given x, returns the q value of every action.
+        """
+        if type(x) != torch.Tensor:
+            x = torch.Tensor(x).to(self.device)
+        if deterministic:
+            return self.target_model(x).argmax(axis=1).cpu().numpy()
+        
+        # add exploration
+        if self.training:
+            # increment the time step used by the epsilon scheduler
+            self.t += 1
+        if np.random.random() < self.eps_scheduler.value(self.t):
+            return np.random.randint(0, self.action_dim, size=(x.shape[0]))
+        else:
+            return self.target_model(x).argmax(axis=1).cpu().numpy()
     
     def get_best_action(self, x, deterministic=True):
         """

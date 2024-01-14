@@ -34,6 +34,10 @@ class LearningParameters:
     cnn_shared_net: bool = False # use shared CNNs for all policies' actor and critics
     goal_conditioned: bool = False # use goal conditioned policies for all policies' actor and critics
 
+
+    # parallel
+    parallel_envs = 4
+
     # def __init__(self, *args, **kwargs):
     #     super().__init__(*args, **kwargs)
     #     print("Using Learn parameters:", str(self))
