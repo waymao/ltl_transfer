@@ -4,7 +4,7 @@
 #SBATCH --mem=36G
 ####SBATCH -p 3090-gcondo --gres=gpu:1
 #SBATCH -t 12:00:00
-#SBATCH --array=0-9
+#SBATCH --array=0-8
 
 
 # Use '%A' for array-job ID, '%J' for job ID and '%a' for task ID
