@@ -47,14 +47,14 @@ def get_learning_parameters(policy_name, game_name, **kwargs):
     if policy_name == "dsac":
         if 'alpha' in kwargs and kwargs['alpha'] == None:
             del kwargs['alpha']
-        if game_name == "miniworld" or game_name == "miniworld_no_vis":
+        if "miniworld" in game_name:
             params = LearningParameters(
                 gamma=0.99,
                 alpha=0.03,
                 batch_size=512,
                 tau=1, # tau per update
                 lr=1e-4,
-                pi_lr=1e-5,
+                pi_lr=1e-4,
                 print_freq=5000,
                 learning_starts=30000,
                 train_freq=12,
@@ -62,9 +62,12 @@ def get_learning_parameters(policy_name, game_name, **kwargs):
                 non_active_target_entropy=0.2 * -np.log(1.0 / 4),
                 target_network_update_freq=1000,
                 max_timesteps_per_episode=1000,
-                max_timesteps_per_task=1500000,
+                max_timesteps_per_task=500000,
                 cnn_shared_net=True
             )
+            if game_name == "miniworld":
+                params.pi_lr = 1e-5
+                params.max_timesteps_per_task = 2000000
         else:
             params = LearningParameters(**kwargs)
     elif policy_name == "dqn":

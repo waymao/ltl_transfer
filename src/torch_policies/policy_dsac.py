@@ -124,7 +124,7 @@ class DiscreteSAC(nn.Module, metaclass=Policy):
             self.step += 1
             return int(np.floor(np.random.rand() * self.action_dim))
         else:
-            return self.forward(x, deterministic=False, **kwargs)[0][0].item()
+            return self.forward(x, deterministic=deterministic, **kwargs)[0][0].item()
     
     def update_target_network(self) -> None:
         """Synchronize the weight for the target network."""

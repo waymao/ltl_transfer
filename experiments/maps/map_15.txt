@@ -7,5 +7,5 @@ X a      cX
 X         X
 X     b   X
 X         X
-X  d      X
+X  d     gX
 XXXXXXXXXXX

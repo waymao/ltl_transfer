@@ -455,7 +455,8 @@ def _test_LPOPL(
     Returns the mean and std of the accumulated rewards episode lengths, success rate, and 
     the LTL goal progression count.
     """
-    task.reset(seed=testing_params.test_seed) # deterministic
+    # task.reset(seed=testing_params.test_seed) # deterministic
+    task.reset()
     r_hist = []
     len_hist = []
     prog_count_hist = []
