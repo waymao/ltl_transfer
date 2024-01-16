@@ -20,7 +20,7 @@ POLICY_MODULES: Mapping[str, Policy] = {
     "dsac": DiscreteSAC
 }
 
-HIDDEN_LAYER_SIZE = [64, 64]
+HIDDEN_LAYER_SIZE = [256, 256, 256]
 REWARD_SCALE = 10
 
 class PolicyBank:
@@ -76,7 +76,7 @@ class PolicyBank:
             if self.rl_algo == "dsac":
                 pi_module = get_MLP(
                     self.num_features, self.num_actions,
-                    [64, 64], 
+                    [256, 256, 256], 
                     use_relu=True, 
                     device=self.device,
                     init_method="fanin",
@@ -90,13 +90,13 @@ class PolicyBank:
                 critic_module = get_MLP(
                     num_features=self.num_features,
                     num_actions=self.num_actions,
-                    hidden_layers=[64, 64],
+                    hidden_layers=[256, 256, 256],
                     init_method=None
                 )
                 critic2_module = get_MLP(
                     num_features=self.num_features,
                     num_actions=self.num_actions,
-                    hidden_layers=[64, 64],
+                    hidden_layers=[256, 256, 256],
                     init_method=None
                 )
                 policy = DiscreteSAC(
@@ -206,6 +206,9 @@ class PolicyBank:
                 active_policy_metrics = metrics
             policy_metrics.append(metrics)
         return active_policy_metrics, policy_metrics
+
+    def get_best_actions(self, ltl, s1, deterministic=False):
+        return self.policies[self.policy2id[ltl]].get_best_actions(s1, deterministic=deterministic)
     
     def get_best_action(self, ltl, s1, deterministic=False):
         return self.policies[self.policy2id[ltl]].get_best_action(s1, deterministic=deterministic)
