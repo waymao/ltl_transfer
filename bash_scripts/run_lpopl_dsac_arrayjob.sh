@@ -46,8 +46,8 @@ algo="lpopl"
 rl_algo="dsac"
 game_name="miniworld"
 train_size=50
-total_steps=2000000
-incremental_steps=2500000
+# total_steps=2000000
+# incremental_steps=2500000
 save_dpath="$HOME/data/shared/ltl-transfer-pytorch/3"
 
 source /users/ywei75/.bashrc
