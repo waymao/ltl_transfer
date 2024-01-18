@@ -420,7 +420,7 @@ def _run_LPOPL(
 
             # updating the hit rates
             curriculum.update_succ_rate(t, reward)
-            if curriculum.stop_task(t) or best_succ_rate > 0.9:
+            if curriculum.stop_task(t) or best_succ_rate >= 0.9:
                 break
 
         # checking the steps time-out

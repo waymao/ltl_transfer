@@ -62,7 +62,7 @@ def get_learning_parameters(policy_name, game_name, **kwargs):
                 non_active_target_entropy=0.2 * -np.log(1.0 / 4),
                 target_network_update_freq=1000,
                 max_timesteps_per_episode=1000,
-                max_timesteps_per_task=500000,
+                max_timesteps_per_task=1000000,
                 cnn_shared_net=True
             )
             if game_name == "miniworld":
