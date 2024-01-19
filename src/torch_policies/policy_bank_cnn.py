@@ -103,7 +103,10 @@ class PolicyBankCNN(PolicyBank):
         checkpoint_path = os.path.join(policy_bank_prefix, "policy_bank.pth")
         checkpoint = torch.load(checkpoint_path)
         for ltl, policy_id in self.policy2id.items():
-            if ltl not in checkpoint['policies']: continue # skip unsaved policies
+            if ltl not in checkpoint['policies']:
+                if ltl != "True" and ltl != "False":
+                    print("Warning: policy", ltl, " in bank not found in checkpoint")
+                continue # skip unsaved policies
             policy: Policy = self.policies[policy_id]
             policy.restore_from_state_dict(checkpoint['policies'][ltl])
         # self.cnn_preprocess.load_state_dict(checkpoint['cnn_preprocess'])
