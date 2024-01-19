@@ -82,7 +82,7 @@ if __name__ == "__main__":
     #                     help='Whether to auto tune alpha based on entropy.')
     parser.add_argument('--resume', default=False, action="store_true",
                         help='Whether to resume from a checkpoint or not.')
-    parser.add_argument('--game_name', default="grid", type=str, choices=['grid', 'miniworld', 'miniworld_no_vis'],
+    parser.add_argument('--game_name', default="grid", type=str, choices=['grid', 'miniworld', 'miniworld_no_vis', 'miniworld_simp_no_vis'],
                         help='Name of the game.')
     parser.add_argument('--run_subfolder', default=None, required=False, type=str,
                         help='Name of the run. Used to save the results in a separate sub folder.')
@@ -123,7 +123,9 @@ if __name__ == "__main__":
                     tasks_id, args.domain_name, args.train_type, args.train_size, args.test_type, args.edge_matcher, 
                     args.rl_algo, args.save_dpath, None)
     curriculum = CurriculumLearner(tester.tasks)
-    task = get_game(args.game_name, tester.get_task_params(curriculum.get_current_task()))
+    ltl_task = tester.tasks[0]
+    # task = get_game(args.game_name, tester.get_task_params(curriculum.get_current_task()))
+    task = get_game(args.game_name, tester.get_task_params(ltl_task))
     task.reset(seed=args.run_id)
 
     policy_bank = _initialize_policy_bank(
