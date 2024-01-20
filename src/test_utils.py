@@ -5,7 +5,8 @@ import argparse
 import logging
 from collections import defaultdict
 import numpy as np
-from envs.grid.game import GameParams, Game
+from envs.grid.game import GameParams as GridGameParams, Game
+from envs.miniworld.params import GameParams as MiniWorldGameParams
 from exp_dataset_creator import read_train_test_formulas
 from torch.utils.tensorboard import SummaryWriter
 import ltl.tasks as tasks
@@ -42,7 +43,7 @@ class Tester:
                  dataset_name, train_type, 
                  train_size, test_type, 
                  edge_matcher, rl_algo, 
-                 save_dpath, logger=None, file_results=None
+                 save_dpath, game_name="grid", logger=None, file_results=None
         ):
         if file_results is None:
             # setting the test attributes
@@ -59,6 +60,7 @@ class Tester:
             self.edge_matcher = edge_matcher
             self.save_dpath = save_dpath
             self.experiment = f"{train_type}/map_{map_id}"
+            self.game_name = game_name
             if map_id == -2:
                 self.map = None
             else:
@@ -151,7 +153,10 @@ class Tester:
         return self.transfer_tasks
 
     def get_task_params(self, ltl_task, init_dfa_state=None, init_loc=None):
-        return GameParams(self.map, self.prob, ltl_task, self.consider_night, init_dfa_state, init_loc)
+        if self.game_name == "grid":
+            return GridGameParams(self.map, self.prob, ltl_task, self.consider_night, init_dfa_state, init_loc)
+        else:
+            return MiniWorldGameParams(self.map, self.prob, ltl_task, self.consider_night, init_dfa_state, init_loc)
 
     def run_test(self, step, game_name, game_params):
         # 'test_function' parameters should be (sess, task_params, learning_params, testing_params, *test_args)
