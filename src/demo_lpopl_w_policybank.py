@@ -86,12 +86,17 @@ if __name__ == "__main__":
                         help='Name of the game.')
     parser.add_argument('--run_subfolder', default=None, required=False, type=str,
                         help='Name of the run. Used to save the results in a separate sub folder.')
-    parser.add_argument('--run_prefix', type=str,
-                        help='Location of the bank and the learning parameters.')
-
+    
     # add all fields of Learning Parameters to parser
     LEARNING_ARGS_PREFIX = "lp."
     add_fields_to_parser(parser, LearningParameters, prefix=LEARNING_ARGS_PREFIX)
+
+    parser.add_argument('--run_prefix', type=str,
+                        help='Location of the bank and the learning parameters.')
+    parser.add_argument('--task_id', type=int, default=0,
+                        help='The task id to run the experiment on.')
+
+    
     args = parser.parse_args()
     if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")
     if args.train_type not in train_types: raise NotImplementedError("Training tasks " + str(args.train_type) + " hasn't been defined yet")
@@ -116,14 +121,13 @@ if __name__ == "__main__":
 
     # Setting the experiment
     testing_params = TestingParameters(test_epis=100)
-    print(learning_params)
-    
 
     tester = Tester(learning_params, testing_params, map_id, args.prob, \
                     tasks_id, args.domain_name, args.train_type, args.train_size, args.test_type, args.edge_matcher, 
                     args.rl_algo, args.save_dpath, None)
     curriculum = CurriculumLearner(tester.tasks)
-    ltl_task = tester.tasks[0]
+    ltl_task = tester.tasks[args.task_id]
+    print("Running task {}:".format(args.task_id), ltl_task)
     # task = get_game(args.game_name, tester.get_task_params(curriculum.get_current_task()))
     task = get_game(args.game_name, tester.get_task_params(ltl_task))
     task.reset(seed=args.run_id)
