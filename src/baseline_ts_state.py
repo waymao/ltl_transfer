@@ -1,6 +1,8 @@
 
 # %%
 import os
+
+from ts_policy_bank import create_discrete_sac_policy
 os.environ["PYGLET_HEADLESS"] = "true"
 os.environ["PYGLET_HEADLESS_DEVICE"] = "0"
 
@@ -19,10 +21,14 @@ import torch
 from torch import nn
 import numpy as np
 
+import time
+
 from torch.utils.tensorboard import SummaryWriter
 from tianshou.utils.logger.tensorboard import TensorboardLogger
 
 NUM_PARALLEL_JOBS = 4
+
+device = "cpu"
 
 # %%
 test_envs = get_game(name="miniworld_simp_no_vis", params=GameParams(
@@ -60,34 +66,19 @@ train_envs = get_game(name="miniworld_simp_no_vis", params=GameParams(
 #             target_update_interval=1000,
 #             learning_starts=10000,
 #             train_freq=1)
-class DummyPreProcess(nn.Module):
-    def __init__(self, output_dim=4):
-        super().__init__()
-        self.output_dim = output_dim
-
-    def forward(self, x, state):
-        return x, state
-state_dim = train_envs.observation_space.shape[0]
-preprocess_net = DummyPreProcess(output_dim=state_dim)
-actor = Actor(preprocess_net, 4, [256, 256, 256], device="cuda")
-actor_optim = Adam(actor.parameters(), lr=1e-4)
-critic1 = Critic(preprocess_net, hidden_sizes=[256, 256, 256], last_size=4, device="cuda")
-critic1_optim = Adam(critic1.parameters(), lr=1e-4)
-critic2 = Critic(preprocess_net, hidden_sizes=[256, 256, 256], last_size=4, device="cuda")
-critic2_optim = Adam(critic2.parameters(), lr=1e-4)
-
-policy = DiscreteSACPolicy(
-    actor, actor_optim, 
-    critic1, critic1_optim, 
-    critic2, critic2_optim,
-    alpha=0.03,
-    gamma=0.99
-).to("cuda")
 
 # logger
-run_name = input("run name: ")
+run_name = time.time()
 writer = SummaryWriter(f"results/tianshou/16-{run_name}/")
 logger = TensorboardLogger(writer)
+
+
+policy = create_discrete_sac_policy(
+    num_actions=test_envs.action_space.n, 
+    num_features=test_envs.observation_space.shape[0], 
+    hidden_layers=[256, 256, 256],
+    device=device
+)
 
 
 train_buffer = ReplayBuffer(int(1e6))
@@ -103,7 +94,8 @@ trainer = OffpolicyTrainer(
     batch_size=64, 
     update_per_step=1,
     step_per_collect=12,
-    logger=logger
+    logger=logger,
+    stop_fn=lambda x: x >= 9, # mean test reward
 )
 
 trainer.run()
