@@ -8,8 +8,21 @@ from ltl.dfa import *
 from .params import GameParams
 from .constants import OBJ_REV_MAP, get_ent_str
 
+class NoInfoWrapper(gym.Wrapper):
+    def __init__(self, env: MiniWorldEnv):
+        super().__init__(env)
+        self.env = env
+
+    def reset(self, *, seed=None, options=None):
+        obs, info = super().reset(seed=seed, options=options)
+        return obs, {}
+
+    def step(self, action):
+        obs, rew, ter, trunc, info = super().step(action)
+        return obs, rew, ter, trunc, {}
+
 class ProgressionTerminateWrapper(gym.Wrapper):
-    def __init__(self, env: MiniWorldEnv, params: GameParams):
+    def __init__(self, env: MiniWorldEnv, params: GameParams, reward_scale=1):
         """
         Wraps around the miniworld env, adding necessary LTL-related func.
         """
@@ -18,6 +31,7 @@ class ProgressionTerminateWrapper(gym.Wrapper):
         self.prob = self.params.prob
         self.env = env
         self.last_dfa_state = None
+        self.reward_scale = reward_scale
 
     def reset(self, *, seed=None, options=None) -> tuple[Any, dict[str, Any]]:
         obs, info = super().reset(seed=seed, options=options)
@@ -33,7 +47,7 @@ class ProgressionTerminateWrapper(gym.Wrapper):
         # if it's not game over, and not last state, and not failure state (-1)
         if not game_over and info['dfa_state'] != self.last_dfa_state and info['dfa_state'] != -1:
             game_over = True
-            rew = self.params.succ_rew * getattr(self.unwrapped, "reward_scale", 1)
+            rew = self.params.succ_rew * self.reward_scale
         self.last_dfa_state = deepcopy(info['dfa_state'])
         return obs, rew, game_over, trunc, info
 

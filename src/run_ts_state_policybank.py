@@ -32,7 +32,7 @@ import pickle
 from torch.utils.tensorboard import SummaryWriter
 from tianshou.utils.logger.tensorboard import TensorboardLogger
 
-NUM_PARALLEL_JOBS = 4
+NUM_PARALLEL_JOBS = 12
 
 device = "cpu"
 
@@ -42,20 +42,21 @@ def generate_envs():
         ltl_task=("until", "True", "a"),
         # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
         prob=1
-    ), max_episode_steps=1000, do_transpose=False, reward_scale=10, ltl_progress_is_term=True)
+    ), max_episode_steps=1000, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=True)
     train_envs = get_game(name="miniworld_simp_no_vis", params=GameParams(
         map_fpath="../experiments/maps/map_13.txt",
         ltl_task=("until", "True", "a"),
         # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
         prob=1,
-    ), max_episode_steps=1000, do_transpose=False, reward_scale=10, ltl_progress_is_term=True)
+    ), max_episode_steps=1000, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=True)
     # test_envs = SubprocVectorEnv(
     #     [lambda: get_game(name="miniworld", params=GameParams(
     #         map_fpath="../experiments/maps/map_16.txt",
     #         ltl_task=("until", "True", "a"),
     #         # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
     #         prob=1
-    #     ), max_episode_steps=1000, do_transpose=True) for _ in range(NUM_PARALLEL_JOBS)]
+    #     ) ,max_episode_steps=1000, do_transpose=False, reward_scale=10, ltl_progress_is_term=True) \
+    #         for _ in range(NUM_PARALLEL_JOBS)]
     # )
     # train_envs = SubprocVectorEnv(
     #     [lambda: get_game(name="miniworld", params=GameParams(
@@ -63,7 +64,8 @@ def generate_envs():
     #         ltl_task=("until", "True", "a"),
     #         # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
     #         prob=1
-    #     ), max_episode_steps=1000, do_transpose=True) for _ in range(NUM_PARALLEL_JOBS)]
+    #     ) ,max_episode_steps=1000, do_transpose=False, reward_scale=10, ltl_progress_is_term=True) \
+    #         for _ in range(NUM_PARALLEL_JOBS)]
     # )
     return train_envs, test_envs
 
@@ -217,7 +219,11 @@ if __name__ == "__main__":
             policy_bank.add_LTL_policy(ltl, policy)
 
     # run training
+    global_time_steps = 0
+    total_time = 0
     for ltl, policy in policy_bank.get_all_policies().items():
+        with open(os.path.join(tb_log_path, "policy_log.txt"), "w") as f:
+            f.write(f"\"{ltl}\",{global_time_steps},{total_time}")
         if ltl == "True" or ltl == "False": continue
         # reset with the correct ltl
         task_params = tester.get_task_params(ltl)
@@ -244,6 +250,8 @@ if __name__ == "__main__":
             save_best_fn=lambda x: print("saved") and policy_bank.save(os.path.join(tb_log_path, "policy_bank_ts.pth"))
         )
 
-        trainer.run()
+        train_result = trainer.run()
+        global_time_steps += train_result["total_step"]
+        total_time += train_result["total_time"]
         policy_bank.save(os.path.join(tb_log_path, "policy_bank_ts.pth"))
 

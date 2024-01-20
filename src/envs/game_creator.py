@@ -11,12 +11,14 @@ def get_parallel_games(name, params, render_mode=None, max_episode_steps=None, d
 def get_game(name, params, 
              render_mode=None, max_episode_steps=None, 
              do_transpose=True, reward_scale=1, 
-             ltl_progress_is_term=False) -> BaseGame:
+             ltl_progress_is_term=False,
+             no_info=False) -> BaseGame:
     if name == "grid":
         from .grid.game import Game as GridGame
         return GridGame(params)
     elif name == "miniworld" or name == "miniworld_no_vis" or name == "miniworld_simp_no_vis":
-        from .miniworld import NavigateEnv, MiniWorldLTLWrapper, NonVisualWrapper, NavigateNoVisEnv, ProgressionTerminateWrapper
+        from .miniworld import NavigateEnv, MiniWorldLTLWrapper, NonVisualWrapper, \
+            NavigateNoVisEnv, ProgressionTerminateWrapper, NoInfoWrapper
         if name == "miniworld_simp_no_vis":
             env = NavigateNoVisEnv(params, render_mode="human", view="top")
             do_transpose = False
@@ -30,7 +32,9 @@ def get_game(name, params,
         if name == "miniworld_no_vis":
             env = NonVisualWrapper(env)
         if ltl_progress_is_term:
-            env = ProgressionTerminateWrapper(env, params)
+            env = ProgressionTerminateWrapper(env, params, reward_scale=reward_scale)
+        if no_info:
+            env = NoInfoWrapper(env)
         return env
     else:
         raise ValueError(f"Unknown game: {name}")
