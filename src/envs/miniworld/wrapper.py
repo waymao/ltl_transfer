@@ -19,7 +19,7 @@ class ProgressionTerminateWrapper(gym.Wrapper):
         self.env = env
         self.last_dfa_state = None
 
-    def reset(self, *, seed, options) -> tuple[Any, dict[str, Any]]:
+    def reset(self, *, seed=None, options=None) -> tuple[Any, dict[str, Any]]:
         obs, info = super().reset(seed=seed, options=options)
         self.last_dfa_state = deepcopy(info['dfa_state'])
         if options is not None and options.get('task_params', None) is not None:
@@ -32,7 +32,7 @@ class ProgressionTerminateWrapper(gym.Wrapper):
         # in addition to game overs, if we got a progression we also consider it a game over
         if not game_over and info['dfa_state'] != self.last_dfa_state:
             game_over = True
-            rew = self.params.succ_rew
+            rew = self.params.succ_rew * getattr(self.unwrapped, "reward_scale", 1)
         self.last_dfa_state = deepcopy(info['dfa_state'])
         return obs, rew, game_over, trunc, info
 

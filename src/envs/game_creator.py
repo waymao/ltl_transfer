@@ -30,7 +30,7 @@ def get_game(name, params,
         if name == "miniworld_no_vis":
             env = NonVisualWrapper(env)
         if ltl_progress_is_term:
-            env = ProgressionTerminateWrapper(env)
+            env = ProgressionTerminateWrapper(env, params)
         return env
     else:
         raise ValueError(f"Unknown game: {name}")

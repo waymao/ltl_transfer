@@ -42,13 +42,13 @@ def generate_envs():
         ltl_task=("until", "True", "a"),
         # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
         prob=1
-    ), max_episode_steps=1000, do_transpose=False, reward_scale=10)
+    ), max_episode_steps=1000, do_transpose=False, reward_scale=10, ltl_progress_is_term=True)
     train_envs = get_game(name="miniworld_simp_no_vis", params=GameParams(
         map_fpath="../experiments/maps/map_13.txt",
         ltl_task=("until", "True", "a"),
         # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
-        prob=1
-    ), max_episode_steps=1000, do_transpose=False, reward_scale=10)
+        prob=1,
+    ), max_episode_steps=1000, do_transpose=False, reward_scale=10, ltl_progress_is_term=True)
     # test_envs = SubprocVectorEnv(
     #     [lambda: get_game(name="miniworld", params=GameParams(
     #         map_fpath="../experiments/maps/map_16.txt",
@@ -152,7 +152,7 @@ if __name__ == "__main__":
     # if not(-2 <= args.map < 20): raise NotImplementedError("The map must be a number between -1 and 9")
 
     # Running the experiment
-    tasks_id = None
+    tasks_id = 0
     map_id = args.map
 
     # learning params
@@ -189,12 +189,15 @@ if __name__ == "__main__":
         testing_params=testing_params,
         map_id=args.map,
         prob=map_id,
+        train_size=args.train_size,
+        rl_algo=args.rl_algo,
         tasks_id=tasks_id,
         dataset_name=args.domain_name,
         train_type=args.train_type,
         test_type=args.test_type,
         edge_matcher=args.edge_matcher, 
         save_dpath=args.save_dpath,
+        game_name=args.game_name,
         logger=logger
     )
     tasks = tester.tasks
@@ -215,10 +218,12 @@ if __name__ == "__main__":
 
     # run training
     for ltl, policy in policy_bank.get_all_policies().items():
+        if ltl == "True" or ltl == "False": continue
         # reset with the correct ltl
-        train_envs.reset(options=GameParams(task=ltl))
-        test_envs.reset(options=GameParams(task=ltl))
-        print("Running Policy", ltl)
+        task_params = tester.get_task_params(ltl)
+        train_envs.reset(options=dict(task_params=task_params))
+        test_envs.reset(options=dict(task_params=task_params))
+        print("Training Sub-Task", ltl)
         
         # training
         train_buffer = ReplayBuffer(int(1e6))
@@ -236,7 +241,7 @@ if __name__ == "__main__":
             step_per_collect=12,
             logger=logger,
             stop_fn=lambda x: x >= 9, # mean test reward,
-            save_best_fn=policy_bank.save(os.path.join(tb_log_path, "policy_bank_ts.pth"))
+            save_best_fn=lambda: print("saved") and policy_bank.save(os.path.join(tb_log_path, "policy_bank_ts.pth"))
         )
 
         trainer.run()
