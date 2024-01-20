@@ -30,7 +30,8 @@ class ProgressionTerminateWrapper(gym.Wrapper):
         obs, rew, game_over, trunc, info = super().step(action)
 
         # in addition to game overs, if we got a progression we also consider it a game over
-        if not game_over and info['dfa_state'] != self.last_dfa_state:
+        # if it's not game over, and not last state, and not failure state (-1)
+        if not game_over and info['dfa_state'] != self.last_dfa_state and info['dfa_state'] != -1:
             game_over = True
             rew = self.params.succ_rew * getattr(self.unwrapped, "reward_scale", 1)
         self.last_dfa_state = deepcopy(info['dfa_state'])

@@ -241,7 +241,7 @@ if __name__ == "__main__":
             step_per_collect=12,
             logger=logger,
             stop_fn=lambda x: x >= 9, # mean test reward,
-            save_best_fn=lambda: print("saved") and policy_bank.save(os.path.join(tb_log_path, "policy_bank_ts.pth"))
+            save_best_fn=lambda x: print("saved") and policy_bank.save(os.path.join(tb_log_path, "policy_bank_ts.pth"))
         )
 
         trainer.run()
