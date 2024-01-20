@@ -223,8 +223,8 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
         #     if self.num_picked_up == self.num_per_objs:
         #         termination = True
         return obs, reward, termination, truncation, {
-            "agent_init_loc": [None, None],
-            "map_size": [None, None],
+            "agent_init_loc": (None, None),
+            "map_size": (None, None),
             **info
         }
     
@@ -238,8 +238,8 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
         agent_loc = self.agent.pos # for transfer
         agent_loc = opengl_to_2dcoord(agent_loc)
         info = {
-            "agent_init_loc": [agent_loc[0], agent_loc[1]],
-            "map_size": [self.max_x, self.max_z],
+            "agent_init_loc": (agent_loc[0], agent_loc[1]),
+            "map_size": (self.max_x, self.max_z),
             **info
         }
         return obs, info

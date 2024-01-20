@@ -50,7 +50,11 @@ class DFA:
 
     def get_LTL(self, s=None):
         if s is None: s = self.state
-        return self.state2ltl[s]
+        ltl = self.state2ltl[s]
+        if type(ltl) == str:
+            return ltl
+        else:
+            return tuple(self.state2ltl[s])
 
     def is_game_over(self):
         """
