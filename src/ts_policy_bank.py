@@ -62,7 +62,8 @@ def create_discrete_sac_policy(
         actor, actor_optim, 
         critic1, critic1_optim, 
         critic2, critic2_optim,
-        alpha=0.03,
-        gamma=0.99
+        alpha=learning_params.alpha,
+        gamma=learning_params.gamma,
+        # TODO add more
     ).to(device)
     return policy

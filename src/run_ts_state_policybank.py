@@ -5,8 +5,6 @@ from ltl.dfa import DFA
 from torch_policies.learning_params import LearningParameters, add_fields_to_parser, get_learning_parameters
 
 from ts_policy_bank import create_discrete_sac_policy, TianshouPolicyBank
-os.environ["PYGLET_HEADLESS"] = "true"
-os.environ["PYGLET_HEADLESS_DEVICE"] = "0"
 
 # %%
 from envs.game_creator import get_game
@@ -31,42 +29,45 @@ import pickle
 
 from torch.utils.tensorboard import SummaryWriter
 from tianshou.utils.logger.tensorboard import TensorboardLogger
+import os
 
-NUM_PARALLEL_JOBS = 12
+NUM_PARALLEL_JOBS = 4
 
 device = "cpu"
 
-def generate_envs():
-    test_envs = get_game(name="miniworld_simp_no_vis", params=GameParams(
-        map_fpath="../experiments/maps/map_13.txt",
-        ltl_task=("until", "True", "a"),
-        # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
-        prob=1
-    ), max_episode_steps=1000, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=True)
-    train_envs = get_game(name="miniworld_simp_no_vis", params=GameParams(
-        map_fpath="../experiments/maps/map_13.txt",
-        ltl_task=("until", "True", "a"),
-        # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
-        prob=1,
-    ), max_episode_steps=1000, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=True)
-    # test_envs = SubprocVectorEnv(
-    #     [lambda: get_game(name="miniworld", params=GameParams(
-    #         map_fpath="../experiments/maps/map_16.txt",
-    #         ltl_task=("until", "True", "a"),
-    #         # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
-    #         prob=1
-    #     ) ,max_episode_steps=1000, do_transpose=False, reward_scale=10, ltl_progress_is_term=True) \
-    #         for _ in range(NUM_PARALLEL_JOBS)]
-    # )
-    # train_envs = SubprocVectorEnv(
-    #     [lambda: get_game(name="miniworld", params=GameParams(
-    #         map_fpath="../experiments/maps/map_16.txt",
-    #         ltl_task=("until", "True", "a"),
-    #         # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
-    #         prob=1
-    #     ) ,max_episode_steps=1000, do_transpose=False, reward_scale=10, ltl_progress_is_term=True) \
-    #         for _ in range(NUM_PARALLEL_JOBS)]
-    # )
+def generate_envs(game_name="miniworld_simp_no_vis", parallel=False):
+    if not parallel:
+        test_envs = get_game(name=game_name, params=GameParams(
+            map_fpath="../experiments/maps/map_13.txt",
+            ltl_task=("until", "True", "a"),
+            # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
+            prob=1
+        ), max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=True)
+        train_envs = get_game(name=game_name, params=GameParams(
+            map_fpath="../experiments/maps/map_13.txt",
+            ltl_task=("until", "True", "a"),
+            # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
+            prob=1,
+        ), max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=True)
+    else:
+        test_envs = SubprocVectorEnv(
+            [lambda: get_game(name=game_name, params=GameParams(
+                map_fpath="../experiments/maps/map_16.txt",
+                ltl_task=("until", "True", "a"),
+                # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
+                prob=1
+            ) ,max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=True) \
+                for _ in range(NUM_PARALLEL_JOBS)]
+        )
+        train_envs = SubprocVectorEnv(
+            [lambda: get_game(name=game_name, params=GameParams(
+                map_fpath="../experiments/maps/map_16.txt",
+                ltl_task=("until", "True", "a"),
+                # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
+                prob=1
+            ) ,max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=True) \
+                for _ in range(NUM_PARALLEL_JOBS)]
+        )
     return train_envs, test_envs
 
 
@@ -212,7 +213,7 @@ if __name__ == "__main__":
             policy = create_discrete_sac_policy(
                 num_actions=test_envs.action_space.n, 
                 num_features=test_envs.observation_space.shape[0], 
-                hidden_layers=[256, 256, 256],
+                hidden_layers=[256, 256, 256, 256],
                 learning_params=learning_params,
                 device=device
             )
@@ -220,11 +221,15 @@ if __name__ == "__main__":
 
     # run training
     global_time_steps = 0
-    total_time = 0
     for ltl, policy in policy_bank.get_all_policies().items():
+        # logging
         with open(os.path.join(tb_log_path, "policy_log.txt"), "w") as f:
-            f.write(f"\"{ltl}\",{global_time_steps},{total_time}")
+            f.write(f"\"{ltl}\",{global_time_steps},{time.time()}")
+        writer.add_scalar("task", str(ltl))
+
+        # skip if it's a dummy policy
         if ltl == "True" or ltl == "False": continue
+        
         # reset with the correct ltl
         task_params = tester.get_task_params(ltl)
         train_envs.reset(options=dict(task_params=task_params))
@@ -246,12 +251,12 @@ if __name__ == "__main__":
             update_per_step=1,
             step_per_collect=12,
             logger=logger,
+            test_in_train=False,
             stop_fn=lambda x: x >= 9, # mean test reward,
             save_best_fn=lambda x: print("saved") and policy_bank.save(os.path.join(tb_log_path, "policy_bank_ts.pth"))
         )
 
         train_result = trainer.run()
-        global_time_steps += train_result["total_step"]
-        total_time += train_result["total_time"]
+        global_time_steps += train_result["train_step"]
         policy_bank.save(os.path.join(tb_log_path, "policy_bank_ts.pth"))
 
