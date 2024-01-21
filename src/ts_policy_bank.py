@@ -30,6 +30,15 @@ class TianshouPolicyBank:
                 for ltl, id in self.policy2id.items()
         }
         torch.save(policy_list, path)
+
+    def save_ckpt(self, path):
+        policy_list = {
+            ltl: {
+                "policy": self.policies[id].state_dict(),
+                "optim": self.policies[id].optim.state_dict()
+            } for ltl, id in self.policy2id.items()
+        }
+        torch.save(policy_list, path)
     
     def get_all_policies(self):
         return {ltl: self.policies[id] for ltl, id in self.policy2id.items()}
@@ -67,3 +76,28 @@ def create_discrete_sac_policy(
         # TODO add more
     ).to(device)
     return policy
+
+
+def load_ts_policy_bank(
+    policy_bank_path: str, 
+    num_actions: int, 
+    num_features: int, 
+    hidden_layers: List[int] = [256, 256, 256],
+    learning_params: LearningParameters = get_learning_parameters("dsac", "miniworld_no_vis"), 
+    device="cpu"
+) -> TianshouPolicyBank:
+    policy_bank = TianshouPolicyBank()
+    policy_list = torch.load(policy_bank_path)
+    for ltl, policy_state_dict in policy_list.items():
+        print("Loading policy for LTL: ", ltl)
+        policy = create_discrete_sac_policy(
+            num_actions=num_actions, 
+            num_features=num_features, 
+            hidden_layers=hidden_layers,
+            learning_params=learning_params, 
+            device=device
+        )
+        policy.load_state_dict(policy_state_dict)
+        policy_bank.add_LTL_policy(ltl, policy)
+    return policy_bank
+

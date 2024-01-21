@@ -4,7 +4,7 @@ import os
 from ltl.dfa import DFA
 from torch_policies.learning_params import LearningParameters, add_fields_to_parser, get_learning_parameters
 
-from ts_policy_bank import create_discrete_sac_policy, TianshouPolicyBank
+from ts_policy_bank import create_discrete_sac_policy, TianshouPolicyBank, load_ts_policy_bank
 
 # %%
 from envs.game_creator import get_game
@@ -134,7 +134,7 @@ def add_parser_cmds(arg_parser):
                         help='The device to run Neural Network computations.')
     parser.add_argument('--resume', default=False, action="store_true",
                         help='Whether to resume from a checkpoint or not.')
-    parser.add_argument('--game_name', default="grid", type=str, choices=['grid', 'miniworld', 'miniworld_no_vis', 'miniworld_simp_no_vis'],
+    parser.add_argument('--game_name', default="miniworld_simp_no_vis", type=str, choices=['grid', 'miniworld', 'miniworld_no_vis', 'miniworld_simp_no_vis'],
                         help='Name of the game.')
     parser.add_argument('--run_subfolder', default=None, required=False, type=str,
                         help='Name of the run. Used to save the results in a separate sub folder.')
@@ -144,6 +144,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog="run_experiments", description='Runs a multi-task RL experiment over a gridworld domain that is inspired by Minecraft.')
     add_parser_cmds(parser)
+    parser.add_argument('--run_prefix', type=str,
+                        help='Location of the bank and the learning parameters.')
 
     # add all fields of Learning Parameters to parser
     LEARNING_ARGS_PREFIX = "lp."
@@ -158,33 +160,15 @@ if __name__ == "__main__":
     tasks_id = 0
     map_id = args.map
 
+    save_path = args.run_prefix
+
     # learning params
-    learning_params = get_learning_parameters(
-        policy_name=args.rl_algo, 
-        game_name=args.game_name,
-        **{
-            key.removeprefix(LEARNING_ARGS_PREFIX): val 
-            for (key, val) in args._get_kwargs() 
-            if key.startswith(LEARNING_ARGS_PREFIX)
-        }
-    )
+    with open(os.path.join(save_path, "learning_params.pkl"), "rb") as f:
+        learning_params = pickle.load(f)
     testing_params = TestingParameters(custom_metric_folder=args.run_subfolder)
     print("Initialized Learning Params:", learning_params)
 
     train_envs, test_envs = generate_envs()
-
-    # logger
-    tb_log_path = os.path.join(
-        args.save_dpath, "results", f"{args.game_name}_{args.domain_name}", f"{args.train_type}_p{args.prob}", 
-        f"{args.algo}_{args.rl_algo}", f"map{map_id}", str(args.run_id), 
-        f"alpha={'auto' if learning_params.auto_alpha else learning_params.alpha}",
-    )
-    if testing_params.custom_metric_folder is not None:
-        tb_log_path = os.path.join(tb_log_path, testing_params.custom_metric_folder)
-    writer = SummaryWriter(log_dir=tb_log_path)
-    logger = TensorboardLogger(writer)
-    with open(os.path.join(tb_log_path, "learning_params.pkl"), "wb") as f:
-        pickle.dump(learning_params, f)
 
     # tester
     tester = Tester(
@@ -201,64 +185,40 @@ if __name__ == "__main__":
         edge_matcher=args.edge_matcher, 
         save_dpath=args.save_dpath,
         game_name=args.game_name,
-        logger=logger
+        logger=None
     )
     tasks = tester.tasks
 
     # initalize policy bank
-    policy_bank = TianshouPolicyBank()
+    policy_bank: TianshouPolicyBank = load_ts_policy_bank(
+        os.path.join(save_path, "policy_bank_ts.pth"),
+        num_actions=test_envs.action_space.n,
+        num_features=test_envs.observation_space.shape[0],
+    )
+    # sanity check to make sure everything is in the policy bank.
     for task in tasks:
         dfa = DFA(task)
         for ltl in dfa.ltl2state.keys():
-            policy = create_discrete_sac_policy(
-                num_actions=test_envs.action_space.n, 
-                num_features=test_envs.observation_space.shape[0], 
-                hidden_layers=[256, 256, 256, 256],
-                learning_params=learning_params,
-                device=device
-            )
-            policy_bank.add_LTL_policy(ltl, policy)
+            assert ltl in policy_bank.policy2id, ("LTL " + str(ltl) + " not found in policy bank.")
 
     # run training
     global_time_steps = 0
-    with open(os.path.join(tb_log_path, "policy_log.txt"), "a") as f:
-        f.write("ltl,global_time_steps,time\n")
     for ltl, policy in policy_bank.get_all_policies().items():
-        # logging
-        with open(os.path.join(tb_log_path, "policy_log.txt"), "a") as f:
-            f.write(f"\"{ltl}\",{global_time_steps},{time.time()}\n")
-        writer.add_scalar("task", str(ltl))
-
         # skip if it's a dummy policy
         if ltl == "True" or ltl == "False": continue
         
         # reset with the correct ltl
         task_params = tester.get_task_params(ltl)
-        train_envs.reset(options=dict(task_params=task_params))
         test_envs.reset(options=dict(task_params=task_params))
-        print("Training Sub-Task", ltl)
         
-        # training
-        train_buffer = ReplayBuffer(int(1e6))
-        train_collector = Collector(policy, train_envs, train_buffer, exploration_noise=True)
-        test_collector = Collector(policy, test_envs, exploration_noise=True)
-        trainer = OffpolicyTrainer(
-            policy, 
-            train_collector, 
-            test_collector, 
-            max_epoch=100, 
-            step_per_epoch=5000,
-            episode_per_test=20, 
-            batch_size=64, 
-            update_per_step=1,
-            step_per_collect=12,
-            logger=logger,
-            test_in_train=False,
-            stop_fn=lambda x: x >= 9, # mean test reward,
-            save_best_fn=lambda x: print("saved") and policy_bank.save(os.path.join(tb_log_path, "policy_bank_ts.pth"))
-        )
+        # collecting results
+        # set policy to be deterministic
+        policy.training = False
+        policy.eval()
 
-        train_result = trainer.run()
-        global_time_steps += train_result["train_step"]
-        policy_bank.save(os.path.join(tb_log_path, "policy_bank_ts.pth"))
+        # collect and rollout
+        test_collector = Collector(policy, test_envs, exploration_noise=True)
+        result = test_collector.collect(n_episode=20)
+
+        print("LTL:", ltl, "rew:", f"{result['rew']} ± {result['rew_std']}", "len:", f"{result['len']} ± {result['len_std']}")
 
