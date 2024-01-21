@@ -19,8 +19,8 @@ class TianshouPolicyBank:
         self.policies: List[BasePolicy] = []
         self.policy2id: Mapping[Union[tuple, str], int] = {}
     
-    def add_LTL_policy(self, ltl: Union[tuple, str], policy: BasePolicy):
-        if ltl not in self.policy2id:
+    def add_LTL_policy(self, ltl: Union[tuple, str], policy: DiscreteSACPolicy):
+        if ltl not in self.policy2id and ltl != "True" and ltl != "False":
             self.policy2id[ltl] = len(self.policies)
             self.policies.append(policy)
     
@@ -35,7 +35,9 @@ class TianshouPolicyBank:
         policy_list = {
             ltl: {
                 "policy": self.policies[id].state_dict(),
-                "optim": self.policies[id].optim.state_dict()
+                "actor_optim": self.policies[id].actor_optim.state_dict(),
+                "critic1_optim": self.policies[id].critic1_optim.state_dict(),
+                "critic2_optim": self.policies[id].critic2_optim.state_dict(),
             } for ltl, id in self.policy2id.items()
         }
         torch.save(policy_list, path)

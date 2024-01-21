@@ -223,7 +223,8 @@ if __name__ == "__main__":
     global_time_steps = 0
     with open(os.path.join(tb_log_path, "policy_log.txt"), "a") as f:
         f.write("ltl,global_time_steps,time\n")
-    for ltl, policy in policy_bank.get_all_policies().items():
+    total_tasks = len(policy_bank.get_all_policies())
+    for i, (ltl, policy) in enumerate(policy_bank.get_all_policies().items()):
         # logging
         with open(os.path.join(tb_log_path, "policy_log.txt"), "a") as f:
             f.write(f"\"{ltl}\",{global_time_steps},{time.time()}\n")
@@ -236,7 +237,8 @@ if __name__ == "__main__":
         task_params = tester.get_task_params(ltl)
         train_envs.reset(options=dict(task_params=task_params))
         test_envs.reset(options=dict(task_params=task_params))
-        print("Training Sub-Task", ltl)
+        print(f"Training Sub-Task {i + 1}/{total_tasks}:", ltl)
+        print("Global Time Step:", global_time_steps)
         
         # training
         train_buffer = ReplayBuffer(int(1e6))
