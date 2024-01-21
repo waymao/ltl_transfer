@@ -221,7 +221,7 @@ if __name__ == "__main__":
 
     # run training
     global_time_steps = 0
-    with open(os.path.join(tb_log_path, "policy_log.txt"), "a") as f:
+    with open(os.path.join(tb_log_path, "policy_log.txt"), "w") as f:
         f.write("ltl,global_time_steps,time\n")
     total_tasks = len(policy_bank.get_all_policies())
     for i, (ltl, policy) in enumerate(policy_bank.get_all_policies().items()):

@@ -13,4 +13,7 @@
 #SBATCH --mail-user=yichen_wei@brown.edu
 
 
-python3 run_ts_state_policybank.py --train_size 50 --rl_algo dsac --map 13 --game_name miniworld_simp_no_vis --train_type mixed
+xvfb-run -a -s "-screen 0 1024x768x24 -ac +extension GLX +render -noreset" \
+    run_ts_state_policybank.py \
+     --train_size 50 --rl_algo dsac --map 13 \
+     --game_name miniworld_simp_no_vis --train_type mixed
