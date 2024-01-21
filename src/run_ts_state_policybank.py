@@ -256,7 +256,7 @@ if __name__ == "__main__":
             test_in_train=False,
             stop_fn=lambda x: x >= 9.5, # mean test reward,
             save_best_fn=lambda x: print("saved") and policy_bank.save(os.path.join(tb_log_path, "policy_bank_ts.pth")),
-            save_checkpoint_fn=lambda x: policy_bank.save_ckpt(os.path.join(tb_log_path, "policy_bank_ts_ckpt.pth"))
+            save_checkpoint_fn=lambda epoch, env_step, grad_step: policy_bank.save_ckpt(os.path.join(tb_log_path, "policy_bank_ts_ckpt.pth"))
         )
 
         train_result = trainer.run()
