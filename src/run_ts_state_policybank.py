@@ -87,8 +87,8 @@ def generate_envs(game_name="miniworld_simp_no_vis", map_id=13, parallel=False, 
             ) ,max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=True) \
                 for _ in range(NUM_PARALLEL_JOBS)]
         )
-        train_envs.seed(seed)
-        test_envs.seed(seed)
+    train_envs.seed(seed)
+    test_envs.seed(seed)
     return train_envs, test_envs
 
 
