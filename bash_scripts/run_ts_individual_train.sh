@@ -19,6 +19,8 @@ train_type="mixed"
 
 i=$SLURM_ARRAY_TASK_ID
 
+conda activate ltl
+
 PYGLET_HEADLESS=true python3 run_ts_single_policy.py \
         --train_size $train_size --rl_algo dsac --map $map --ltl_id $i \
         --game_name miniworld_simp_no_vis --train_type $train_type \
