@@ -158,8 +158,8 @@ if __name__ == "__main__":
     logger = TensorboardLogger(writer)
 
     # dump lp again
-    with open(os.path.join(tb_log_path, "learning_params.pkl"), "wb") as f:
-        pickle.dump(learning_params, f)
+    # with open(os.path.join(tb_log_path, "learning_params.pkl"), "wb") as f:
+    #     pickle.dump(learning_params, f)
 
     # tester
     tester = Tester(
