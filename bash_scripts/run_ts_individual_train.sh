@@ -20,6 +20,7 @@ train_type="sequence"
 
 i=$SLURM_ARRAY_TASK_ID
 
+source /users/ywei75/.bashrc
 conda activate ltl
 
 PYGLET_HEADLESS=true python3 run_ts_single_policy.py \
