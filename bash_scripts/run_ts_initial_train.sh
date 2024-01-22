@@ -9,7 +9,7 @@
 #SBATCH -e sbatch_out/arrayjob-dsac-%A-%a.err
 #SBATCH -o sbatch_out/arrayjob-dsac-%A-%a.out
 
-#SBATCH --mail-type=BEGIN,END,FAIL,TIME_LIMIT_90
+#SBATCH --mail-type=FAIL,TIME_LIMIT_90
 #SBATCH --mail-user=yichen_wei@brown.edu
 
 
