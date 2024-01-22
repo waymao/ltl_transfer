@@ -7,8 +7,8 @@
 #SBATCH --array=0-27
 
 # Use '%A' for array-job ID, '%J' for job ID and '%a' for task ID
-#SBATCH -e sbatch_out/arrayjob-dsac-%A-%a.err
-#SBATCH -o sbatch_out/arrayjob-dsac-%A-%a.out
+#SBATCH -e ~/scratch/ltl_ts/arrayjob-train-%A-%a.err
+#SBATCH -o ~/scratch/ltl_ts/arrayjob-train-%A-%a.out
 
 #SBATCH --mail-type=BEGIN,END,FAIL,TIME_LIMIT_90
 #SBATCH --mail-user=yichen_wei@brown.edu
