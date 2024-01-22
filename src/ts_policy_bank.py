@@ -1,4 +1,4 @@
-from typing import List, Mapping, Union
+from typing import List, Mapping, Tuple, Union
 import json
 import os
 
@@ -24,12 +24,14 @@ def list_to_tuple(obj):
 class TianshouPolicyBank:
     def __init__(self):
         self.policies: List[BasePolicy] = []
+        self.policy_ltls: List[str] = []
         self.policy2id: Mapping[Union[tuple, str], int] = {}
     
     def add_LTL_policy(self, ltl: Union[tuple, str], policy: DiscreteSACPolicy):
         if ltl not in self.policy2id and ltl != "True" and ltl != "False":
             self.policy2id[ltl] = len(self.policies)
             self.policies.append(policy)
+            self.policy_ltls.append(ltl)
     
     def save_pb_index(self, path):
         # saving the ltl map
@@ -45,11 +47,11 @@ class TianshouPolicyBank:
         path = os.path.join(path, "policies")
         os.makedirs(path, exist_ok=True)
         for ltl, id in self.policy2id.items():
-            save_individual_policy(path, id, self.policies[id])
+            save_individual_policy(path, id, ltl, self.policies[id])
     
     def save_individual_policy(self, path, policy_id):
         path = os.path.join(path, "policies")
-        save_individual_policy(path, policy_id, self.policies[policy_id])
+        save_individual_policy(path, policy_id, self.policy_ltls[policy_id], self.policies[policy_id])
     
     def get_all_policies(self):
         return {ltl: self.policies[id] for ltl, id in self.policy2id.items()}
@@ -108,11 +110,12 @@ def load_ts_policy_bank(
     for ltl, id in sorted(ltl_list, key=lambda x: x[1]):
         ltl = list_to_tuple(ltl)
         print("Loading policy for LTL: ", ltl)
-        policy = load_individual_policy(
+        policy, ltl_stored = load_individual_policy(
             os.path.join(policy_bank_path, "policies"), 
             id, num_actions, 
             num_features, hidden_layers, 
             learning_params, device)
+        assert ltl == ltl_stored
         policy_bank.add_LTL_policy(ltl, policy)
     return policy_bank
 
@@ -125,7 +128,7 @@ def load_individual_policy(
     hidden_layers: List[int] = [256, 256, 256],
     learning_params: LearningParameters = get_learning_parameters("dsac", "miniworld_no_vis"),
     device="cpu"
-):
+) -> Tuple[BasePolicy, str]:
     policy = create_discrete_sac_policy(
             num_actions=num_actions, 
             num_features=num_features, 
@@ -133,20 +136,22 @@ def load_individual_policy(
             learning_params=learning_params, 
             device=device
         )
-    save_data = torch.load(os.path.join(policy_bank_path, str(policy_id) + "_ckpt.pth"))
+    save_data = torch.load(os.path.join(policy_bank_path, "policies", str(policy_id) + "_ckpt.pth"))
     policy.load_state_dict(save_data['policy'])
     policy.actor_optim.load_state_dict(save_data['actor_optim'])
     policy.critic1_optim.load_state_dict(save_data['critic1_optim'])
     policy.critic2_optim.load_state_dict(save_data['critic2_optim'])
-    return policy
+    return policy, save_data['ltl']
 
 
 def save_individual_policy(
     policy_bank_path: str,
     policy_id: int,
+    ltl: str,
     policy: DiscreteSACPolicy,
 ):
     save_data = {
+        "ltl": ltl,
         "policy": policy.state_dict(),
         "actor_optim": policy.actor_optim.state_dict(),
         "critic1_optim": policy.critic1_optim.state_dict(),
