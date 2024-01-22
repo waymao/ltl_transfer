@@ -3,12 +3,12 @@
 #SBATCH -N 1
 #SBATCH --mem=16G
 #SBATCH -t 48:00:00
-##SBATCH --array=0-648
-#SBATCH --array=0-27
+#SBATCH --array=0-648
+##SBATCH --array=0-27
 
 # Use '%A' for array-job ID, '%J' for job ID and '%a' for task ID
-#SBATCH -e ~/scratch/ltl_ts/arrayjob-train-%A-%a.err
-#SBATCH -o ~/scratch/ltl_ts/arrayjob-train-%A-%a.out
+#SBATCH -e sbatch_out/arrayjob-train-%A-%a.err
+#SBATCH -o sbatch_out/arrayjob-train-%A-%a.out
 
 #SBATCH --mail-type=BEGIN,END,FAIL,TIME_LIMIT_90
 #SBATCH --mail-user=yichen_wei@brown.edu
@@ -16,7 +16,7 @@
 map=13
 run_id=1
 train_size=50
-train_type="sequence"
+train_type="mixed"
 
 ltl_id=`expr $SLURM_ARRAY_TASK_ID`
 
