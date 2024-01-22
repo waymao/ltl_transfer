@@ -22,7 +22,7 @@ def get_game(name, params,
         from .miniworld import NavigateEnv, MiniWorldLTLWrapper, NonVisualWrapper, \
             NavigateNoVisEnv, ProgressionTerminateWrapper
         if name == "miniworld_simp_no_vis":
-            env = NavigateNoVisEnv(params, render_mode="human", view="top")
+            env = NavigateNoVisEnv(params, render_mode="human", view="top", max_episode_steps=max_episode_steps)
             do_transpose = False
         elif max_episode_steps is not None:
             env = NavigateEnv(params, render_mode="human", view="top", max_episode_steps=max_episode_steps)
