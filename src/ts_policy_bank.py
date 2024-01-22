@@ -44,13 +44,11 @@ class TianshouPolicyBank:
         #     torch.save(self.policies[id].state_dict(), os.path.join(path, str(id) + ".pth"))
 
     def save_ckpt(self, path):
-        path = os.path.join(path, "policies")
         os.makedirs(path, exist_ok=True)
         for ltl, id in self.policy2id.items():
             save_individual_policy(path, id, ltl, self.policies[id])
     
     def save_individual_policy(self, path, policy_id):
-        path = os.path.join(path, "policies")
         save_individual_policy(path, policy_id, self.policy_ltls[policy_id], self.policies[policy_id])
     
     def get_all_policies(self):
@@ -157,4 +155,4 @@ def save_individual_policy(
         "critic1_optim": policy.critic1_optim.state_dict(),
         "critic2_optim": policy.critic2_optim.state_dict(),
     }
-    torch.save(save_data, os.path.join(policy_bank_path, str(policy_id) + "_ckpt.pth"))
+    torch.save(save_data, os.path.join(policy_bank_path, "policies", str(policy_id) + "_ckpt.pth"))

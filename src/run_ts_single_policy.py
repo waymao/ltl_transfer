@@ -210,7 +210,7 @@ if __name__ == "__main__":
         learning_params = pickle.load(f)
     
     # logger
-    writer = SummaryWriter(log_dir=tb_log_path)
+    writer = SummaryWriter(log_dir=os.path.join(tb_log_path, "logs", f"policy_{args.ltl_id}"))
     logger = TensorboardLogger(writer)
 
     # dump lp again
