@@ -44,7 +44,7 @@ class TianshouPolicyBank:
         #     torch.save(self.policies[id].state_dict(), os.path.join(path, str(id) + ".pth"))
 
     def save_ckpt(self, path):
-        os.makedirs(path, exist_ok=True)
+        os.makedirs(os.path.join(path, "policies"), exist_ok=True)
         for ltl, id in self.policy2id.items():
             save_individual_policy(path, id, ltl, self.policies[id])
     
