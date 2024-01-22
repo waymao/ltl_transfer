@@ -182,8 +182,8 @@ if __name__ == "__main__":
 
     # run training
     global_time_steps = 0
-    with open(os.path.join(tb_log_path, "policy_log.txt"), "w") as f:
-        f.write("ltl,global_time_steps,time\n")
+    with open(os.path.join(tb_log_path, "logs", f"policy{args.ltl_id}_status.txt"), "w") as f:
+        f.write(f"{time.time()},started\n")
     train_buffer = VectorReplayBuffer(int(1e6), buffer_num=NUM_PARALLEL_JOBS if PARALLEL_TRAIN else 1)
 
     policy_id = args.ltl_id
@@ -231,4 +231,5 @@ if __name__ == "__main__":
 
     print("Done! Final Training Result:")
     print(train_result)
-
+    with open(os.path.join(tb_log_path, "logs", f"policy{args.ltl_id}_status.txt"), "a") as f:
+        f.write(f"{time.time()},done\n")
