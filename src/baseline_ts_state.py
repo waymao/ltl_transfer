@@ -2,7 +2,7 @@
 # %%
 import os
 
-from ts_policy_bank import create_discrete_sac_policy
+from ts_utils.ts_policy_bank import create_discrete_sac_policy
 os.environ["PYGLET_HEADLESS"] = "true"
 os.environ["PYGLET_HEADLESS_DEVICE"] = "0"
 

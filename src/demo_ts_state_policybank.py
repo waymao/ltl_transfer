@@ -4,17 +4,10 @@ import os
 from ltl.dfa import DFA
 from torch_policies.learning_params import LearningParameters, add_fields_to_parser, get_learning_parameters
 
-from ts_policy_bank import create_discrete_sac_policy, TianshouPolicyBank, load_ts_policy_bank
+from ts_utils.ts_policy_bank import create_discrete_sac_policy, TianshouPolicyBank, load_ts_policy_bank
 
 # %%
-from envs.game_creator import get_game
-from envs.miniworld.params import GameParams
-from tianshou.policy import PPOPolicy, DiscreteSACPolicy, TD3Policy
-from tianshou.env import DummyVectorEnv, SubprocVectorEnv
-from tianshou.utils.net.common import ActorCritic
-from tianshou.utils.net.discrete import Actor, Critic
-from tianshou.trainer import OffpolicyTrainer
-from tianshou.data import Collector, ReplayBuffer
+from ts_utils.ts_envs import generate_envs
 from torch_policies.network import get_CNN_preprocess
 from torch.optim import Adam
 import torch
@@ -34,41 +27,6 @@ import os
 NUM_PARALLEL_JOBS = 4
 
 device = "cpu"
-
-def generate_envs(game_name="miniworld_simp_no_vis", parallel=False):
-    if not parallel:
-        test_envs = get_game(name=game_name, params=GameParams(
-            map_fpath="../experiments/maps/map_13.txt",
-            ltl_task=("until", "True", "a"),
-            # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
-            prob=1
-        ), max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=True)
-        train_envs = get_game(name=game_name, params=GameParams(
-            map_fpath="../experiments/maps/map_13.txt",
-            ltl_task=("until", "True", "a"),
-            # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
-            prob=1,
-        ), max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=True)
-    else:
-        test_envs = SubprocVectorEnv(
-            [lambda: get_game(name=game_name, params=GameParams(
-                map_fpath="../experiments/maps/map_16.txt",
-                ltl_task=("until", "True", "a"),
-                # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
-                prob=1
-            ) ,max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=True) \
-                for _ in range(NUM_PARALLEL_JOBS)]
-        )
-        train_envs = SubprocVectorEnv(
-            [lambda: get_game(name=game_name, params=GameParams(
-                map_fpath="../experiments/maps/map_16.txt",
-                ltl_task=("until", "True", "a"),
-                # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
-                prob=1
-            ) ,max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=True) \
-                for _ in range(NUM_PARALLEL_JOBS)]
-        )
-    return train_envs, test_envs
 
 
 def add_parser_cmds(arg_parser):
