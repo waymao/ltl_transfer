@@ -1,18 +1,25 @@
 from typing import List, Mapping, Union
+import json
+import os
 
 from torch_policies.learning_params import LearningParameters, get_learning_parameters
 from tianshou.policy import BasePolicy, DiscreteSACPolicy
-from tianshou.data import Batch, ReplayBuffer
 from tianshou.policy import PPOPolicy, DiscreteSACPolicy, TD3Policy
-from tianshou.env import DummyVectorEnv, SubprocVectorEnv
 from tianshou.utils.net.common import ActorCritic
 from tianshou.utils.net.discrete import Actor, Critic
-from tianshou.trainer import OffpolicyTrainer
-from tianshou.data import Collector, ReplayBuffer
 from torch_policies.network import get_CNN_preprocess
 from torch.optim import Adam
 import torch
 from torch import nn
+
+def list_to_tuple(obj):
+    tmp = []
+    for item in obj:
+        if isinstance(item, list):
+            tmp.append(list_to_tuple(item))
+        else:
+            tmp.append(item)
+    return tuple(tmp)
 
 class TianshouPolicyBank:
     def __init__(self):
@@ -24,23 +31,21 @@ class TianshouPolicyBank:
             self.policy2id[ltl] = len(self.policies)
             self.policies.append(policy)
     
+    def save_pb_index(self, path):
+        # saving the ltl map
+        with open(os.path.join(path, "ltl_list.json"), "w") as f:
+            json.dump(list(self.policy2id.items()), f)
+    
     def save(self, path):
-        policy_list = {
-            ltl: self.policies[id].state_dict() \
-                for ltl, id in self.policy2id.items()
-        }
-        torch.save(policy_list, path)
+        self.save_ckpt(path)
+        # for ltl, id in self.policy2id.items():
+        #     torch.save(self.policies[id].state_dict(), os.path.join(path, str(id) + ".pth"))
 
     def save_ckpt(self, path):
-        policy_list = {
-            ltl: {
-                "policy": self.policies[id].state_dict(),
-                "actor_optim": self.policies[id].actor_optim.state_dict(),
-                "critic1_optim": self.policies[id].critic1_optim.state_dict(),
-                "critic2_optim": self.policies[id].critic2_optim.state_dict(),
-            } for ltl, id in self.policy2id.items()
-        }
-        torch.save(policy_list, path)
+        path = os.path.join(path, "policies")
+        os.makedirs(path, exist_ok=True)
+        for ltl, id in self.policy2id.items():
+            save_individual_policy(path, id, self.policies[id])
     
     def get_all_policies(self):
         return {ltl: self.policies[id] for ltl, id in self.policy2id.items()}
@@ -85,21 +90,62 @@ def load_ts_policy_bank(
     num_actions: int, 
     num_features: int, 
     hidden_layers: List[int] = [256, 256, 256],
-    learning_params: LearningParameters = get_learning_parameters("dsac", "miniworld_no_vis"), 
+    learning_params: LearningParameters = get_learning_parameters("dsac", "miniworld_no_vis"),
+    load_optim=True,
     device="cpu"
 ) -> TianshouPolicyBank:
     policy_bank = TianshouPolicyBank()
-    policy_list = torch.load(policy_bank_path)
-    for ltl, policy_state_dict in policy_list.items():
+    
+    # loading the ltl-to-policy index
+    with open(os.path.join(policy_bank_path, "ltl_list.json"), "r") as f:
+        ltl_list = json.load(f)
+
+    # loading each individual policy file
+    for ltl, id in sorted(ltl_list, key=lambda x: x[1]):
+        ltl = list_to_tuple(ltl)
         print("Loading policy for LTL: ", ltl)
-        policy = create_discrete_sac_policy(
+        policy = load_individual_policy(
+            os.path.join(policy_bank_path, "policies"), 
+            id, num_actions, 
+            num_features, hidden_layers, 
+            learning_params, device)
+        policy_bank.add_LTL_policy(ltl, policy)
+    return policy_bank
+
+
+def load_individual_policy(
+    policy_bank_path: str,
+    policy_id: int,
+    num_actions: int,
+    num_features: int,
+    hidden_layers: List[int] = [256, 256, 256],
+    learning_params: LearningParameters = get_learning_parameters("dsac", "miniworld_no_vis"),
+    device="cpu"
+):
+    policy = create_discrete_sac_policy(
             num_actions=num_actions, 
             num_features=num_features, 
             hidden_layers=hidden_layers,
             learning_params=learning_params, 
             device=device
         )
-        policy.load_state_dict(policy_state_dict)
-        policy_bank.add_LTL_policy(ltl, policy)
-    return policy_bank
+    save_data = torch.load(os.path.join(policy_bank_path, str(policy_id) + "_ckpt.pth"))
+    policy.load_state_dict(save_data['policy'])
+    policy.actor_optim.load_state_dict(save_data['actor_optim'])
+    policy.critic1_optim.load_state_dict(save_data['critic1_optim'])
+    policy.critic2_optim.load_state_dict(save_data['critic2_optim'])
+    return policy
 
+
+def save_individual_policy(
+    policy_bank_path: str,
+    policy_id: int,
+    policy: DiscreteSACPolicy,
+):
+    save_data = {
+        "policy": policy.state_dict(),
+        "actor_optim": policy.actor_optim.state_dict(),
+        "critic1_optim": policy.critic1_optim.state_dict(),
+        "critic2_optim": policy.critic2_optim.state_dict(),
+    }
+    torch.save(save_data, os.path.join(policy_bank_path, str(policy_id) + "_ckpt.pth"))
