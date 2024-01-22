@@ -16,8 +16,8 @@ class NavigateNoVisEnv(NavigateEnv):
 
         dist_min = np.zeros(num_objs)
         dist_max = np.ones(num_objs) * np.sqrt(self.unwrapped.size ** 2)
-        angle_min = np.ones(num_objs) * -np.pi
-        angle_max = np.ones(num_objs) * np.pi
+        angle_min = np.ones(num_objs) * -np.pi / 2
+        angle_max = np.ones(num_objs) * np.pi / 2
         self.observation_space = Box(
             low=np.stack([dist_min, angle_min], axis=1).reshape(-1),
             high=np.stack([dist_max, angle_max], axis=1).reshape(-1),

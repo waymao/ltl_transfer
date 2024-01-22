@@ -2,6 +2,7 @@
 # from .miniworld import NavigateEnv, MiniWorldLTLWrapper
 # from typing import Union
 from .game_base import BaseGame
+from .generic_wrappers import NoInfoWrapper, ReseedWrapper
 from gymnasium.wrappers import GrayScaleObservation, FrameStack
 from stable_baselines3.common.vec_env import VecEnv, DummyVecEnv, SubprocVecEnv
 
@@ -12,13 +13,14 @@ def get_game(name, params,
              render_mode=None, max_episode_steps=None, 
              do_transpose=True, reward_scale=1, 
              ltl_progress_is_term=False,
-             no_info=False) -> BaseGame:
+             no_info=False,
+             seed_wrapper=True) -> BaseGame:
     if name == "grid":
         from .grid.game import Game as GridGame
         return GridGame(params)
     elif name == "miniworld" or name == "miniworld_no_vis" or name == "miniworld_simp_no_vis":
         from .miniworld import NavigateEnv, MiniWorldLTLWrapper, NonVisualWrapper, \
-            NavigateNoVisEnv, ProgressionTerminateWrapper, NoInfoWrapper
+            NavigateNoVisEnv, ProgressionTerminateWrapper
         if name == "miniworld_simp_no_vis":
             env = NavigateNoVisEnv(params, render_mode="human", view="top")
             do_transpose = False
@@ -35,6 +37,8 @@ def get_game(name, params,
             env = ProgressionTerminateWrapper(env, params, reward_scale=reward_scale)
         if no_info:
             env = NoInfoWrapper(env)
+        if seed_wrapper:
+            env = ReseedWrapper(env)
         return env
     else:
         raise ValueError(f"Unknown game: {name}")

@@ -8,18 +8,6 @@ from ltl.dfa import *
 from .params import GameParams
 from .constants import OBJ_REV_MAP, get_ent_str
 
-class NoInfoWrapper(gym.Wrapper):
-    def __init__(self, env: MiniWorldEnv):
-        super().__init__(env)
-        self.env = env
-
-    def reset(self, *, seed=None, options=None):
-        obs, info = super().reset(seed=seed, options=options)
-        return obs, {}
-
-    def step(self, action):
-        obs, rew, ter, trunc, info = super().step(action)
-        return obs, rew, ter, trunc, {}
 
 class ProgressionTerminateWrapper(gym.Wrapper):
     def __init__(self, env: MiniWorldEnv, params: GameParams, reward_scale=1):

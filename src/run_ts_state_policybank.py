@@ -10,11 +10,11 @@ from ts_policy_bank import create_discrete_sac_policy, TianshouPolicyBank
 from envs.game_creator import get_game
 from envs.miniworld.params import GameParams
 from tianshou.policy import PPOPolicy, DiscreteSACPolicy, TD3Policy
-from tianshou.env import DummyVectorEnv, SubprocVectorEnv
+from tianshou.env import DummyVectorEnv, SubprocVectorEnv, ShmemVectorEnv, DummyVectorEnv
 from tianshou.utils.net.common import ActorCritic
 from tianshou.utils.net.discrete import Actor, Critic
 from tianshou.trainer import OffpolicyTrainer
-from tianshou.data import Collector, ReplayBuffer
+from tianshou.data import Collector, ReplayBuffer, VectorReplayBuffer
 from torch_policies.network import get_CNN_preprocess
 from torch.optim import Adam
 import torch
@@ -31,43 +31,63 @@ from torch.utils.tensorboard import SummaryWriter
 from tianshou.utils.logger.tensorboard import TensorboardLogger
 import os
 
-NUM_PARALLEL_JOBS = 4
+NUM_PARALLEL_JOBS = 10
+PARALLEL_TRAIN = False
 
 device = "cpu"
 
-def generate_envs(game_name="miniworld_simp_no_vis", parallel=False):
+def generate_envs(game_name="miniworld_simp_no_vis", map_id=13, parallel=False, seed=0):
     if not parallel:
-        test_envs = get_game(name=game_name, params=GameParams(
-            map_fpath="../experiments/maps/map_13.txt",
-            ltl_task=("until", "True", "a"),
-            # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
-            prob=1
-        ), max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=True)
-        train_envs = get_game(name=game_name, params=GameParams(
-            map_fpath="../experiments/maps/map_13.txt",
-            ltl_task=("until", "True", "a"),
-            # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
-            prob=1,
-        ), max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=True)
+        # test_envs = DummyVectorEnv(
+        #     [lambda: get_game(name=game_name, params=GameParams(
+        #         map_fpath=f"../experiments/maps/map_{map_id}.txt",
+        #         ltl_task=("until", "True", "a"),
+        #         # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
+        #         prob=1
+        #     ), 
+        #     max_episode_steps=1500, do_transpose=False, 
+        #     reward_scale=10, ltl_progress_is_term=True, no_info=True)]
+        # )
+        test_envs = ShmemVectorEnv(
+            [lambda: get_game(name=game_name, params=GameParams(
+                map_fpath=f"../experiments/maps/map_{map_id}.txt",
+                ltl_task=("until", "True", "a"),
+                # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
+                prob=1
+            ) ,max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=True) \
+                for _ in range(NUM_PARALLEL_JOBS)]
+        )
+        train_envs = DummyVectorEnv(
+            [lambda: get_game(name=game_name, params=GameParams(
+                map_fpath=f"../experiments/maps/map_{map_id}.txt",
+                ltl_task=("until", "True", "a"),
+                # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
+                prob=1
+            ), 
+            max_episode_steps=1500, do_transpose=False, 
+            reward_scale=10, ltl_progress_is_term=True, no_info=True)]
+        )
     else:
-        test_envs = SubprocVectorEnv(
+        test_envs = ShmemVectorEnv(
             [lambda: get_game(name=game_name, params=GameParams(
-                map_fpath="../experiments/maps/map_16.txt",
+                map_fpath=f"../experiments/maps/map_{map_id}.txt",
                 ltl_task=("until", "True", "a"),
                 # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
                 prob=1
             ) ,max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=True) \
                 for _ in range(NUM_PARALLEL_JOBS)]
         )
-        train_envs = SubprocVectorEnv(
+        train_envs = ShmemVectorEnv(
             [lambda: get_game(name=game_name, params=GameParams(
-                map_fpath="../experiments/maps/map_16.txt",
+                map_fpath=f"../experiments/maps/map_{map_id}.txt",
                 ltl_task=("until", "True", "a"),
                 # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
                 prob=1
             ) ,max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=True) \
                 for _ in range(NUM_PARALLEL_JOBS)]
         )
+        train_envs.seed(seed)
+        test_envs.seed(seed)
     return train_envs, test_envs
 
 
@@ -171,7 +191,7 @@ if __name__ == "__main__":
     testing_params = TestingParameters(custom_metric_folder=args.run_subfolder)
     print("Initialized Learning Params:", learning_params)
 
-    train_envs, test_envs = generate_envs()
+    train_envs, test_envs = generate_envs(parallel=PARALLEL_TRAIN, seed=args.run_id)
 
     # logger
     tb_log_path = os.path.join(
@@ -207,13 +227,17 @@ if __name__ == "__main__":
 
     # initalize policy bank
     policy_bank = TianshouPolicyBank()
+    print("Action Space:", test_envs.action_space[0])
+    print("Obs Space:", test_envs.observation_space[0])
+    print()
+
     for task in tasks:
         dfa = DFA(task)
         for ltl in dfa.ltl2state.keys():
             policy = create_discrete_sac_policy(
-                num_actions=test_envs.action_space.n, 
-                num_features=test_envs.observation_space.shape[0], 
-                hidden_layers=[256, 256, 256, 256],
+                num_actions=test_envs.action_space[0].n, 
+                num_features=test_envs.observation_space[0].shape[0], 
+                hidden_layers=[256, 256, 256],
                 learning_params=learning_params,
                 device=device
             )
@@ -224,6 +248,7 @@ if __name__ == "__main__":
     with open(os.path.join(tb_log_path, "policy_log.txt"), "w") as f:
         f.write("ltl,global_time_steps,time\n")
     total_tasks = len(policy_bank.get_all_policies())
+    train_buffer = VectorReplayBuffer(int(1e6), buffer_num=NUM_PARALLEL_JOBS if PARALLEL_TRAIN else 1)
     for i, (ltl, policy) in enumerate(policy_bank.get_all_policies().items()):
         # logging
         with open(os.path.join(tb_log_path, "policy_log.txt"), "a") as f:
@@ -241,9 +266,10 @@ if __name__ == "__main__":
         print("Global Time Step:", global_time_steps)
         
         # training
-        train_buffer = ReplayBuffer(int(1e6))
+        train_buffer.reset()
         train_collector = Collector(policy, train_envs, train_buffer, exploration_noise=True)
         test_collector = Collector(policy, test_envs, exploration_noise=True)
+        # train_collector.collect(n_step=4800, random=True)
         trainer = OffpolicyTrainer(
             policy, 
             train_collector, 
