@@ -224,6 +224,7 @@ if __name__ == "__main__":
         stop_fn=lambda x: x >= 9.5, # mean test reward,
         save_best_fn=lambda x: save_individual_policy(tb_log_path, policy_id, ltl, policy),
         # save_checkpoint_fn=lambda epoch, env_step, grad_step: save_individual_policy(tb_log_path, policy_id, ltl, policy)
+        show_progress=("SLURM_JOB_ID" not in os.environ)
     )
 
     train_result = trainer.run()
