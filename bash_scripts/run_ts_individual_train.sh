@@ -18,12 +18,17 @@ run_id=1
 train_size=50
 train_type="sequence"
 
-i=`expr $SLURM_ARRAY_TASK_ID`
+ltl_id=`expr $SLURM_ARRAY_TASK_ID`
 
 source /users/ywei75/.bashrc
 conda activate ltl
 
+#echo PYGLET_HEADLESS=true python3 run_ts_single_policy.py \
+#        --train_size $train_size --rl_algo dsac --map $map --ltl_id $ltl_id \
+#        --game_name miniworld_simp_no_vis --train_type $train_type \
+#        --save_dpath=/users/ywei75/data/shared/ltl-transfer-ts
+
 PYGLET_HEADLESS=true python3 run_ts_single_policy.py \
-        --train_size $train_size --rl_algo dsac --map $map --ltl_id $i \
+        --train_size $train_size --rl_algo dsac --map $map --ltl_id $ltl_id \
         --game_name miniworld_simp_no_vis --train_type $train_type \
         --save_dpath=/users/ywei75/data/shared/ltl-transfer-ts
