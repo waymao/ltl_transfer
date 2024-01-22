@@ -266,7 +266,8 @@ if __name__ == "__main__":
         f.write("ltl,global_time_steps,time\n")
     total_tasks = len(policy_bank.get_all_policies())
     train_buffer = VectorReplayBuffer(int(1e6), buffer_num=NUM_PARALLEL_JOBS if PARALLEL_TRAIN else 1)
-    for i, (ltl, policy) in enumerate(policy_bank.get_all_policies().items()):
+    for ltl, i in policy_bank.policy2id.items():
+        policy = policy_bank.policies[i]
         # logging
         with open(os.path.join(tb_log_path, "policy_log.txt"), "a") as f:
             f.write(f"\"{ltl}\",{global_time_steps},{time.time()}\n")
@@ -300,11 +301,10 @@ if __name__ == "__main__":
             logger=logger,
             test_in_train=False,
             stop_fn=lambda x: x >= 9.5, # mean test reward,
-            save_best_fn=lambda x: print("saved") and policy_bank.save(os.path.join(tb_log_path, "policy_bank_ts.pth")),
-            save_checkpoint_fn=lambda epoch, env_step, grad_step: policy_bank.save_ckpt(os.path.join(tb_log_path, "policy_bank_ts_ckpt.pth"))
+            save_best_fn=lambda x: policy_bank.save_individual_policy(tb_log_path, i),
+            save_checkpoint_fn=lambda epoch, env_step, grad_step: policy_bank.save_ckpt(tb_log_path)
         )
 
         train_result = trainer.run()
         global_time_steps += train_result["train_step"]
-        policy_bank.save(os.path.join(tb_log_path, "policy_bank_ts.pth"))
 

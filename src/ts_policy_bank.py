@@ -47,6 +47,10 @@ class TianshouPolicyBank:
         for ltl, id in self.policy2id.items():
             save_individual_policy(path, id, self.policies[id])
     
+    def save_individual_policy(self, path, policy_id):
+        path = os.path.join(path, "policies")
+        save_individual_policy(path, policy_id, self.policies[policy_id])
+    
     def get_all_policies(self):
         return {ltl: self.policies[id] for ltl, id in self.policy2id.items()}
 
