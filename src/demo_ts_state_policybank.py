@@ -22,9 +22,11 @@ import pickle
 
 from torch.utils.tensorboard import SummaryWriter
 from tianshou.utils.logger.tensorboard import TensorboardLogger
+from tianshou.data import Collector
 import os
 
-NUM_PARALLEL_JOBS = 4
+NUM_PARALLEL_JOBS = 12
+PARALLEL_TRAIN = True
 
 device = "cpu"
 
@@ -108,6 +110,9 @@ if __name__ == "__main__":
     # add all fields of Learning Parameters to parser
     LEARNING_ARGS_PREFIX = "lp."
     add_fields_to_parser(parser, LearningParameters, prefix=LEARNING_ARGS_PREFIX)
+
+    parser.add_argument('-o', '--output_file', type=str, default=None, help='Output file to save the results.')
+    parser.add_argument('--no_deterministic_eval', action="store_true", help='Whether to run deterministic evaluation or not.')
     args = parser.parse_args()
     # if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")
     # if args.train_type not in train_types: raise NotImplementedError("Training tasks " + str(args.train_type) + " hasn't been defined yet")
@@ -126,7 +131,7 @@ if __name__ == "__main__":
     testing_params = TestingParameters(custom_metric_folder=args.run_subfolder)
     print("Initialized Learning Params:", learning_params)
 
-    train_envs, test_envs = generate_envs()
+    train_envs, test_envs = generate_envs(parallel=PARALLEL_TRAIN, seed=args.run_id)
 
     # tester
     tester = Tester(
@@ -149,19 +154,23 @@ if __name__ == "__main__":
 
     # initalize policy bank
     policy_bank: TianshouPolicyBank = load_ts_policy_bank(
-        os.path.join(save_path, "policy_bank_ts.pth"),
-        num_actions=test_envs.action_space.n,
-        num_features=test_envs.observation_space.shape[0],
+        os.path.join(save_path),
+        num_actions=test_envs.action_space[0].n,
+        num_features=test_envs.observation_space[0].shape[0],
     )
     # sanity check to make sure everything is in the policy bank.
     for task in tasks:
         dfa = DFA(task)
         for ltl in dfa.ltl2state.keys():
-            assert ltl in policy_bank.policy2id, ("LTL " + str(ltl) + " not found in policy bank.")
+            if ltl != 'True' and ltl != 'False': 
+                assert ltl in policy_bank.policy2id, \
+                    ("LTL " + str(ltl) + " not found in policy bank.")
 
     # run training
     global_time_steps = 0
-    for ltl, policy in policy_bank.get_all_policies().items():
+    result_list = []
+    num_policies = len(policy_bank.policies)
+    for i, (ltl, policy) in enumerate(policy_bank.get_all_policies().items()):
         # skip if it's a dummy policy
         if ltl == "True" or ltl == "False": continue
         
@@ -170,13 +179,26 @@ if __name__ == "__main__":
         test_envs.reset(options=dict(task_params=task_params))
         
         # collecting results
-        # set policy to be deterministic
-        policy.training = False
-        policy.eval()
+        # set policy to be deterministic if set up to do so
+        if not args.no_deterministic_eval:
+            policy.training = False
+            policy.eval()
 
         # collect and rollout
         test_collector = Collector(policy, test_envs, exploration_noise=True)
         result = test_collector.collect(n_episode=20)
 
-        print("LTL:", ltl, "rew:", f"{result['rew']} ± {result['rew_std']}", "len:", f"{result['len']} ± {result['len_std']}")
+        print(f"LTL {i}/{num_policies}:", ltl, \
+              "rew:", f"{result['rew']} ± {result['rew_std']}", \
+              "len:", f"{result['len']} ± {result['len_std']}")
+        result_list.append((ltl, result['rew'], result['rew_std'], result['len'], result['len_std']))
+    
+    print("Average Success Rate:", np.mean([rew for _, rew, _, _, _ in result_list]) / 10)
+
+    # save results
+    if args.output_file is not None:
+        with open(args.output_file, 'w') as f:
+            f.write("ltl,rew,rew_std,length,length_std\n")
+            for ltl, rew, rew_std, length, length_std in result_list:
+                f.write(f"\"{ltl}\",{rew},{rew_std},{length},{length_std}\n")
 

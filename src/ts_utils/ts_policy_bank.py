@@ -109,7 +109,7 @@ def load_ts_policy_bank(
         ltl = list_to_tuple(ltl)
         print("Loading policy for LTL: ", ltl)
         policy, ltl_stored = load_individual_policy(
-            os.path.join(policy_bank_path, "policies"), 
+            policy_bank_path, 
             id, num_actions, 
             num_features, hidden_layers, 
             learning_params, device)
