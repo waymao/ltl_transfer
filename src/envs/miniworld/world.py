@@ -92,6 +92,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
     """
 
     def __init__(self, params: Optional[GameParams] = None, visit_only=True, max_episode_steps=9000, **kwargs):
+        self.custom_params = params
         if params is not None and params.map_fpath is not None:
             with open(params.map_fpath, 'r') as f:
                 self._map_mat = f.readlines()
@@ -171,7 +172,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
         height = 0
         width = 0
 
-        use_map_agent_loc = not IGNORE_MAP_AGENT_LOC and self.params.init_loc is None
+        use_map_agent_loc = not IGNORE_MAP_AGENT_LOC and self.custom_params.init_loc is None
         # loading the map
         for i, l in enumerate(map_mat):
             # I don't consider empty lines!
@@ -207,8 +208,8 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
                     self.place_agent(min_x=x, max_x=x, min_z=z, max_z=z)
             width = max(width, len(l_stripped))
         
-        if self.params.init_loc is not None:
-            i, j = self.params.init_loc
+        if self.custom_params.init_loc is not None:
+            i, j = self.custom_params.init_loc
             x, z = mat_to_opengl(i, j, num_rows=self.size)
             self.place_agent(pos=[x, z])
         elif IGNORE_MAP_AGENT_LOC:
@@ -234,7 +235,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
             **info
         }
     
-    def reset(self, **kwargs):
+    def reset(self, params=None, **kwargs):
         obs, info = super().reset(**kwargs)
 
         # change agent size
