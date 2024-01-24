@@ -119,15 +119,16 @@ def createMap(conf_params, seed, show):
 
 if __name__ == '__main__':
     # configuration parameters for creating a map
-    map_width  = 21
-    map_height = 21
+    map_width  = 50
+    map_height = 50
     resources = 'adf'
     fancy_resources = 'gh'
     workstations = 'bce'
     num_resource_per_type = 5
     num_fancy_resources_per_type = 2
     num_workstations_per_type = 2
-    shelter_locations = [(i, j) for i in range(8, 13) for j in range(11, 20)]
+    shelter_locations = []
+    # shelter_locations = [(i, j) for i in range(8, 13) for j in range(11, 20)]
     # NOTE: the map's difficulty is measure by the difference between the reward obtained by an optimal myopic policy vs a globally optimal policy (over the sequential tasks)
     tasks = ["ab", "ac", "de", "db", "fae", "abdc", "acfb", "acfc", "faeg", "acfbh"]
     conf_params = map_width, map_height, resources, fancy_resources, workstations, num_resource_per_type, num_fancy_resources_per_type, num_workstations_per_type, shelter_locations, tasks
