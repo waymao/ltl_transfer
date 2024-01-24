@@ -11,7 +11,7 @@ class GameParams:
                  init_loc=None,
                  step_rew=0.0,
                  succ_rew=1.0,
-                 fail_rew=0.0
+                 fail_rew=0.0,
         ):
         self.map_fpath = map_fpath
         self.prob = prob

@@ -7,7 +7,7 @@ from miniworld.miniworld import MiniWorldEnv
 
 from .params import GameParams
 from .constants import OBJ_MAP, AGENT_MARKER, BLOCK_SCALE, OBSTACLE_MARKER, \
-    RANDOM_COLOR_LIST, RANDOM_OBJ_TYPES, DEFAULT_MAP_SIZE, ALWAYS_RANDOM_AGENT_LOC, \
+    RANDOM_COLOR_LIST, RANDOM_OBJ_TYPES, DEFAULT_MAP_SIZE, IGNORE_MAP_AGENT_LOC, \
     OBJECT_SIZE, DEFAULT_GAME_PARAMS
 
 # for debug info
@@ -170,6 +170,8 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
         items_set = set()
         height = 0
         width = 0
+
+        use_map_agent_loc = not IGNORE_MAP_AGENT_LOC and self.params.init_loc is None
         # loading the map
         for i, l in enumerate(map_mat):
             # I don't consider empty lines!
@@ -199,13 +201,17 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
 
                     # update the feature set
                     items_set.add(e)
-                elif e == AGENT_MARKER and not ALWAYS_RANDOM_AGENT_LOC:
+                elif e == AGENT_MARKER and use_map_agent_loc:
                     # add the agent if not randomizing agent loc
                     x, z = mat_to_opengl(i, j, num_rows=self.size)
                     self.place_agent(min_x=x, max_x=x, min_z=z, max_z=z)
             width = max(width, len(l_stripped))
         
-        if ALWAYS_RANDOM_AGENT_LOC:
+        if self.params.init_loc is not None:
+            i, j = self.params.init_loc
+            x, z = mat_to_opengl(i, j, num_rows=self.size)
+            self.place_agent(pos=[x, z])
+        elif IGNORE_MAP_AGENT_LOC:
             # add the agent in the end
             self.place_agent()
         return items_set
