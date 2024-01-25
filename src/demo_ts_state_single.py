@@ -1,13 +1,18 @@
-
-# %%
 import os
 from ltl.dfa import DFA
-from torch_policies.learning_params import LearningParameters, add_fields_to_parser, get_learning_parameters
+from torch_policies.learning_params import LearningParameters, \
+    add_fields_to_parser, get_learning_parameters
 
-from ts_utils.ts_policy_bank import create_discrete_sac_policy, TianshouPolicyBank, load_ts_policy_bank
-from ts_utils.ts_argparse import add_parser_cmds
-# %%
+from ts_utils.ts_policy_bank import create_discrete_sac_policy, TianshouPolicyBank, load_ts_policy_bank, load_individual_policy, save_individual_policy
 from ts_utils.ts_envs import generate_envs
+from ts_utils.ts_argparse import add_parser_cmds
+
+# %%
+from tianshou.policy import PPOPolicy, DiscreteSACPolicy, TD3Policy
+from tianshou.utils.net.common import ActorCritic
+from tianshou.utils.net.discrete import Actor, Critic
+from tianshou.trainer import OffpolicyTrainer
+from tianshou.data import Collector, ReplayBuffer, VectorReplayBuffer, Batch
 from torch_policies.network import get_CNN_preprocess
 from torch.optim import Adam
 import torch
@@ -22,11 +27,13 @@ import pickle
 
 from torch.utils.tensorboard import SummaryWriter
 from tianshou.utils.logger.tensorboard import TensorboardLogger
-from tianshou.data import Collector, Batch
 import os
-from tianshou.policy import BasePolicy
+
+NUM_PARALLEL_JOBS = 10
+PARALLEL_TRAIN = False
 
 device = "cpu"
+
 
 
 if __name__ == "__main__":
@@ -34,15 +41,15 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog="run_experiments", description='Runs a multi-task RL experiment over a gridworld domain that is inspired by Minecraft.')
     add_parser_cmds(parser)
-    parser.add_argument('--run_prefix', type=str,
-                        help='Location of the bank and the learning parameters.')
 
     # add all fields of Learning Parameters to parser
     LEARNING_ARGS_PREFIX = "lp."
     add_fields_to_parser(parser, LearningParameters, prefix=LEARNING_ARGS_PREFIX)
-
+    parser.add_argument('--run_prefix', type=str,
+                        help='Location of the bank and the learning parameters.')
     parser.add_argument('--ltl_id', type=int, required=True, help='Policy ID to demo')
     parser.add_argument('--no_deterministic_eval', action="store_true", help='Whether to run deterministic evaluation or not.')
+
     args = parser.parse_args()
     # if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")
     # if args.train_type not in train_types: raise NotImplementedError("Training tasks " + str(args.train_type) + " hasn't been defined yet")
@@ -53,20 +60,41 @@ if __name__ == "__main__":
     tasks_id = 0
     map_id = args.map
 
-    save_path = args.run_prefix
-
     # learning params
-    with open(os.path.join(save_path, "learning_params.pkl"), "rb") as f:
-        learning_params = pickle.load(f)
+    learning_params = get_learning_parameters(
+        policy_name=args.rl_algo, 
+        game_name=args.game_name,
+        **{
+            key.removeprefix(LEARNING_ARGS_PREFIX): val 
+            for (key, val) in args._get_kwargs() 
+            if key.startswith(LEARNING_ARGS_PREFIX)
+        }
+    )
     testing_params = TestingParameters(custom_metric_folder=args.run_subfolder)
     print("Initialized Learning Params:", learning_params)
 
-    train_envs, test_envs = generate_envs(
-        game_name=args.game_name, 
-        parallel=False, 
-        map_id=map_id, 
-        seed=args.run_id
-    )
+    train_envs, test_envs = generate_envs(game_name=args.game_name, parallel=PARALLEL_TRAIN, map_id=map_id, seed=args.run_id)
+
+    # path for logger
+    tb_log_path = os.path.join(
+        args.save_dpath, "results", f"{args.game_name}_{args.domain_name}", f"{args.train_type}_p{args.prob}", 
+        f"{args.algo}_{args.rl_algo}", f"map{map_id}", str(args.run_id), 
+        f"alpha={'auto' if learning_params.auto_alpha else learning_params.alpha}",
+    ) if args.run_prefix is None else args.run_prefix
+    if testing_params.custom_metric_folder is not None:
+        tb_log_path = os.path.join(tb_log_path, testing_params.custom_metric_folder)
+    
+    # load the proper lp
+    with open(os.path.join(tb_log_path, "learning_params.pkl"), "rb") as f:
+        learning_params = pickle.load(f)
+    
+    # logger
+    writer = SummaryWriter(log_dir=os.path.join(tb_log_path, "logs", f"policy_{args.ltl_id}"))
+    logger = TensorboardLogger(writer)
+
+    # dump lp again
+    # with open(os.path.join(tb_log_path, "learning_params.pkl"), "wb") as f:
+    #     pickle.dump(learning_params, f)
 
     # tester
     tester = Tester(
@@ -83,28 +111,23 @@ if __name__ == "__main__":
         edge_matcher=args.edge_matcher, 
         save_dpath=args.save_dpath,
         game_name=args.game_name,
-        logger=None
+        logger=logger
     )
     tasks = tester.tasks
 
-    # initalize policy bank
-    policy_bank: TianshouPolicyBank = load_ts_policy_bank(
-        os.path.join(save_path),
-        num_actions=test_envs.action_space[0].n,
-        num_features=test_envs.observation_space[0].shape[0],
-    )
-    # sanity check to make sure everything is in the policy bank.
-    for task in tasks:
-        dfa = DFA(task)
-        for ltl in dfa.ltl2state.keys():
-            if ltl != 'True' and ltl != 'False': 
-                assert ltl in policy_bank.policy2id, \
-                    ("LTL " + str(ltl) + " not found in policy bank.")
-    assert args.ltl_id in policy_bank.policy2id.values(), "Policy ID not found in policy bank"
+    # run training
+    global_time_steps = 0
+    with open(os.path.join(tb_log_path, "logs", f"policy{args.ltl_id}_status.txt"), "w") as f:
+        f.write(f"{time.time()},started\n")
+    train_buffer = VectorReplayBuffer(int(1e6), buffer_num=NUM_PARALLEL_JOBS if PARALLEL_TRAIN else 1)
 
-    # get the correct policy
-    policy: BasePolicy = policy_bank.policies[args.ltl_id]
-    ltl = policy_bank.policy_ltls[args.ltl_id]
+    ltl_id = args.ltl_id
+    policy, ltl = load_individual_policy(
+        tb_log_path, ltl_id, 
+        num_actions=test_envs.action_space[0].n, 
+        num_features=test_envs.observation_space[0].shape[0], 
+        learning_params=learning_params, 
+        device=device)
 
     print("Running policy", ltl)
     
