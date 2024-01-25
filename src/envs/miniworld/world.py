@@ -18,6 +18,8 @@ print("Renderer Vendor:", ctypes.string_at(glGetString(GL_VENDOR)).decode())
 print("Renderer Hardware:", ctypes.string_at(glGetString(GL_RENDERER)).decode())
 
 def mat_to_opengl(i, j, num_rows, offset=0.5):
+    i = float(i)
+    j = float(j)
     offset *= BLOCK_SCALE
     return (j * BLOCK_SCALE + offset, i * BLOCK_SCALE + offset)
 
@@ -211,7 +213,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
         if self.custom_params.init_loc is not None:
             i, j = self.custom_params.init_loc
             x, z = mat_to_opengl(i, j, num_rows=self.size)
-            self.place_agent(pos=[x, z])
+            self.place_agent(pos=[x, 0.0, z])
         elif IGNORE_MAP_AGENT_LOC:
             # add the agent in the end
             self.place_agent()
@@ -235,8 +237,12 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
             **info
         }
     
-    def reset(self, params=None, **kwargs):
-        obs, info = super().reset(**kwargs)
+    def reset(self, options: dict=None, *args, **kwargs):
+        print(options)
+        params = options.get('task_params', None) if options is not None else None
+        if params is not None and type(params) == GameParams:
+            self.custom_params = params
+        obs, info = super().reset(*args, **kwargs)
 
         # change agent size
         # self.agent.radius /= 2

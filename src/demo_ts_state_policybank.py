@@ -105,7 +105,7 @@ if __name__ == "__main__":
     
     # reset with the correct ltl
     task_params = tester.get_task_params(ltl)
-    test_envs.reset(options=dict(task_params=task_params))
+    test_envs.reset()
     
     # collecting results
     # set policy to be deterministic if set up to do so
@@ -114,13 +114,13 @@ if __name__ == "__main__":
         policy.eval()
 
     # collect and rollout
-    for i in range(1000):
-        obs, info = test_envs.reset()
+    for x in range(2, 10):
+        task_params.init_loc = [x, 10.0]
+        obs, info = test_envs.reset(options=dict(task_params=task_params))
         test_envs.render()
-        for i in range(1500):
+        for i in range(200):
             print(obs)
             a = policy.forward(Batch(obs=obs, info=info)).act
-            print("Action:", a)
             obs, reward, term, trunc, info = test_envs.step(a.numpy())
             test_envs.render()
             if term or trunc:
