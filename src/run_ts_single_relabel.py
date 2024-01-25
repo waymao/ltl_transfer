@@ -152,8 +152,8 @@ if __name__ == "__main__":
     # collect and rollout
     #uncomment for the coordinates
     results = {}
-    for x in np.arange(1.0, 10, .5):
-        for y in np.arange(1.0, 10, .5):
+    for x in np.linspace(1, 10, (10 - 1) * 2 + 1):
+        for y in np.linspace(1, 10, (10 - 1) * 2 + 1):
             task_params.init_loc = [x, y]
             obs, info = test_envs.reset(options=dict(task_params=task_params))
             for i in range(1500):
@@ -169,7 +169,9 @@ if __name__ == "__main__":
                         # "new_ltl_goal": info[0]['ltl_goal'],
                     }
                     print(f"{x:.2f}, {y:.2f}", results[f"{x}, {y}"])
+                    break
 
     print(results)
+    os.makedirs(os.path.join(tb_log_path, "classifier"), exist_ok=True)
     with open(os.path.join(tb_log_path, "classifier", f"policy{args.ltl_id}_status.json"), "w") as f:
         json.dump(results, f)
