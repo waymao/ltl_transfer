@@ -63,7 +63,7 @@ if __name__ == "__main__":
     testing_params = TestingParameters(custom_metric_folder=args.run_subfolder)
     print("Initialized Learning Params:", learning_params)
 
-    train_envs, test_envs = generate_envs(parallel=PARALLEL_TRAIN, map_id=map_id, seed=args.run_id)
+    train_envs, test_envs = generate_envs(game_name=args.game_name, parallel=PARALLEL_TRAIN, map_id=map_id, seed=args.run_id)
 
     # tester
     tester = Tester(

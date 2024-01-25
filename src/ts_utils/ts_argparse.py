@@ -28,7 +28,7 @@ def add_parser_cmds(parser: ArgumentParser):
 
     parser.add_argument('--algo', default='lpopl', type=str,
                         help='This parameter indicated which algorithm to use. The options are: ' + str(algos))
-    parser.add_argument('--rl_algo', default="dqn", type=str, choices=rl_algos,
+    parser.add_argument('--rl_algo', default="dsac", type=str, choices=rl_algos,
                         help="The RL Algorithm to be used for LPOPL / Transfer.  The options are: " + str(rl_algos))
     
     parser.add_argument('--train_type', default='sequence', type=str,
@@ -63,7 +63,7 @@ def add_parser_cmds(parser: ArgumentParser):
                         help='The device to run Neural Network computations.')
     parser.add_argument('--resume', default=False, action="store_true",
                         help='Whether to resume from a checkpoint or not.')
-    parser.add_argument('--game_name', default="grid", type=str, choices=['grid', 'miniworld', 'miniworld_no_vis', 'miniworld_simp_no_vis'],
+    parser.add_argument('--game_name', default="miniworld_simp_no_vis", type=str, choices=['grid', 'miniworld', 'miniworld_no_vis', 'miniworld_simp_no_vis'],
                         help='Name of the game.')
     parser.add_argument('--run_subfolder', default=None, required=False, type=str,
                         help='Name of the run. Used to save the results in a separate sub folder.')

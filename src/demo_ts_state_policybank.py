@@ -2,13 +2,14 @@
 # %%
 import os
 from ltl.dfa import DFA
-from torch_policies.learning_params import LearningParameters, \
-    add_fields_to_parser, get_learning_parameters
+from torch_policies.learning_params import LearningParameters, add_fields_to_parser, get_learning_parameters
 
 from ts_utils.ts_policy_bank import create_discrete_sac_policy, TianshouPolicyBank, load_ts_policy_bank
 from ts_utils.ts_argparse import add_parser_cmds
 # %%
 from ts_utils.ts_envs import generate_envs
+from torch_policies.network import get_CNN_preprocess
+from torch.optim import Adam
 import torch
 from torch import nn
 import numpy as np
@@ -21,10 +22,9 @@ import pickle
 
 from torch.utils.tensorboard import SummaryWriter
 from tianshou.utils.logger.tensorboard import TensorboardLogger
+from tianshou.data import Collector, Batch
 import os
-
-NUM_PARALLEL_JOBS = 10
-PARALLEL_TRAIN = False
+from tianshou.policy import BasePolicy
 
 device = "cpu"
 
@@ -34,11 +34,15 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog="run_experiments", description='Runs a multi-task RL experiment over a gridworld domain that is inspired by Minecraft.')
     add_parser_cmds(parser)
+    parser.add_argument('--run_prefix', type=str,
+                        help='Location of the bank and the learning parameters.')
 
     # add all fields of Learning Parameters to parser
     LEARNING_ARGS_PREFIX = "lp."
     add_fields_to_parser(parser, LearningParameters, prefix=LEARNING_ARGS_PREFIX)
 
+    parser.add_argument('--policy_id', type=int, required=True, help='Policy ID to demo')
+    parser.add_argument('--no_deterministic_eval', action="store_true", help='Whether to run deterministic evaluation or not.')
     args = parser.parse_args()
     # if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")
     # if args.train_type not in train_types: raise NotImplementedError("Training tasks " + str(args.train_type) + " hasn't been defined yet")
@@ -49,34 +53,15 @@ if __name__ == "__main__":
     tasks_id = 0
     map_id = args.map
 
+    save_path = args.run_prefix
+
     # learning params
-    learning_params = get_learning_parameters(
-        policy_name=args.rl_algo, 
-        game_name=args.game_name,
-        **{
-            key.removeprefix(LEARNING_ARGS_PREFIX): val 
-            for (key, val) in args._get_kwargs() 
-            if key.startswith(LEARNING_ARGS_PREFIX)
-        }
-    )
+    with open(os.path.join(save_path, "learning_params.pkl"), "rb") as f:
+        learning_params = pickle.load(f)
     testing_params = TestingParameters(custom_metric_folder=args.run_subfolder)
     print("Initialized Learning Params:", learning_params)
 
-    train_envs, test_envs = generate_envs(game_name=args.game_name, parallel=PARALLEL_TRAIN, map_id=map_id, seed=args.run_id)
-
-    # logger
-    tb_log_path = os.path.join(
-        args.save_dpath, "results", f"{args.game_name}_{args.domain_name}", f"{args.train_type}_p{args.prob}", 
-        f"{args.algo}_{args.rl_algo}", f"map{map_id}", str(args.run_id), 
-        f"alpha={'auto' if learning_params.auto_alpha else learning_params.alpha}",
-    )
-    if testing_params.custom_metric_folder is not None:
-        tb_log_path = os.path.join(tb_log_path, testing_params.custom_metric_folder)
-    # writer = SummaryWriter(log_dir=tb_log_path)
-    # logger = TensorboardLogger(writer)
-    os.makedirs(tb_log_path, exist_ok=True)
-    with open(os.path.join(tb_log_path, "learning_params.pkl"), "wb") as f:
-        pickle.dump(learning_params, f)
+    train_envs, test_envs = generate_envs(game_name=args.game_name, parallel=False, map_id=map_id, seed=args.run_id)
 
     # tester
     tester = Tester(
@@ -98,22 +83,45 @@ if __name__ == "__main__":
     tasks = tester.tasks
 
     # initalize policy bank
-    policy_bank = TianshouPolicyBank()
-
+    policy_bank: TianshouPolicyBank = load_ts_policy_bank(
+        os.path.join(save_path),
+        num_actions=test_envs.action_space[0].n,
+        num_features=test_envs.observation_space[0].shape[0],
+    )
+    # sanity check to make sure everything is in the policy bank.
     for task in tasks:
         dfa = DFA(task)
         for ltl in dfa.ltl2state.keys():
-            policy = create_discrete_sac_policy(
-                num_actions=test_envs.action_space[0].n, 
-                num_features=test_envs.observation_space[0].shape[0], 
-                hidden_layers=[256, 256, 256],
-                learning_params=learning_params,
-                device=device
-            )
-            policy_bank.add_LTL_policy(ltl, policy)
+            if ltl != 'True' and ltl != 'False': 
+                assert ltl in policy_bank.policy2id, \
+                    ("LTL " + str(ltl) + " not found in policy bank.")
+    assert args.policy_id in policy_bank.policy2id.values(), "Policy ID not found in policy bank"
 
-    # save policy bank
-    policy_bank.save_pb_index(tb_log_path)
-    policy_bank.save_ckpt(tb_log_path)
-    print("Saved bank to", tb_log_path)
+    # get the correct policy
+    policy: BasePolicy = policy_bank.policies[args.policy_id]
+    ltl = policy_bank.policy_ltls[args.policy_id]
 
+    print("Running policy", ltl)
+    
+    # reset with the correct ltl
+    task_params = tester.get_task_params(ltl)
+    test_envs.reset(options=dict(task_params=task_params))
+    
+    # collecting results
+    # set policy to be deterministic if set up to do so
+    if not args.no_deterministic_eval:
+        policy.training = False
+        policy.eval()
+
+    # collect and rollout
+    for i in range(1000):
+        obs, info = test_envs.reset()
+        test_envs.render()
+        for i in range(1500):
+            print(obs)
+            a = policy.forward(Batch(obs=obs, info=info)).act
+            print("Action:", a)
+            obs, reward, term, trunc, info = test_envs.step(a.numpy())
+            test_envs.render()
+            if term or trunc:
+                break
