@@ -1,3 +1,4 @@
+from copy import deepcopy
 from gymnasium import utils, spaces
 import numpy as np
 from typing import Optional
@@ -238,10 +239,9 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
         }
     
     def reset(self, options: dict=None, *args, **kwargs):
-        print(options)
         params = options.get('task_params', None) if options is not None else None
         if params is not None and type(params) == GameParams:
-            self.custom_params = params
+            self.custom_params = deepcopy(params)
         obs, info = super().reset(*args, **kwargs)
 
         # change agent size
