@@ -1,3 +1,4 @@
+import json
 import os
 from ltl.dfa import DFA
 from torch_policies.learning_params import LearningParameters, \
@@ -73,7 +74,13 @@ if __name__ == "__main__":
     testing_params = TestingParameters(custom_metric_folder=args.run_subfolder)
     print("Initialized Learning Params:", learning_params)
 
-    train_envs, test_envs = generate_envs(game_name=args.game_name, parallel=PARALLEL_TRAIN, map_id=map_id, seed=args.run_id)
+    train_envs, test_envs = generate_envs(
+        game_name=args.game_name, 
+        parallel=PARALLEL_TRAIN, 
+        map_id=map_id, 
+        seed=args.run_id,
+        no_info=False
+    )
 
     # path for logger
     tb_log_path = os.path.join(
@@ -134,6 +141,7 @@ if __name__ == "__main__":
     # reset with the correct ltl
     task_params = tester.get_task_params(ltl)
     test_envs.reset()
+    test_envs.get_env_attr("unwrapped", 0)
     
     # collecting results
     # set policy to be deterministic if set up to do so
@@ -143,15 +151,25 @@ if __name__ == "__main__":
 
     # collect and rollout
     #uncomment for the coordinates
-    # for x in range(2, 10, 0.1):
-    for x in range(1000):
-        # uncomment for a specific location
-        # task_params.init_loc = [x, 5.0]
-        obs, info = test_envs.reset(options=dict(task_params=task_params))
-        test_envs.render()
-        for i in range(200):
-            a = policy.forward(Batch(obs=obs, info=info)).act
-            obs, reward, term, trunc, info = test_envs.step(a.numpy())
-            test_envs.render()
-            if term or trunc:
-                break
+    results = {}
+    for x in np.arange(1.0, 10, .5):
+        for y in np.arange(1.0, 10, .5):
+            task_params.init_loc = [x, y]
+            obs, info = test_envs.reset(options=dict(task_params=task_params))
+            for i in range(1500):
+                a = policy.forward(Batch(obs=obs, info=info)).act
+                obs, reward, term, trunc, info = test_envs.step(a.numpy())
+                if term or trunc:
+                    true_prop = info[0]['true_props']
+                    success = info[0]['dfa_state'] != -1 and not trunc
+                    results[f"{x}, {y}"] = {
+                        "success": success,
+                        "true_proposition": info[0]['true_props'] if success else '',
+                        "steps": i + 1, 
+                        # "new_ltl_goal": info[0]['ltl_goal'],
+                    }
+                    print(f"{x:.2f}, {y:.2f}", results[f"{x}, {y}"])
+
+    print(results)
+    with open(os.path.join(tb_log_path, "classifier", f"policy{args.ltl_id}_status.json"), "w") as f:
+        json.dump(results, f)

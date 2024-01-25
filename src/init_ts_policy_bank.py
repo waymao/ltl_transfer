@@ -117,3 +117,15 @@ if __name__ == "__main__":
     policy_bank.save_ckpt(tb_log_path)
     print("Saved bank to", tb_log_path)
 
+
+    # sanity check
+    # load policy bank
+    policy_bank = load_ts_policy_bank(
+        tb_log_path,
+        num_actions=test_envs.action_space[0].n,
+        num_features=test_envs.observation_space[0].shape[0],
+        learning_params=learning_params,
+        device=device
+    )
+    print(policy_bank.policies[0].actor.last_model.0.weight)
+

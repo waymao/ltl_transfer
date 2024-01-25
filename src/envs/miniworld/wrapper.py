@@ -65,7 +65,7 @@ class MiniWorldLTLWrapper(gym.Wrapper):
             obs = np.transpose(obs, (2, 0, 1))
         info = {
             **info,
-            # "ltl_goal": self.get_LTL_goal(),
+            "ltl_goal": self.get_LTL_goal(),
             "dfa_game_over": self.ltl_game_over,
             "dfa_state": self.dfa.state
         }
@@ -86,7 +86,8 @@ class MiniWorldLTLWrapper(gym.Wrapper):
         # collect LTL related info
         info = {
             **info,
-            # "ltl_goal": self.get_LTL_goal(),
+            "true_props": true_props,
+            "ltl_goal": self.get_LTL_goal(),
             "dfa_game_over": self.ltl_game_over,
             "dfa_state": self.dfa.state
         }
