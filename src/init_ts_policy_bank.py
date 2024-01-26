@@ -127,5 +127,4 @@ if __name__ == "__main__":
         learning_params=learning_params,
         device=device
     )
-    print(policy_bank.policies[0].actor.last_model.0.weight)
 
