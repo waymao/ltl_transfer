@@ -200,7 +200,8 @@ if __name__ == "__main__":
                 print(f"{x:.2f}, {y:.2f}, {angle}", results[dict_key])
                 break
 
-    print(results)
     os.makedirs(os.path.join(tb_log_path, "classifier"), exist_ok=True)
-    with open(os.path.join(tb_log_path, "classifier", f"policy{args.ltl_id}_status.json"), "w") as f:
+    file = os.path.join(tb_log_path, "classifier", f"policy{args.ltl_id}_status.json")
+    with open(file, "w") as f:
         json.dump(results, f)
+    print("Saved rollout result to", file)
