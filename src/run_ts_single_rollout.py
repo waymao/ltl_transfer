@@ -191,10 +191,12 @@ if __name__ == "__main__":
             if term or trunc:
                 true_prop = info[0]['true_props']
                 success = info[0]['dfa_state'] != -1 and not trunc
+                state = test_envs.get_env_attr("curr_state", 0)
                 results[dict_key] = {
                     "success": success,
                     "true_proposition": info[0]['true_props'] if success else '',
                     "steps": i + 1, 
+                    "final_state": state
                     # "new_ltl_goal": info[0]['ltl_goal'],
                 }
                 print(f"{x:.2f}, {y:.2f}, {angle}", results[dict_key])
