@@ -175,8 +175,11 @@ if __name__ == "__main__":
     if args.render:
         test_envs.render()
         input("Press Enter When Ready...")
-    for x, y, angle in space_iter:
+    for loc in space_iter:
+        x, y, angle = loc
+        dict_key = ", ".join([str(a) for a in loc])
         task_params.init_loc = [x, y]
+        task_params.init_angle = angle
         obs, info = test_envs.reset(options=dict(task_params=task_params))
         if args.render:
             test_envs.render()
@@ -188,13 +191,13 @@ if __name__ == "__main__":
             if term or trunc:
                 true_prop = info[0]['true_props']
                 success = info[0]['dfa_state'] != -1 and not trunc
-                results[f"{x}, {y}"] = {
+                results[dict_key] = {
                     "success": success,
                     "true_proposition": info[0]['true_props'] if success else '',
                     "steps": i + 1, 
                     # "new_ltl_goal": info[0]['ltl_goal'],
                 }
-                print(f"{x:.2f}, {y:.2f}", results[f"{x}, {y}"])
+                print(f"{x:.2f}, {y:.2f}, {angle}", results[dict_key])
                 break
 
     print(results)

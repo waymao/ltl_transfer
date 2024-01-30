@@ -211,10 +211,16 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
                     self.place_agent(min_x=x, max_x=x, min_z=z, max_z=z)
             width = max(width, len(l_stripped))
         
-        if self.custom_params.init_loc is not None:
-            i, j = self.custom_params.init_loc
-            x, z = mat_to_opengl(i, j, num_rows=self.size)
-            self.place_agent(pos=[x, 0.0, z])
+        if self.custom_params.init_loc is not None or self.custom_params.init_angle is not None:
+            pos = None
+            angle = None
+            if self.custom_params.init_loc is not None:
+                i, j = self.custom_params.init_loc
+                x, z = mat_to_opengl(i, j, num_rows=self.size)
+                pos = [x, 0.0, z]
+            if self.custom_params.init_angle is not None:
+                angle = self.custom_params.init_angle / 180 * np.pi
+            self.place_agent(pos=pos, dir=angle)
         elif IGNORE_MAP_AGENT_LOC:
             # add the agent in the end
             self.place_agent()

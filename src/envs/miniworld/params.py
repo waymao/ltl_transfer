@@ -9,6 +9,7 @@ class GameParams:
                  consider_night=False, 
                  init_dfa_state=0, 
                  init_loc=None,
+                 init_angle=None,
                  step_rew=0.0,
                  succ_rew=1.0,
                  fail_rew=0.0,
@@ -19,6 +20,7 @@ class GameParams:
         self.consider_night = consider_night
         self.init_dfa_state = init_dfa_state
         self.init_loc = init_loc
+        self.init_angle = init_angle
 
         self.step_rew = step_rew
         self.succ_rew = succ_rew
