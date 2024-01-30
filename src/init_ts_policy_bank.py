@@ -120,6 +120,7 @@ if __name__ == "__main__":
 
     # sanity check
     # load policy bank
+    print("Running Sanity Check, Loading Policy Bank.")
     policy_bank = load_ts_policy_bank(
         tb_log_path,
         num_actions=test_envs.action_space[0].n,
@@ -127,4 +128,6 @@ if __name__ == "__main__":
         learning_params=learning_params,
         device=device
     )
+    print("Successfully loaded policy bank. Sanity Check Complete.")
+    print("Policy Bank saved at:", tb_log_path)
 
