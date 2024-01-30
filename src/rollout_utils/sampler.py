@@ -1,16 +1,17 @@
 import math
 from gymnasium.spaces import Box
 from typing import Union, List
+from copy import deepcopy
 
 class BoxSpaceIterator:
     def __init__(self, space: Box, interval: Union[List[float], float]=1):
         self.space = space
-        self.prog = space.low
+        self.prog = deepcopy(space.low)
         if type(interval) != list:
             self.interval = [interval] * len(self.prog)
         else:
             self.interval = interval
-        assert len(self.freq) == len(self.prog), \
+        assert len(self.interval) == len(self.prog), \
             f"Interval dim {len(self.interval)} does not match space dim {len(self.prog)}"
         
 

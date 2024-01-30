@@ -129,11 +129,15 @@ if __name__ == "__main__":
     tasks = tester.tasks
 
     # sampler
-    state_space = gymnasium.spaces.Box(low=[])
+    env_size = test_envs.get_env_attr("size", 0)[0]
+    state_space = gymnasium.spaces.Box(
+        low=np.array([1, 1, -180]), 
+        high=np.array([env_size - 1, env_size - 1, 180])
+    )
     if args.rollout_method == "uniform":
-        space_iter = BoxSpaceIterator(test_envs.observation_space[0])
+        space_iter = BoxSpaceIterator(state_space, interval=[.5, .5, 30])
     elif args.rollout_method == "random":
-        space_iter = RandomIterator(test_envs.observation_space[0], num_samples=100)
+        space_iter = RandomIterator(state_space, num_samples=100)
     else:
         raise NotImplementedError("Rollout method " + str(args.rollout_method) + " not implemented.")
 
@@ -171,7 +175,7 @@ if __name__ == "__main__":
     if args.render:
         test_envs.render()
         input("Press Enter When Ready...")
-    for x, y in space_iter:
+    for x, y, angle in space_iter:
         task_params.init_loc = [x, y]
         obs, info = test_envs.reset(options=dict(task_params=task_params))
         if args.render:
