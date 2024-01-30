@@ -1,5 +1,7 @@
 import json
 import os
+
+import gymnasium
 from ltl.dfa import DFA
 from torch_policies.learning_params import LearningParameters, \
     add_fields_to_parser, get_learning_parameters
@@ -126,6 +128,7 @@ if __name__ == "__main__":
     tasks = tester.tasks
 
     # sampler
+    state_space = gymnasium.spaces.Box(low=[])
     if args.rollout_method == "uniform":
         space_iter = BoxSpaceIterator(test_envs.observation_space[0])
     elif args.rollout_method == "random":

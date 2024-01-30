@@ -1,9 +1,14 @@
+import gymnasium
 from tianshou.env import DummyVectorEnv, SubprocVectorEnv, ShmemVectorEnv, DummyVectorEnv
+from envs.game_base import BaseGame
 from envs.game_creator import get_game
 from envs.miniworld.params import GameParams
 
 
 NUM_PARALLEL_JOBS = 11
+
+def get_state_space(env: gymnasium.Env):
+    return env.get_wrapper_attr("size")
 
 def generate_envs(game_name="miniworld_simp_no_vis", map_id=13, parallel=False, seed=0, no_info=True):
     if not parallel:
