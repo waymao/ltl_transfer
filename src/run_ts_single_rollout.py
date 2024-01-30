@@ -55,6 +55,7 @@ if __name__ == "__main__":
     parser.add_argument('--ltl_id', type=int, required=True, help='Policy ID to demo')
     parser.add_argument('--no_deterministic_eval', action="store_true", help='Whether to run deterministic evaluation or not.')
     parser.add_argument('--rollout_method', type=str, default="uniform", choices=['uniform', 'random'], help='How to rollout the policy.')
+    parser.add_argument('--render', action="store_true", help='Whether to run rendering.')
 
     args = parser.parse_args()
     # if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")
@@ -167,12 +168,19 @@ if __name__ == "__main__":
     # collect and rollout
     #uncomment for the coordinates
     results = {}
+    if args.render:
+        test_envs.render()
+        input("Press Enter When Ready...")
     for x, y in space_iter:
         task_params.init_loc = [x, y]
         obs, info = test_envs.reset(options=dict(task_params=task_params))
+        if args.render:
+            test_envs.render()
         for i in range(1500):
             a = policy.forward(Batch(obs=obs, info=info)).act
             obs, reward, term, trunc, info = test_envs.step(a.numpy())
+            if args.render:
+                test_envs.render()
             if term or trunc:
                 true_prop = info[0]['true_props']
                 success = info[0]['dfa_state'] != -1 and not trunc
