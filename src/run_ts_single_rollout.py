@@ -30,6 +30,8 @@ from torch.utils.tensorboard import SummaryWriter
 from tianshou.utils.logger.tensorboard import TensorboardLogger
 import os
 
+from rollout_utils.sampler import BoxSpaceIterator, RandomIterator
+
 NUM_PARALLEL_JOBS = 10
 PARALLEL_TRAIN = False
 
@@ -50,6 +52,7 @@ if __name__ == "__main__":
                         help='Location of the bank and the learning parameters.')
     parser.add_argument('--ltl_id', type=int, required=True, help='Policy ID to demo')
     parser.add_argument('--no_deterministic_eval', action="store_true", help='Whether to run deterministic evaluation or not.')
+    parser.add_argument('--rollout_method', type=str, default="uniform", choices=['uniform', 'random'], help='How to rollout the policy.')
 
     args = parser.parse_args()
     # if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")
@@ -122,6 +125,15 @@ if __name__ == "__main__":
     )
     tasks = tester.tasks
 
+    # sampler
+    if args.rollout_method == "uniform":
+        space_iter = BoxSpaceIterator(test_envs.observation_space[0])
+    elif args.rollout_method == "random":
+        space_iter = RandomIterator(test_envs.observation_space[0], num_samples=100)
+    else:
+        raise NotImplementedError("Rollout method " + str(args.rollout_method) + " not implemented.")
+
+
     # run training
     global_time_steps = 0
     with open(os.path.join(tb_log_path, "logs", f"policy{args.ltl_id}_status.txt"), "w") as f:
@@ -152,24 +164,23 @@ if __name__ == "__main__":
     # collect and rollout
     #uncomment for the coordinates
     results = {}
-    for x in np.linspace(1, 10, (10 - 1) * 2 + 1):
-        for y in np.linspace(1, 10, (10 - 1) * 2 + 1):
-            task_params.init_loc = [x, y]
-            obs, info = test_envs.reset(options=dict(task_params=task_params))
-            for i in range(1500):
-                a = policy.forward(Batch(obs=obs, info=info)).act
-                obs, reward, term, trunc, info = test_envs.step(a.numpy())
-                if term or trunc:
-                    true_prop = info[0]['true_props']
-                    success = info[0]['dfa_state'] != -1 and not trunc
-                    results[f"{x}, {y}"] = {
-                        "success": success,
-                        "true_proposition": info[0]['true_props'] if success else '',
-                        "steps": i + 1, 
-                        # "new_ltl_goal": info[0]['ltl_goal'],
-                    }
-                    print(f"{x:.2f}, {y:.2f}", results[f"{x}, {y}"])
-                    break
+    for x, y in space_iter:
+        task_params.init_loc = [x, y]
+        obs, info = test_envs.reset(options=dict(task_params=task_params))
+        for i in range(1500):
+            a = policy.forward(Batch(obs=obs, info=info)).act
+            obs, reward, term, trunc, info = test_envs.step(a.numpy())
+            if term or trunc:
+                true_prop = info[0]['true_props']
+                success = info[0]['dfa_state'] != -1 and not trunc
+                results[f"{x}, {y}"] = {
+                    "success": success,
+                    "true_proposition": info[0]['true_props'] if success else '',
+                    "steps": i + 1, 
+                    # "new_ltl_goal": info[0]['ltl_goal'],
+                }
+                print(f"{x:.2f}, {y:.2f}", results[f"{x}, {y}"])
+                break
 
     print(results)
     os.makedirs(os.path.join(tb_log_path, "classifier"), exist_ok=True)
