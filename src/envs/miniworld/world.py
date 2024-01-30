@@ -249,7 +249,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
         agent_loc = self.agent.pos # for transfer
         agent_loc = opengl_to_2dcoord(agent_loc)
         agent_angle = self.agent.dir / np.pi * 180
-        return agent_loc, agent_angle
+        return *agent_loc, agent_angle
     
     def reset(self, options: dict=None, *args, **kwargs):
         params = options.get('task_params', None) if options is not None else None

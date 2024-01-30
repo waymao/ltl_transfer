@@ -191,7 +191,7 @@ if __name__ == "__main__":
             if term or trunc:
                 true_prop = info[0]['true_props']
                 success = info[0]['dfa_state'] != -1 and not trunc
-                state = test_envs.get_env_attr("curr_state", 0)
+                state = test_envs.get_env_attr("curr_state", 0)[0]
                 results[dict_key] = {
                     "success": success,
                     "true_proposition": info[0]['true_props'] if success else '',

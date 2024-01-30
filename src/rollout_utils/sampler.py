@@ -38,11 +38,15 @@ class RandomIterator:
     def __init__(self, space: Box, num_samples: int=100):
         self.space = space
         self.num_samples = num_samples
+        self.count = 0
 
     def __iter__(self):
         return self
     
     def __next__(self):
+        self.count += 1
+        if self.count > self.num_samples:
+            raise StopIteration
         return self.space.sample()
 
     def __len__(self):
