@@ -14,6 +14,7 @@ OBJ_MAP: Mapping[str, Tuple[Entity, str]] = {
     "g": (Box, 'purple'),
     "h": (Ball, 'purple'),
     "i": (Ball, 'red'),
+    "s": (Ball, 'grey'), # "shelter", but an ordinary obj in this new domain
     "X": (Box, 'grey') # obstacle
 }
 

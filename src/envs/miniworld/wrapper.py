@@ -99,6 +99,8 @@ class MiniWorldLTLWrapper(gym.Wrapper):
         """
         test_pos = self.unwrapped.agent.pos + self.unwrapped.agent.dir_vec * 1.3 * self.unwrapped.agent.radius
         ent = self.unwrapped.intersect(self.unwrapped.agent, test_pos, 1.3 * self.unwrapped.agent.radius)
+        # test_pos = self.unwrapped.agent.pos + self.unwrapped.agent.dir_vec * 1.5 * self.unwrapped.agent.radius
+        # ent = self.unwrapped.intersect(self.unwrapped.agent, test_pos, 1.2 * self.unwrapped.agent.radius)
         symbol = get_ent_str(ent)
         return symbol.replace("X", "")
 
