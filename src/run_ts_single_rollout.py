@@ -131,8 +131,8 @@ if __name__ == "__main__":
     # sampler
     env_size = test_envs.get_env_attr("size", 0)[0]
     state_space = gymnasium.spaces.Box(
-        low=np.array([1, 1, -180]), 
-        high=np.array([env_size - 1, env_size - 1, 180])
+        low=np.array([1, 1, 0]), 
+        high=np.array([env_size - 1, env_size - 1, 359.9])
     )
     if args.rollout_method == "uniform":
         space_iter = BoxSpaceIterator(state_space, interval=[.5, .5, 30])
@@ -188,6 +188,9 @@ if __name__ == "__main__":
             obs, reward, term, trunc, info = test_envs.step(a.numpy())
             if args.render:
                 test_envs.render()
+                state = test_envs.get_env_attr("curr_state", 0)[0]
+                print(state)
+                input("Press Enter When Ready...")
             if term or trunc:
                 true_prop = info[0]['true_props']
                 success = info[0]['dfa_state'] != -1 and not trunc
