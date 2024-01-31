@@ -56,6 +56,7 @@ if __name__ == "__main__":
     parser.add_argument('--no_deterministic_eval', action="store_true", help='Whether to run deterministic evaluation or not.')
     parser.add_argument('--rollout_method', type=str, default="uniform", choices=['uniform', 'random'], help='How to rollout the policy.')
     parser.add_argument('--render', action="store_true", help='Whether to run rendering.')
+    parser.add_argument('--verbose', '-v', action="store_true", help='Verbose printing of results.')
 
     args = parser.parse_args()
     # if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")
@@ -202,7 +203,8 @@ if __name__ == "__main__":
                     "final_state": state
                     # "new_ltl_goal": info[0]['ltl_goal'],
                 }
-                print(f"{x:.2f}, {y:.2f}, {angle}", results[dict_key])
+                if args.verbose or args.render:
+                    print(f"{x:.2f}, {y:.2f}, {angle}", results[dict_key])
                 break
 
     os.makedirs(os.path.join(tb_log_path, "classifier"), exist_ok=True)
