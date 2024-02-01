@@ -24,15 +24,24 @@ class Classifier:
         pass
 
 
-class NearestNeighborMatcher(Classifier):
+class NaiveMatcher(Classifier):
     def __init__(self, ratio=0.75, distance_threshold=0.1):
         self.ratio = ratio
         self.distance_threshold = distance_threshold
         self.data = {}
 
-    def predict(self, x) -> Tuple[float, float]:
+    def predict(self, point) -> Tuple[float, float]:
         # returns success rate and length.
-        pass
+        x, y, angle = point
+        # find the nearest neighbor
+        nearest = None
+        nearest_distance = float('inf')
+        for loc, val in self.data.items():
+            distance = (x - loc[0])**2 + (y - loc[1])**2
+            if distance < nearest_distance:
+                nearest = loc
+                nearest_distance = distance
+        return self.data[nearest]
 
     def load(self, path, id):
         file_path = f"{path}/classifier/policy{id}_status.json.gz"
@@ -49,7 +58,7 @@ class NearestNeighborMatcher(Classifier):
 
 def test_load_knn():
     path = "/home/wyc/data/shared/ltl-transfer-ts/results/miniworld_simp_no_vis_minecraft/mixed_p1.0/lpopl_dsac/map13/0/alpha=0.03/"
-    matcher = NearestNeighborMatcher()
+    matcher = NaiveMatcher()
     matcher.load(path, 0)
 
 if __name__ == "__main__":

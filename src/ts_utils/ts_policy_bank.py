@@ -7,7 +7,7 @@ from ltl.dfa import DFA
 from torch_policies.learning_params import LearningParameters, get_learning_parameters
 from tianshou.policy import BasePolicy, DiscreteSACPolicy
 from tianshou.policy import PPOPolicy, DiscreteSACPolicy, TD3Policy
-from .classifier import Classifier, NearestNeighborMatcher
+from .classifier import Classifier, NaiveMatcher
 from tianshou.utils.net.discrete import Actor, Critic
 from torch_policies.network import get_CNN_preprocess
 from torch.optim import Adam
@@ -131,7 +131,7 @@ def load_ts_policy_bank(
         # loading the classifier
         try:
             if load_classifier == "knn":
-                classifier = NearestNeighborMatcher()
+                classifier = NaiveMatcher()
                 classifier.load(policy_bank_path, id)
             else:
                 classifier = None
@@ -186,7 +186,7 @@ def save_individual_policy(
 ########################## TESTING ##########################
 def test_load_knn_pb():
     path = "/home/wyc/data/shared/ltl-transfer-ts/results/miniworld_simp_no_vis_minecraft/mixed_p1.0/lpopl_dsac/map13/0/alpha=0.03/"
-    matcher = NearestNeighborMatcher()
+    matcher = NaiveMatcher()
     matcher.load(path, 0)
     return load_ts_policy_bank(path, 4, 22)
 
