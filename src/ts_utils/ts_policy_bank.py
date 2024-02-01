@@ -1,4 +1,5 @@
-from typing import List, Mapping, Tuple, Union
+import sys
+from typing import List, Mapping, Optional, Tuple, Union
 import json
 import os
 from ltl.dfa import DFA
@@ -6,7 +7,7 @@ from ltl.dfa import DFA
 from torch_policies.learning_params import LearningParameters, get_learning_parameters
 from tianshou.policy import BasePolicy, DiscreteSACPolicy
 from tianshou.policy import PPOPolicy, DiscreteSACPolicy, TD3Policy
-from tianshou.utils.net.common import ActorCritic
+from .classifier import Classifier, NearestNeighborMatcher
 from tianshou.utils.net.discrete import Actor, Critic
 from torch_policies.network import get_CNN_preprocess
 from torch.optim import Adam
@@ -26,19 +27,21 @@ class TianshouPolicyBank:
     def __init__(self):
         self.policies: List[BasePolicy] = []
         self.policy_ltls: List[str] = []
-        self.matchers = []
+        self.classifiers: List[Optional[Classifier]] = []
         self.policy2id: Mapping[Union[tuple, str], int] = {}
         self.dfas: List[DFA] = []
-
-        # rollout result predictor
-        self.rollout_predictors: list = []
     
-    def add_LTL_policy(self, ltl: Union[tuple, str], policy: DiscreteSACPolicy):
+    def add_LTL_policy(self, 
+                ltl: Union[tuple, str], 
+                policy: DiscreteSACPolicy, 
+                classifier: Optional[Classifier] = None
+        ):
         if ltl not in self.policy2id and ltl != "True" and ltl != "False":
             self.policy2id[ltl] = len(self.policies)
             self.policies.append(policy)
             self.dfas.append(DFA(ltl))
             self.policy_ltls.append(ltl)
+            self.classifiers.append(classifier)
     
     def save_pb_index(self, path):
         # saving the ltl map
@@ -105,7 +108,7 @@ def load_ts_policy_bank(
     num_features: int, 
     hidden_layers: List[int] = [256, 256, 256],
     learning_params: LearningParameters = get_learning_parameters("dsac", "miniworld_no_vis"),
-    load_optim=True,
+    load_classifier="knn",
     device="cpu"
 ) -> TianshouPolicyBank:
     policy_bank = TianshouPolicyBank()
@@ -124,7 +127,19 @@ def load_ts_policy_bank(
             num_features, hidden_layers, 
             learning_params, device)
         assert ltl == ltl_stored
-        policy_bank.add_LTL_policy(ltl, policy)
+        
+        # loading the classifier
+        try:
+            if load_classifier == "knn":
+                classifier = NearestNeighborMatcher()
+                classifier.load(policy_bank_path, id)
+            else:
+                classifier = None
+        except:
+            print("unable to load classifier for policy ", id, file=sys.stderr)
+            classifier = None
+        
+        policy_bank.add_LTL_policy(ltl, policy, classifier)
     return policy_bank
 
 
@@ -166,3 +181,16 @@ def save_individual_policy(
         "critic2_optim": policy.critic2_optim.state_dict(),
     }
     torch.save(save_data, os.path.join(policy_bank_path, "policies", str(policy_id) + "_ckpt.pth"))
+
+
+########################## TESTING ##########################
+def test_load_knn_pb():
+    path = "/home/wyc/data/shared/ltl-transfer-ts/results/miniworld_simp_no_vis_minecraft/mixed_p1.0/lpopl_dsac/map13/0/alpha=0.03/"
+    matcher = NearestNeighborMatcher()
+    matcher.load(path, 0)
+    return load_ts_policy_bank(path, 4, 22)
+
+if __file__ == "__main__":
+    test_load_knn_pb()
+    print("Done!")
+
