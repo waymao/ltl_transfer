@@ -175,7 +175,9 @@ if __name__ == "__main__":
     # collect and rollout
     results = {}
     outfile = os.path.join(tb_log_path, "classifier", f"policy{args.ltl_id}_status.json.gz")
+    
     # clear output file
+    os.makedirs(os.path.join(tb_log_path, "classifier"), exist_ok=True)
     with gzip.open(outfile, 'wt', encoding='UTF-8') as f:
         json.dump(results, f)
     
