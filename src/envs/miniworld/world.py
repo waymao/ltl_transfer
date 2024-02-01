@@ -220,7 +220,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
                 pos = [x, 0.0, z]
             if self.custom_params.init_angle is not None:
                 angle = self.custom_params.init_angle / 180 * np.pi
-            self.place_agent(pos=pos, dir=angle)
+            self.place_entity(ent=self.agent, pos=pos, dir=angle)
         elif IGNORE_MAP_AGENT_LOC:
             # add the agent in the end
             self.place_agent()
