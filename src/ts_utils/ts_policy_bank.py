@@ -1,6 +1,7 @@
 from typing import List, Mapping, Tuple, Union
 import json
 import os
+from ltl.dfa import DFA
 
 from torch_policies.learning_params import LearningParameters, get_learning_parameters
 from tianshou.policy import BasePolicy, DiscreteSACPolicy
@@ -25,12 +26,18 @@ class TianshouPolicyBank:
     def __init__(self):
         self.policies: List[BasePolicy] = []
         self.policy_ltls: List[str] = []
+        self.matchers = []
         self.policy2id: Mapping[Union[tuple, str], int] = {}
+        self.dfas: List[DFA] = []
+
+        # rollout result predictor
+        self.rollout_predictors: list = []
     
     def add_LTL_policy(self, ltl: Union[tuple, str], policy: DiscreteSACPolicy):
         if ltl not in self.policy2id and ltl != "True" and ltl != "False":
             self.policy2id[ltl] = len(self.policies)
             self.policies.append(policy)
+            self.dfas.append(DFA(ltl))
             self.policy_ltls.append(ltl)
     
     def save_pb_index(self, path):
@@ -53,6 +60,9 @@ class TianshouPolicyBank:
     
     def get_all_policies(self):
         return {ltl: self.policies[id] for ltl, id in self.policy2id.items()}
+
+    def get_dfa(self, ltl):
+        return self.policy2id[ltl]
 
 
 class DummyPreProcess(nn.Module):

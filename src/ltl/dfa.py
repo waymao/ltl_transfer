@@ -1,3 +1,4 @@
+from typing import List, Mapping
 from . import ltl_progression
 
 
@@ -9,13 +10,13 @@ class DFA:
         if init_dfa_state:
             initial_state = ltl2state[init_dfa_state]
         # setting the DFA
-        self.formula   = ltl_formula
-        self.state     = initial_state    # initial state id
-        self.terminal  = accepting_states # list of terminal states
-        self.ltl2state = ltl2state        # dictionary from ltl to state
+        self.formula: tuple       = ltl_formula
+        self.state: int           = initial_state    # initial state id
+        self.terminal: List[int]  = accepting_states # list of terminal states
+        self.ltl2state: Mapping[tuple, int] = ltl2state        # dictionary from ltl to state
         self.state2ltl = {v: k for k, v in self.ltl2state.items()}
         # Adding the edges
-        self.nodelist = {}
+        self.nodelist: Mapping[int, Mapping[int, str]] = {}
         for v1, v2, label in edges:
             if v1 not in self.nodelist:
                 self.nodelist[v1] = {}

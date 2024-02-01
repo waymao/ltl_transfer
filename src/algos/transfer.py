@@ -2,6 +2,7 @@ import os
 import re
 import time
 import random
+from typing import Tuple, List
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from copy import deepcopy
@@ -343,6 +344,7 @@ def zero_shot_transfer_single_task(game_name, transfer_task, ltl_idx, num_times,
     success, run2sol, run2traj, run2exitcode = 0, defaultdict(list), {}, {}
 
     start_time = time.time()
+    # remove infeasible edges 
     test2trains = remove_infeasible_edges(dfa_graph, train_edges, task_aux.dfa.state, task_aux.dfa.terminal[0], tester.edge_matcher)
     precomputation_time = time.time() - start_time
 
@@ -577,11 +579,16 @@ def remove_infeasible_edges(test_dfa, train_edges, start_state, goal_state, edge
     test_edges = list(test_dfa.edges.keys())  # make a copy of edges because nx graph dict mutated in-place
     for test_edge in test_edges:
         if test_edge[0] != test_edge[1]:  # ignore self-edge
+            # self edge and out edge pair to be tested
             self_edge_label = test_dfa.edges[test_edge[0], test_edge[0]]["edge_label"]
             out_edge_label = test_dfa.edges[test_edge]["edge_label"]
             test_edge_pair = (self_edge_label, out_edge_label)
+
+            # edge leading to the failure state
             fail_edge = get_fail_edge(test_dfa_copy, test_edge[0])
             is_matched = False
+
+            # match each potential testing outgoing edges with training outgoing edges
             for train_edge in train_edges:
                 if edge_matcher == 'rigid':
                     match = match_edges(test_edge_pair, [train_edge])
@@ -590,6 +597,8 @@ def remove_infeasible_edges(test_dfa, train_edges, start_state, goal_state, edge
                 if match:
                     test2trains[test_edge_pair].add(train_edge)
                     is_matched = True
+            
+            # remove test edge if it cannot be matched with any training edge
             if not is_matched:
                 test_dfa.remove_edge(test_edge[0], test_edge[1])
                 # optimization: return as soon as start and goal are not connected
@@ -597,6 +606,7 @@ def remove_infeasible_edges(test_dfa, train_edges, start_state, goal_state, edge
                 if not feasible_paths_node:
                     # print("short circuit remove_infeasible_edges")
                     return None
+    # return the list of training edges that can be matched with each test edge for execution
     return test2trains
 
 
@@ -654,7 +664,7 @@ def is_model_match(formula1, formula2):
         return False
 
 
-def match_edges(test_edge_pair, train_edges):
+def match_edges(test_edge_pair: Tuple[str, str], train_edges: List[Tuple[str, str]]):
     """
     Determine if test_edge can be matched with any training_edge
     match means exact match (aka. eq) OR test_edge is less constrained than a training_edge (aka. subset)

@@ -173,8 +173,12 @@ if __name__ == "__main__":
         policy.eval()
 
     # collect and rollout
-    #uncomment for the coordinates
     results = {}
+    outfile = os.path.join(tb_log_path, "classifier", f"policy{args.ltl_id}_status.json.gz")
+    # clear output file
+    with gzip.open(outfile, 'wt', encoding='UTF-8') as f:
+        json.dump(results, f)
+    
     if args.render:
         test_envs.render()
         input("Press Enter When Ready...")
@@ -210,7 +214,6 @@ if __name__ == "__main__":
                 break
 
     os.makedirs(os.path.join(tb_log_path, "classifier"), exist_ok=True)
-    file = os.path.join(tb_log_path, "classifier", f"policy{args.ltl_id}_status.json.gz")
-    with gzip.open(file, "w") as f:
+    with gzip.open(outfile, 'wt', encoding='UTF-8') as f:
         json.dump(results, f)
-    print("Saved rollout result to", file)
+    print("Saved rollout result to", outfile)

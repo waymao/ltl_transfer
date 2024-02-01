@@ -9,13 +9,14 @@ The main function is 'get_dfa' which receives a co-safe LTL formula and progress
 it over all possible valuations of the propositions. It returns all possible progressions
 of the formula in the form of a DFA.
 """
+from typing import List
 from sympy import *
 from sympy.logic import simplify_logic
 from sympy.logic.boolalg import And, Or, Not
 import collections
 
 
-def get_dfa(ltl_formula):
+def get_dfa(ltl_formula: tuple):
     propositions = extract_propositions(ltl_formula)
     propositions.sort()
     truth_assignments = _get_truth_assignments(propositions)
@@ -55,7 +56,7 @@ def get_dfa(ltl_formula):
     # Reducing edges formulas to its minimal form...
     # NOTE: this might take a while since we are using a very
     #       inefficient python library for logic manipulations
-    edges_tuple = []
+    edges_tuple: List[Tuple[int, int, str]] = []
     for edge, truth_assignments in edge2assignments.items():
         f = _get_formula(truth_assignments, propositions)
         edges_tuple.append((edge[0], edge[1], f))
@@ -83,7 +84,7 @@ def _get_propositions(ltl_formula):
     return _get_propositions(ltl_formula[1]) + _get_propositions(ltl_formula[2])
 
 
-def _get_truth_assignments(propositions):
+def _get_truth_assignments(propositions: List[str]) -> List[str]:
     """
     computing all possible Truth value assignments for propositions,
     represented by a list of true propositions
@@ -102,7 +103,7 @@ def _get_truth_assignments(propositions):
     return truth_assignments
 
 
-def _progress(ltl_formula, truth_assignment):
+def _progress(ltl_formula: tuple, truth_assignment: str) -> tuple:
     """
     Implement LTL progression rules
     """
