@@ -10,6 +10,8 @@ from ts_utils.ts_policy_bank import create_discrete_sac_policy, TianshouPolicyBa
 from ts_utils.ts_envs import generate_envs
 from ts_utils.ts_argparse import add_parser_cmds
 
+import gzip
+
 # %%
 from tianshou.policy import PPOPolicy, DiscreteSACPolicy, TD3Policy
 from tianshou.utils.net.common import ActorCritic
@@ -208,7 +210,7 @@ if __name__ == "__main__":
                 break
 
     os.makedirs(os.path.join(tb_log_path, "classifier"), exist_ok=True)
-    file = os.path.join(tb_log_path, "classifier", f"policy{args.ltl_id}_status.json")
-    with open(file, "w") as f:
+    file = os.path.join(tb_log_path, "classifier", f"policy{args.ltl_id}_status.json.gz")
+    with gzip.open(file, "w") as f:
         json.dump(results, f)
     print("Saved rollout result to", file)
