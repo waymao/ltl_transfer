@@ -109,7 +109,8 @@ def load_ts_policy_bank(
     hidden_layers: List[int] = [256, 256, 256],
     learning_params: LearningParameters = get_learning_parameters("dsac", "miniworld_no_vis"),
     load_classifier="knn",
-    device="cpu"
+    device="cpu",
+    verbose=False
 ) -> TianshouPolicyBank:
     policy_bank = TianshouPolicyBank()
     
@@ -120,7 +121,7 @@ def load_ts_policy_bank(
     # loading each individual policy file
     for ltl, id in sorted(ltl_list, key=lambda x: x[1]):
         ltl = list_to_tuple(ltl)
-        print("Loading policy for LTL: ", ltl)
+        if verbose: print("Loading policy for LTL: ", ltl_to_print(ltl))
         policy, ltl_stored = load_individual_policy(
             policy_bank_path, 
             id, num_actions, 
