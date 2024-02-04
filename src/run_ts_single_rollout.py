@@ -190,6 +190,8 @@ if __name__ == "__main__":
         task_params.init_loc = [x, y]
         task_params.init_angle = angle
         obs, info = test_envs.reset(options=dict(task_params=task_params))
+        dfa = DFA(ltl)
+        original_state = dfa.state
         if args.render:
             test_envs.render()
         for i in range(1500):
@@ -208,8 +210,8 @@ if __name__ == "__main__":
                     "success": success,
                     "true_proposition": info[0]['true_props'] if success else '',
                     "steps": i + 1, 
-                    "final_state": state
-                    # "new_ltl_goal": info[0]['ltl_goal'],
+                    "final_state": state,
+                    "edge": info[0]['traversed_edge']
                 }
                 if args.verbose or args.render:
                     print(f"{x:.2f}, {y:.2f}, {angle}", results[dict_key])

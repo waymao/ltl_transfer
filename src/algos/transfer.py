@@ -378,6 +378,8 @@ def zero_shot_transfer_single_task(game_name, transfer_task, ltl_idx, num_times,
                         test_self_edge = dfa_graph.edges[test_edge[0], test_edge[0]]["edge_label"]  # self_edge label
                         test_out_edge = dfa_graph.edges[test_edge]["edge_label"]  # get boolean formula for out edge
                         test_edge_pair = (test_self_edge, test_out_edge)
+
+                        # for each feasible training edge pair, find the success probability
                         for train_self_edge, train_out_edge in test2trains[test_edge_pair]:
                             for ltl in edge2ltls[(train_self_edge, train_out_edge)]:
                                 prob = policy2edge2loc2prob[ltl][train_out_edge][cur_loc]
@@ -713,6 +715,8 @@ def execute_option(tester, task, policy_bank, ltl_policy, option_edge, edge2loc2
     """
     'option_edge' is 1 outgoing edge associated with edge-centric option
     'option_edge' maye be different from target DFA edge when 'option_edge' is more constraint than target DFA edge
+
+    returns: final location, total reward, trajectory
     """
     num_features = task.get_num_features()
     step, option_reward, traj = 0, 0, []
@@ -728,6 +732,7 @@ def execute_option(tester, task, policy_bank, ltl_policy, option_edge, edge2loc2
             break
         r = task.execute_action(a)
         option_reward += r
+        # transition: (state, action, reward, next_state)
         transition = ((cur_loc, cur_node), a.name, r, ((task.agent.i, task.agent.j), task.dfa.state))
         traj.append(transition)
         # tester.log_results("step %d: dfa_state: %d; %s; %s; %d" % (step, cur_node, str(cur_loc), str(a), option_reward))

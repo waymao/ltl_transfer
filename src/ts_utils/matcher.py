@@ -11,7 +11,7 @@ import sympy
 from ts_utils.ts_policy_bank import TianshouPolicyBank
 
 
-def remove_infeasible_edges(
+def match_remove_edges(
         test_dfa: nx.DiGraph, 
         train_edges: List[Tuple[str, str]], 
         start_state: int, 
@@ -168,20 +168,20 @@ def dfa2graph(dfa: DFA):
     return nx.DiGraph(nodelist)
 
 
-def get_training_edges(policy_bank: TianshouPolicyBank, policy2edge2loc2prob):
+def get_training_edges(policy_bank: TianshouPolicyBank):
     """
     Pair every outgoing edge that each state-centric policy have achieved during training,
     with the self-edge of the DFA progress state corresponding to the state-centric policy.
     Map each edge pair to corresponding LTLs, possibly one to many.
     """
     edges2ltls = defaultdict(list)
-    for ltl, edge2loc2prob in policy2edge2loc2prob.items():
-        dfa: DFA = policy_bank.dfas[policy_bank.get_id(ltl)]
-        node = dfa.ltl2state[ltl]
-        self_edge = dfa.nodelist[node][node]
-        for out_edge in edge2loc2prob.keys():
+    for i, ltl in enumerate(policy_bank.policy_ltls):
+        dfa: DFA = policy_bank.dfas[i]
+        dfa_state = dfa.ltl2state[ltl]
+        self_edge = dfa.nodelist[dfa_state][dfa_state]
+        for out_edge in policy_bank.classifiers[i].possible_edges:
             edges2ltls[(self_edge, out_edge)].append(ltl)
-    return edges2ltls.keys(), edges2ltls
+    return edges2ltls.keys(), dict(edges2ltls)
 
 if __name__ == '__main__':
     formula = ('and',
@@ -218,6 +218,6 @@ if __name__ == '__main__':
     train_edges = [(train_self_edge, train_out_edge)]
     dfa = DFA(formula)
     dfa_graph = dfa2graph(dfa)
-    test2train = remove_infeasible_edges(dfa_graph, train_edges, 0, 5, 'relaxed')
+    test2train = match_remove_edges(dfa_graph, train_edges, 0, 5, 'relaxed')
     print(test2train)
 

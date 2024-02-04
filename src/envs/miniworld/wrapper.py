@@ -67,12 +67,17 @@ class MiniWorldLTLWrapper(gym.Wrapper):
             **info,
             "ltl_goal": self.get_LTL_goal(),
             "dfa_game_over": self.ltl_game_over,
-            "dfa_state": self.dfa.state
+            "dfa_state": self.dfa.state,
+            "loc": self.unwrapped.curr_state,
+            "traversed_edge": None
         }
         return obs, info
     
     def step(self, action):
         obs, rew, ter, trunc, info = self.env.step(action)
+        
+        # progress
+        prev_state = self.dfa.state
         true_props = self.get_true_propositions()
         self.dfa.progress(true_props)
         # assign the correct reward
@@ -89,7 +94,9 @@ class MiniWorldLTLWrapper(gym.Wrapper):
             "true_props": true_props,
             "ltl_goal": self.get_LTL_goal(),
             "dfa_game_over": self.ltl_game_over,
-            "dfa_state": self.dfa.state
+            "dfa_state": self.dfa.state,
+            "loc": self.unwrapped.curr_state,
+            "traversed_edge": self.dfa.nodelist[prev_state][self.dfa.state]
         }
         return obs, rew * self.reward_scale, self.ltl_game_over or ter, trunc, info
 

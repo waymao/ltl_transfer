@@ -7,10 +7,13 @@ import gzip
 
 class Classifier:
     def __init__(self):
+        self.possible_edges = set()
         pass
 
     def predict(self, x) -> Tuple[float, float]:
-        # returns success rate and length.
+        """
+        returns success rate and length.
+        """
         pass
 
     def add_data(self, state, result):
@@ -29,6 +32,7 @@ class NaiveMatcher(Classifier):
         self.ratio = ratio
         self.distance_threshold = distance_threshold
         self.data = {}
+        self.possible_edges = set()
 
     def predict(self, point) -> Tuple[float, float]:
         # returns success rate and length.
@@ -55,6 +59,8 @@ class NaiveMatcher(Classifier):
             ): val
             for loc, val in data.items()
         }
+        for loc in self.data:
+            self.possible_edges.add(self.data[loc]['edge'])
 
 def test_load_knn():
     path = "/home/wyc/data/shared/ltl-transfer-ts/results/miniworld_simp_no_vis_minecraft/mixed_p1.0/lpopl_dsac/map13/0/alpha=0.03/"

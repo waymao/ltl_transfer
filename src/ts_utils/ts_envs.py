@@ -10,7 +10,7 @@ NUM_PARALLEL_JOBS = 11
 def get_state_space(env: gymnasium.Env):
     return env.get_wrapper_attr("size")
 
-def generate_envs(game_name="miniworld_simp_no_vis", map_id=13, parallel=False, seed=0, no_info=True):
+def generate_envs(game_name="miniworld_simp_no_vis", map_id=13, parallel=False, seed=0, no_info=True, ltl_progress_is_term=True):
     if not parallel:
         test_envs = DummyVectorEnv(
             [lambda: get_game(name=game_name, params=GameParams(
@@ -20,7 +20,7 @@ def generate_envs(game_name="miniworld_simp_no_vis", map_id=13, parallel=False, 
                 prob=1
             ), 
             max_episode_steps=1500, do_transpose=False, 
-            reward_scale=10, ltl_progress_is_term=True, no_info=no_info)]
+            reward_scale=10, ltl_progress_is_term=ltl_progress_is_term, no_info=no_info)]
         )
         # test_envs = ShmemVectorEnv(
         #     [lambda: get_game(name=game_name, params=GameParams(
@@ -28,7 +28,7 @@ def generate_envs(game_name="miniworld_simp_no_vis", map_id=13, parallel=False, 
         #         ltl_task=("until", "True", "a"),
         #         # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
         #         prob=1
-        #     ) ,max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=no_info) \
+        #     ) ,max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=ltl_progress_is_term, no_info=no_info) \
         #         for _ in range(NUM_PARALLEL_JOBS)]
         # )
         train_envs = DummyVectorEnv(
@@ -39,7 +39,7 @@ def generate_envs(game_name="miniworld_simp_no_vis", map_id=13, parallel=False, 
                 prob=1
             ), 
             max_episode_steps=1500, do_transpose=False, 
-            reward_scale=10, ltl_progress_is_term=True, no_info=no_info)]
+            reward_scale=10, ltl_progress_is_term=ltl_progress_is_term, no_info=no_info)]
         )
     else:
         test_envs = ShmemVectorEnv(
@@ -48,7 +48,7 @@ def generate_envs(game_name="miniworld_simp_no_vis", map_id=13, parallel=False, 
                 ltl_task=("until", "True", "a"),
                 # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
                 prob=1
-            ) ,max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=no_info) \
+            ) ,max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=ltl_progress_is_term, no_info=no_info) \
                 for _ in range(NUM_PARALLEL_JOBS)]
         )
         train_envs = ShmemVectorEnv(
@@ -57,7 +57,7 @@ def generate_envs(game_name="miniworld_simp_no_vis", map_id=13, parallel=False, 
                 ltl_task=("until", "True", "a"),
                 # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
                 prob=1
-            ) ,max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=True, no_info=no_info) \
+            ) ,max_episode_steps=1500, do_transpose=False, reward_scale=10, ltl_progress_is_term=ltl_progress_is_term, no_info=no_info) \
                 for _ in range(NUM_PARALLEL_JOBS)]
         )
     train_envs.seed(seed)
