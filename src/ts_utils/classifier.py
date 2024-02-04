@@ -45,7 +45,8 @@ class NaiveMatcher(Classifier):
             if distance < nearest_distance:
                 nearest = loc
                 nearest_distance = distance
-        return self.data[nearest]
+        data = self.data[nearest]
+        return int(data["success"]), data["steps"]
 
     def load(self, path, id):
         file_path = f"{path}/classifier/policy{id}_status.json.gz"

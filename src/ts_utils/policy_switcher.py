@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Mapping, Tuple, Union
+from typing import Mapping, Optional, Tuple, Union
 
 from ts_utils.matcher import dfa2graph
 from .ts_policy_bank import TianshouPolicyBank
@@ -58,20 +58,27 @@ class PolicySwitcher:
     def get_best_policy(self, curr_dfa_state, env_state):
         """
         Given current env state and dfa state, 
-        get the best policy to execute, and the corresponding edge pair.
+        get the corresponding edge pair, ltl, and the best policy to execute.
         """
         option2problen = self._compute_option_ranking(curr_dfa_state, env_state)
         if option2problen == {}:
-            return None
+            return None, None
         else:
             # sort through the set and return the best policy in ascending order.
             # per python tuple comparison, compare prob first, then len.
             # return the policy with the highest probability and the shortest length.
             (ltl, train_self_edge, train_out_edge), (prob, len) = sorted(option2problen.items(), key=lambda x: (-x[1][0], x[1][1]), reverse=True)[0]
-            return (train_self_edge, train_out_edge), self.pb.policies[self.pb.policy2id[ltl]]
+            return (train_self_edge, train_out_edge), ltl, \
+                   self.pb.policies[self.pb.policy2id[ltl]]
     
     def exclude_policy(self, edge: Tuple[str, str], ltl: str):
         self.exclude_list[edge].add(ltl)
     
-    def reset_excluded_policy(self, edge: Tuple[str, str]):
-        self.exclude_list[edge] = set()
+    def reset_excluded_policy(self, edge: Optional[Tuple[str, str]] = None):
+        """
+        Reset the policy exclusion list. If edge is None, reset all exclusion lists.
+        """
+        if edge is None:
+            self.exclude_list = defaultdict(set)
+        else:
+            self.exclude_list[edge] = set()

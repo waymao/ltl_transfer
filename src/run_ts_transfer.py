@@ -14,6 +14,8 @@ from ts_utils.ts_policy_bank import TianshouPolicyBank, load_ts_policy_bank
 from ts_utils.ts_envs import generate_envs
 from ts_utils.ts_argparse import add_parser_cmds
 
+from utils.print_ltl import ltl_to_print
+
 # %%
 from tianshou.data import  Batch
 import numpy as np
@@ -48,6 +50,7 @@ def run_experiment():
                         help='Location of the bank and the learning parameters.')
     parser.add_argument('--no_deterministic_eval', action="store_true", help='Whether to run deterministic evaluation or not.')
     parser.add_argument('--render', action="store_true", help='Whether to run rendering.')
+    parser.add_argument('--verbose', '-v', action="store_true", help='Whether to print debug info.')
 
     args = parser.parse_args()
     # if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")
@@ -151,18 +154,22 @@ def run_experiment():
         input("Press Enter When Ready...")
 
     # edge matching
+    if args.verbose: print("Gathering training edges from the bank...")
     train_edges, t_edge2ltls = get_training_edges(policy_bank)
     task_dfa: DFA = deepcopy(test_envs.get_env_attr("dfa")[0])
     dfa_graph = dfa2graph(test_envs.get_env_attr("dfa")[0])
 
     # look for infeasible edges in the testing ("eval") DFA and remove it
+    if args.verbose: print("Removing infeasible edges from the testing DFA.")
     test2trains = match_remove_edges(
         dfa_graph, train_edges, task_dfa.state, task_dfa.terminal[0], tester.edge_matcher
     )
     policy_switcher = PolicySwitcher(policy_bank, test2trains, t_edge2ltls, ltl)
 
     # TODO save some metrics
+    if args.verbose: print("Running the experiment...")
     for epi in range(100):
+        if args.verbose: print("Episode", epi)
         # reset
         policy_switcher.reset_excluded_policy()
         obses, infos = test_envs.reset()
@@ -175,6 +182,8 @@ def run_experiment():
         i1 = 0 # global step counter
         cum_rew = 0
 
+        FAIL_STATUS = ""
+
         while not term and not trunc:
             # gather the informations
             env_state = infos[0]['loc']
@@ -183,7 +192,17 @@ def run_experiment():
 
             while next_node == curr_node and not term and not trunc:
                 # try every possible option
-                training_edges, best_policy = policy_switcher.get_best_policy(curr_node, env_state)
+                training_edges, ltl, best_policy = policy_switcher.get_best_policy(curr_node, env_state)
+                if best_policy is None:
+                    FAIL_STATUS = "No path available"
+                    break
+
+                if args.verbose: 
+                    print("Executing policy", ltl_to_print(ltl), 
+                          "with training edges", training_edges,
+                          "on node", curr_node,
+                          "with env state", env_state
+                    )
 
                 for _ in range(500): # option step limit
                     a = best_policy.forward(Batch(obs=obs, info=info)).act
@@ -204,9 +223,16 @@ def run_experiment():
             if trunc or term: # env game over
                 success = info[0]['dfa_state'] != -1 and not trunc
                 env_state = test_envs.get_env_attr("curr_state", 0)[0]
+                if trunc:
+                    FAIL_STATUS = "Truncated"
+                elif info[0]['dfa_state'] == -1:
+                    FAIL_STATUS = "DFA Dead end"
+                elif info[0]['dfa_state'] != task_dfa.terminal[0]:
+                    FAIL_STATUS = "DFA not terminal"
                 result = {
                     "success": success,
                     "steps": i1 + 1,
+                    "message": "success" if success else FAIL_STATUS,
                     "final_state": env_state, 
                 }
                 print(result)

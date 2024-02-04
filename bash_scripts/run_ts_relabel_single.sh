@@ -14,9 +14,9 @@
 #SBATCH --mail-user=yichen_wei@brown.edu
 
 map=13
-run_id=1
+run_id=0
 train_size=50
-train_type="mixed"
+train_type="sequence"
 
 ltl_id=`expr $SLURM_ARRAY_TASK_ID`
 
@@ -32,4 +32,4 @@ conda activate ltl
 PYGLET_HEADLESS=true python run_ts_single_rollout.py \
         --save_dpath=$HOME/data/shared/ltl-transfer-ts \
         --game_name miniworld_simp_no_vis \
-        --map 13 --train_type mixed --ltl $ltl_id --no_deterministic_eval --rollout_method uniform
+        --map 13 --train_type $train_type --ltl $ltl_id --no_deterministic_eval --rollout_method uniform
