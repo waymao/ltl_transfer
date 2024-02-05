@@ -35,7 +35,7 @@ class NaiveMatcher(Classifier):
         self.data = {}
         self.possible_edges = set()
 
-    def predict(self, point) -> Tuple[float, float]:
+    def predict(self, point) -> Tuple[str, float, float]:
         # returns success rate and length.
         x, y, angle = point
 
@@ -46,14 +46,14 @@ class NaiveMatcher(Classifier):
         point = np.array([[x, y]])
 
         # compute euclidean distance and angle difference
-        distance_sq_N = (all_point_xy_N2 - point)**2
+        distance_sq_N = np.sum((all_point_xy_N2 - point)**2, axis=1)
         angle_diff = np.abs(all_point_angle_N - angle)
         
         # ignore data points with angle difference > 60
         distance_sq_N[angle_diff > 60] = float('inf')
 
         # find the nearest neighbor
-        nearest_idx = np.argmin(distance_sq_N)
+        nearest_idx = np.argmin(distance_sq_N + angle_diff / 100)
 
         # find the nearest neighbor, naive approach
         # nearest = None
@@ -65,7 +65,7 @@ class NaiveMatcher(Classifier):
         #         nearest_distance = distance
 
         data = self.data[tuple(all_point_loc[nearest_idx])]
-        return int(data["success"]), data["steps"]
+        return (data.get('self_edge', None), data['edge']), int(data["success"]), data["steps"]
 
     def load(self, path, id):
         file_path = f"{path}/classifier/policy{id}_status.json.gz"

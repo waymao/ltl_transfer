@@ -48,6 +48,7 @@ def run_experiment():
     add_fields_to_parser(parser, LearningParameters, prefix=LEARNING_ARGS_PREFIX)
     parser.add_argument('--run_prefix', type=str,
                         help='Location of the bank and the learning parameters.')
+    parser.add_argument('--task_id', type=int, help='The task id to run.')
     parser.add_argument('--no_deterministic_eval', action="store_true", help='Whether to run deterministic evaluation or not.')
     parser.add_argument('--render', action="store_true", help='Whether to run rendering.')
     parser.add_argument('--verbose', '-v', action="store_true", help='Whether to print debug info.')
@@ -81,7 +82,8 @@ def run_experiment():
         map_id=map_id, 
         seed=args.run_id,
         no_info=False,
-        ltl_progress_is_term=False
+        ltl_progress_is_term=False,
+        max_episode_steps=9000
     )
 
     # path for logger
@@ -101,8 +103,8 @@ def run_experiment():
     tester = Tester(
         learning_params=learning_params, 
         testing_params=testing_params,
-        map_id=args.map,
-        prob=map_id,
+        map_id=map_id,
+        prob=args.prob,
         train_size=args.train_size,
         rl_algo=args.rl_algo,
         tasks_id=tasks_id,
@@ -134,9 +136,13 @@ def run_experiment():
         verbose=True
     )
     tasks = tester.get_LTL_tasks()
-    ltl = tasks[0]
+    try:
+        ltl = tasks[args.task_id]
+    except IndexError:
+        print("Task ID", args.task_id, "not found in the task list.")
+        exit(1)
 
-    print("Running task", ltl)
+    print("Running task", ltl_to_print(ltl))
     
     # reset with the correct ltl
     task_params = tester.get_task_params(ltl)
@@ -160,7 +166,7 @@ def run_experiment():
     dfa_graph = dfa2graph(test_envs.get_env_attr("dfa")[0])
 
     # look for infeasible edges in the testing ("eval") DFA and remove it
-    if args.verbose: print("Removing infeasible edges from the testing DFA.")
+    if args.verbose: print("Matching training/testing edges and removing infeasible edges...")
     test2trains = match_remove_edges(
         dfa_graph, train_edges, task_dfa.state, task_dfa.terminal[0], tester.edge_matcher
     )
@@ -172,7 +178,7 @@ def run_experiment():
         if args.verbose: print("Episode", epi)
         # reset
         policy_switcher.reset_excluded_policy()
-        obses, infos = test_envs.reset()
+        obs, info = test_envs.reset()
         if args.render:
             test_envs.render()
         
@@ -186,15 +192,17 @@ def run_experiment():
 
         while not term and not trunc:
             # gather the informations
-            env_state = infos[0]['loc']
-            curr_node = infos[0]['dfa_state']
+            env_state = info[0]['loc']
+            curr_node = info[0]['dfa_state']
             next_node = curr_node
 
             while next_node == curr_node and not term and not trunc:
                 # try every possible option
-                training_edges, ltl, best_policy = policy_switcher.get_best_policy(curr_node, env_state)
+                env_state = info[0]['loc']
+                best_policy, training_edges, ltl, stats = policy_switcher.get_best_policy(curr_node, env_state)
                 if best_policy is None:
                     FAIL_STATUS = "No path available"
+                    if args.verbose: print("No policy available for node", curr_node, "; goal: ", ltl_to_print(info[0]['ltl_goal']))
                     break
 
                 if args.verbose: 
@@ -203,6 +211,7 @@ def run_experiment():
                           "on node", curr_node,
                           "with env state", env_state
                     )
+                    print("       test stats: prob:", stats[0], "| len:", stats[1])
 
                 for _ in range(500): # option step limit
                     a = best_policy.forward(Batch(obs=obs, info=info)).act
@@ -213,15 +222,18 @@ def run_experiment():
                     cum_rew += reward
 
                     if args.render: test_envs.render()
+                    if next_node != curr_node and args.verbose: print("Hit proposition:", info[0]['true_props'])
+                    
                     if term or trunc or next_node != curr_node:
                         break
                 
                 if not term and not trunc and next_node == curr_node:
                     # we are stuck in the same node
-                    policy_switcher.exclude_policy(training_edges, best_policy)
+                    policy_switcher.exclude_policy(curr_node, best_policy)
+                    if args.verbose: print("   Policy failed to finish. Excluding policy", ltl_to_print(ltl), "on node", curr_node)
 
-            if trunc or term: # env game over
-                success = info[0]['dfa_state'] != -1 and not trunc
+            if trunc[0] or term[0] or FAIL_STATUS != "": # env game over
+                success = term[0] and info[0]['dfa_state'] != -1 and not trunc[0]
                 env_state = test_envs.get_env_attr("curr_state", 0)[0]
                 if trunc:
                     FAIL_STATUS = "Truncated"

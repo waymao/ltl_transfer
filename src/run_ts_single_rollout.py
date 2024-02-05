@@ -211,6 +211,7 @@ if __name__ == "__main__":
                     "true_proposition": info[0]['true_props'] if success else '',
                     "steps": i + 1, 
                     "final_state": state,
+                    "self_edge": info[0]['self_edge'],
                     "edge": info[0]['traversed_edge']
                 }
                 if args.verbose or args.render:

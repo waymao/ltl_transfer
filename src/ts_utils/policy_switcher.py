@@ -6,6 +6,8 @@ from .ts_policy_bank import TianshouPolicyBank
 from ltl.dfa import DFA
 import networkx as nx
 
+from tqdm import tqdm
+
 class PolicySwitcher:
     def __init__(self, 
                  pb: TianshouPolicyBank, 
@@ -49,30 +51,36 @@ class PolicySwitcher:
                 # for each matched training edge, find the probability
                 for train_self_edge, train_out_edge in self.test2trains[test_edge_pair]:
                     for ltl in self.edge2ltls[(train_self_edge, train_out_edge)]:
-                        if ltl not in self.exclude_list[(train_self_edge, train_out_edge)]:
+                        if ltl not in self.exclude_list[curr_dfa_state]:
                             ltl_id = self.pb.policy2id[ltl]
-                            prob, len = self.pb.classifiers[ltl_id].predict(env_state)
-                            option2problen[(ltl, train_self_edge, train_out_edge)] = prob, len
+                            (pb_self_edge, pb_out_edge), prob, len = self.pb.classifiers[ltl_id].predict(env_state)
+                            if pb_out_edge == train_out_edge:
+                                # if the predicted outcome given the current state 
+                                #     does not match the wanted outcome, skip.
+                                # Only add the policy if the edge is the same.
+                                option2problen[(ltl, test_self_edge, test_out_edge)] = prob, len
         return option2problen
 
-    def get_best_policy(self, curr_dfa_state, env_state):
+    def get_best_policy(self, curr_dfa_state, env_state, verbose=False):
         """
         Given current env state and dfa state, 
         get the corresponding edge pair, ltl, and the best policy to execute.
         """
         option2problen = self._compute_option_ranking(curr_dfa_state, env_state)
         if option2problen == {}:
-            return None, None
+            return None, None, None, None
         else:
             # sort through the set and return the best policy in ascending order.
             # per python tuple comparison, compare prob first, then len.
             # return the policy with the highest probability and the shortest length.
-            (ltl, train_self_edge, train_out_edge), (prob, len) = sorted(option2problen.items(), key=lambda x: (-x[1][0], x[1][1]), reverse=True)[0]
-            return (train_self_edge, train_out_edge), ltl, \
-                   self.pb.policies[self.pb.policy2id[ltl]]
+            # for item in sorted(option2problen.items(), key=lambda x: (-x[1][0], x[1][1])):
+            #     print("          item:", item)
+            best = min(option2problen.items(), key=lambda x: (-x[1][0], x[1][1]))
+            (ltl, train_self_edge, train_out_edge), (prob, len) = best
+            return self.pb.policies[self.pb.policy2id[ltl]], (train_self_edge, train_out_edge), ltl, (prob, len)
     
-    def exclude_policy(self, edge: Tuple[str, str], ltl: str):
-        self.exclude_list[edge].add(ltl)
+    def exclude_policy(self, node: int, ltl: str):
+        self.exclude_list[node].add(ltl)
     
     def reset_excluded_policy(self, edge: Optional[Tuple[str, str]] = None):
         """

@@ -96,6 +96,7 @@ class MiniWorldLTLWrapper(gym.Wrapper):
             "dfa_game_over": self.ltl_game_over,
             "dfa_state": self.dfa.state,
             "loc": self.unwrapped.curr_state,
+            "self_edge": self.dfa.nodelist[prev_state][prev_state],
             "traversed_edge": self.dfa.nodelist[prev_state][self.dfa.state]
         }
         return obs, rew * self.reward_scale, self.ltl_game_over or ter, trunc, info
