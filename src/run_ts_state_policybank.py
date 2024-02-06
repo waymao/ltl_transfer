@@ -138,6 +138,7 @@ if __name__ == "__main__":
             num_features=test_envs.observation_space[0].shape[0],
             hidden_layers=[256, 256, 256],
             learning_params=learning_params,
+            load_classifier=None,
             device=device
         )
 

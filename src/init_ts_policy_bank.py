@@ -126,6 +126,7 @@ if __name__ == "__main__":
         num_actions=test_envs.action_space[0].n,
         num_features=test_envs.observation_space[0].shape[0],
         learning_params=learning_params,
+        load_classifier=None,
         device=device
     )
     print("Successfully loaded policy bank. Sanity Check Complete.")
