@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH -n 1
+#SBATCH -n 2
 #SBATCH -N 1
-#SBATCH --mem=2G
+#SBATCH --mem=12G
 #SBATCH -t 48:00:00
 ##SBATCH --array=0-648
 #SBATCH --array=0-27
@@ -18,7 +18,7 @@ run_id=0
 train_size=50
 train_type="sequence"
 
-ltl_id=`expr $SLURM_ARRAY_TASK_ID`
+task_id=`expr $SLURM_ARRAY_TASK_ID`
 
 source /users/ywei75/.bashrc
 conda activate ltl
@@ -29,7 +29,7 @@ conda activate ltl
 #         --game_name miniworld_simp_no_vis --train_type $train_type \
 #         --save_dpath=$HOME/data/shared/ltl-transfer-ts
 
-PYGLET_HEADLESS=true python run_ts_single_rollout.py \
+PYGLET_HEADLESS=true python run_ts_transfer.py \
         --save_dpath=$HOME/data/shared/ltl-transfer-ts \
         --game_name miniworld_simp_no_vis \
-        --map $map --train_type $train_type --ltl $ltl_id --rollout_method uniform
+        --map $map --train_type $train_type --task_id $task_id
