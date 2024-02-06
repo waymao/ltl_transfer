@@ -52,6 +52,7 @@ def run_experiment():
     parser.add_argument('--no_deterministic_eval', action="store_true", help='Whether to run deterministic evaluation or not.')
     parser.add_argument('--render', action="store_true", help='Whether to run rendering.')
     parser.add_argument('--verbose', '-v', action="store_true", help='Whether to print debug info.')
+    parser.add_argument('--num_epi', default=100, type=int, help="Number of Episodes to Run.")
 
     args = parser.parse_args()
     # if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")
@@ -174,7 +175,8 @@ def run_experiment():
 
     # TODO save some metrics
     if args.verbose: print("Running the experiment...")
-    for epi in range(100):
+    succ_count = 0
+    for epi in range(args.num_epi):
         if args.verbose: print("Episode", epi)
         # reset
         policy_switcher.reset_excluded_policy()
@@ -184,19 +186,19 @@ def run_experiment():
         
         # rollout of one episode
         node2option2prob = {} # node -> (ltl, edge_pair) -> prob
-        term = trunc = False
+        term = trunc = [False]
         i1 = 0 # global step counter
         cum_rew = 0
 
         FAIL_STATUS = ""
 
-        while not term and not trunc:
+        while not term[0] and not trunc[0]:
             # gather the informations
             env_state = info[0]['loc']
             curr_node = info[0]['dfa_state']
             next_node = curr_node
 
-            while next_node == curr_node and not term and not trunc:
+            while next_node == curr_node and not term[0] and not trunc[0]:
                 # try every possible option
                 env_state = info[0]['loc']
                 best_policy, training_edges, ltl, stats = policy_switcher.get_best_policy(curr_node, env_state)
@@ -222,12 +224,13 @@ def run_experiment():
                     cum_rew += reward
 
                     if args.render: test_envs.render()
-                    if next_node != curr_node and args.verbose: print("Hit proposition:", info[0]['true_props'])
+                    if next_node != curr_node and args.verbose: 
+                        print("Hit proposition:", info[0]['true_props'], "in", _, "steps.")
                     
-                    if term or trunc or next_node != curr_node:
+                    if term[0] or trunc[0] or next_node != curr_node:
                         break
                 
-                if not term and not trunc and next_node == curr_node:
+                if not term[0] and not trunc[0] and next_node == curr_node:
                     # we are stuck in the same node
                     policy_switcher.exclude_policy(curr_node, best_policy)
                     if args.verbose: print("   Policy failed to finish. Excluding policy", ltl_to_print(ltl), "on node", curr_node)
@@ -247,10 +250,10 @@ def run_experiment():
                     "message": "success" if success else FAIL_STATUS,
                     "final_state": env_state, 
                 }
+                if success: succ_count += 1
                 print(result)
                 break
-
-        print("Done!")
+    print("Done! Success Rate:", succ_count / args.num_epi)
 
 
 if __name__ == "__main__":
