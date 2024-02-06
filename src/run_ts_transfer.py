@@ -1,4 +1,5 @@
 from copy import deepcopy
+import gzip
 import json
 import os
 
@@ -174,6 +175,10 @@ def run_experiment():
     policy_switcher = PolicySwitcher(policy_bank, test2trains, t_edge2ltls, ltl)
 
     # TODO save some metrics
+    run_info = {
+        "task": tasks[args.task_id],
+        "result": []
+    }
     if args.verbose: print("Running the experiment...")
     succ_count = 0
     for epi in range(args.num_epi):
@@ -183,6 +188,7 @@ def run_experiment():
         obs, info = test_envs.reset()
         if args.render:
             test_envs.render()
+        init_env_state = info[0]['loc']
         
         # rollout of one episode
         node2option2prob = {} # node -> (ltl, edge_pair) -> prob
@@ -203,8 +209,8 @@ def run_experiment():
                 env_state = info[0]['loc']
                 best_policy, training_edges, ltl, stats = policy_switcher.get_best_policy(curr_node, env_state)
                 if best_policy is None:
-                    FAIL_STATUS = "No path available"
-                    if args.verbose: print("No policy available for node", curr_node, "; goal: ", ltl_to_print(info[0]['ltl_goal']))
+                    FAIL_STATUS = f"No policy available for goal {ltl_to_print(info[0]['ltl_goal'])}"
+                    if args.verbose: print("No policy available / works for node", curr_node, "; goal: ", ltl_to_print(info[0]['ltl_goal']))
                     break
 
                 if args.verbose: 
@@ -236,24 +242,35 @@ def run_experiment():
                     if args.verbose: print("   Policy failed to finish. Excluding policy", ltl_to_print(ltl), "on node", curr_node)
 
             if trunc[0] or term[0] or FAIL_STATUS != "": # env game over
-                success = term[0] and info[0]['dfa_state'] != -1 and not trunc[0]
+                success = bool(term[0] and info[0]['dfa_state'] != -1 and not trunc[0])
                 env_state = test_envs.get_env_attr("curr_state", 0)[0]
-                if trunc:
-                    FAIL_STATUS = "Truncated"
-                elif info[0]['dfa_state'] == -1:
-                    FAIL_STATUS = "DFA Dead end"
-                elif info[0]['dfa_state'] != task_dfa.terminal[0]:
-                    FAIL_STATUS = "DFA not terminal"
+                if FAIL_STATUS == "":
+                    if trunc:
+                        FAIL_STATUS = "Truncated by ENV"
+                    elif info[0]['dfa_state'] == -1:
+                        FAIL_STATUS = "DFA Dead end"
+                    elif info[0]['dfa_state'] != task_dfa.terminal[0]:
+                        FAIL_STATUS = "DFA not terminal"
                 result = {
                     "success": success,
                     "steps": i1 + 1,
                     "message": "success" if success else FAIL_STATUS,
-                    "final_state": env_state, 
+                    "final_env_state": env_state, 
+                    "final_dfa_state": info[0]['dfa_state'],
+                    "init_env_state": init_env_state
                 }
                 if success: succ_count += 1
                 print(result)
+                run_info["result"].append(result)
                 break
     print("Done! Success Rate:", succ_count / args.num_epi)
+
+    save_folder = os.path.join(tb_log_path, "transfer_results")
+    os.makedirs(save_folder, exist_ok=True)
+    file_name = os.path.join(save_folder, f"task_{tester.test_type}_{args.task_id}.json.gz")
+    with gzip.open(file_name, 'wt') as f:
+        json.dump(run_info, f)
+    print("Saved result to", file_name)
 
 
 if __name__ == "__main__":
