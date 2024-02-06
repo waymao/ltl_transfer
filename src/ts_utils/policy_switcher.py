@@ -53,12 +53,12 @@ class PolicySwitcher:
                     for ltl in self.edge2ltls[(train_self_edge, train_out_edge)]:
                         if ltl not in self.exclude_list[curr_dfa_state]:
                             ltl_id = self.pb.policy2id[ltl]
-                            (pb_self_edge, pb_out_edge), prob, len = self.pb.classifiers[ltl_id].predict(env_state)
-                            if pb_out_edge == train_out_edge:
+                            result_dict = self.pb.classifiers[ltl_id].predict(env_state)
+                            if (train_self_edge, train_out_edge) in result_dict:
                                 # if the predicted outcome given the current state 
                                 #     does not match the wanted outcome, skip.
                                 # Only add the policy if the edge is the same.
-                                option2problen[(ltl, test_self_edge, test_out_edge)] = prob, len
+                                option2problen[(ltl, test_self_edge, test_out_edge)] = result_dict[(train_self_edge, train_out_edge)]
         return option2problen
 
     def get_best_policy(self, curr_dfa_state, env_state, verbose=False):
@@ -73,8 +73,12 @@ class PolicySwitcher:
             # sort through the set and return the best policy in ascending order.
             # per python tuple comparison, compare prob first, then len.
             # return the policy with the highest probability and the shortest length.
+            # print()
+            # print("Getting best policies for edge.")
+            # print("     Rankings:")
             # for item in sorted(option2problen.items(), key=lambda x: (-x[1][0], x[1][1])):
             #     print("          item:", item)
+            
             best = min(option2problen.items(), key=lambda x: (-x[1][0], x[1][1]))
             (ltl, train_self_edge, train_out_edge), (prob, len) = best
             return self.pb.policies[self.pb.policy2id[ltl]], (train_self_edge, train_out_edge), ltl, (prob, len)
