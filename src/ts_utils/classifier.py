@@ -52,7 +52,9 @@ class NaiveMatcher(Classifier):
                 results[edges][1] += data["steps"]
         final_result: Mapping[str, Tuple[float, float]] = {}
         for key, val in results.items():
-            final_result[key] = tuple([item / len(locs) for item in val])
+            hit_prob = val[0] / len(locs)
+            mean_len = val[1] / val[0]
+            final_result[key] = (hit_prob, mean_len)
         return final_result
     
 
