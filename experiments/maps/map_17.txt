@@ -1,7 +1,11 @@
-XXXXXXX
-X     X
-X     X
-X  a  X
-X     X
-X     X
-XXXXXXX
+XXXXXXXXXXX
+Xf    d  eX
+X         X
+Xb       gX
+X         X
+X a      cX
+X         X
+Xf       hX
+Xs       bX
+X  d  e   X
+XXXXXXXXXXX
