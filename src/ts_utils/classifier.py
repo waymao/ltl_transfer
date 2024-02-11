@@ -53,7 +53,7 @@ class NaiveMatcher(Classifier):
         final_result: Mapping[str, Tuple[float, float]] = {}
         for key, val in results.items():
             hit_prob = val[0] / len(locs)
-            mean_len = val[1] / val[0]
+            mean_len = val[1] / val[0] if val[0] > 0 else 999999
             final_result[key] = (hit_prob, mean_len)
         return final_result
     
