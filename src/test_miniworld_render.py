@@ -54,7 +54,7 @@ if __name__ == "__main__":
     map_id = args.map
 
     testing_params = TestingParameters(custom_metric_folder=args.run_subfolder)
-    train_envs, test_envs = generate_envs(
+    train_envs, test_envs = generate_envs(prob=args.prob,
         game_name="miniworld_no_vis", parallel=False, map_id=map_id, seed=args.run_id)
 
     obs = test_envs.reset()

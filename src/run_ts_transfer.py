@@ -1,3 +1,4 @@
+import cProfile
 from copy import deepcopy
 import gzip
 import json
@@ -78,7 +79,7 @@ def run_experiment():
     testing_params = TestingParameters(custom_metric_folder=args.run_subfolder)
     print("Initialized Learning Params:", learning_params)
 
-    train_envs, test_envs = generate_envs(
+    train_envs, test_envs = generate_envs(prob=args.prob,
         game_name=args.game_name, 
         parallel=PARALLEL_TRAIN, 
         map_id=map_id, 
@@ -275,5 +276,6 @@ def run_experiment():
 
 if __name__ == "__main__":
     run_experiment()
+    # cProfile.run("run_experiment()", "transfer_prof.prof")
 
 # %%

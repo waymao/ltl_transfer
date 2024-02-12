@@ -55,15 +55,31 @@ if __name__ == "__main__":
     tasks_id = 0
     map_id = args.map
 
-    save_path = args.run_prefix
+    # learning params
+    learning_params = get_learning_parameters(
+        policy_name=args.rl_algo, 
+        game_name=args.game_name,
+        **{
+            key.removeprefix(LEARNING_ARGS_PREFIX): val 
+            for (key, val) in args._get_kwargs() 
+            if key.startswith(LEARNING_ARGS_PREFIX)
+        }
+    )
+
+    # path for saves
+    tb_log_path = os.path.join(
+        args.save_dpath, "results", f"{args.game_name}_{args.domain_name}", f"{args.train_type}_p{args.prob}", 
+        f"{args.algo}_{args.rl_algo}", f"map{map_id}", str(args.run_id), 
+        f"alpha={'auto' if learning_params.auto_alpha else learning_params.alpha}",
+    ) if args.run_prefix is None else args.run_prefix
 
     # learning params
-    with open(os.path.join(save_path, "learning_params.pkl"), "rb") as f:
+    with open(os.path.join(tb_log_path, "learning_params.pkl"), "rb") as f:
         learning_params = pickle.load(f)
     testing_params = TestingParameters(custom_metric_folder=args.run_subfolder)
     print("Initialized Learning Params:", learning_params)
 
-    train_envs, test_envs = generate_envs(game_name=args.game_name, parallel=PARALLEL_TRAIN, map_id=map_id, seed=args.run_id)
+    train_envs, test_envs = generate_envs(prob=args.prob,game_name=args.game_name, parallel=PARALLEL_TRAIN, map_id=map_id, seed=args.run_id)
 
     # tester
     tester = Tester(
@@ -86,9 +102,10 @@ if __name__ == "__main__":
 
     # initalize policy bank
     policy_bank: TianshouPolicyBank = load_ts_policy_bank(
-        os.path.join(save_path),
+        os.path.join(tb_log_path),
         num_actions=test_envs.action_space[0].n,
         num_features=test_envs.observation_space[0].shape[0],
+        load_classifier=None
     )
     # sanity check to make sure everything is in the policy bank.
     for task in tasks:

@@ -10,14 +10,23 @@ NUM_PARALLEL_JOBS = 11
 def get_state_space(env: gymnasium.Env):
     return env.get_wrapper_attr("size")
 
-def generate_envs(game_name="miniworld_simp_no_vis", map_id=13, parallel=False, seed=0, no_info=True, ltl_progress_is_term=True, max_episode_steps=1500):
+def generate_envs(
+        game_name="miniworld_simp_no_vis", 
+        map_id=13, 
+        parallel=False, 
+        seed=0, 
+        no_info=True, 
+        ltl_progress_is_term=True, 
+        max_episode_steps=1500,
+        prob=1.0
+    ):
     if not parallel:
         test_envs = DummyVectorEnv(
             [lambda: get_game(name=game_name, params=GameParams(
                 map_fpath=f"../experiments/maps/map_{map_id}.txt",
                 ltl_task=("until", "True", "a"),
                 # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
-                prob=1
+                prob=prob
             ), 
             max_episode_steps=max_episode_steps, do_transpose=False, 
             reward_scale=10, ltl_progress_is_term=ltl_progress_is_term, no_info=no_info)]
@@ -27,7 +36,7 @@ def generate_envs(game_name="miniworld_simp_no_vis", map_id=13, parallel=False, 
         #         map_fpath=f"../experiments/maps/map_{map_id}.txt",
         #         ltl_task=("until", "True", "a"),
         #         # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
-        #         prob=1
+        #         prob=prob
         #     ) ,max_episode_steps=max_episode_steps, do_transpose=False, reward_scale=10, ltl_progress_is_term=ltl_progress_is_term, no_info=no_info) \
         #         for _ in range(NUM_PARALLEL_JOBS)]
         # )
@@ -36,7 +45,7 @@ def generate_envs(game_name="miniworld_simp_no_vis", map_id=13, parallel=False, 
                 map_fpath=f"../experiments/maps/map_{map_id}.txt",
                 ltl_task=("until", "True", "a"),
                 # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
-                prob=1
+                prob=prob
             ), 
             max_episode_steps=max_episode_steps, do_transpose=False, 
             reward_scale=10, ltl_progress_is_term=ltl_progress_is_term, no_info=no_info)]
@@ -47,7 +56,7 @@ def generate_envs(game_name="miniworld_simp_no_vis", map_id=13, parallel=False, 
                 map_fpath=f"../experiments/maps/map_{map_id}.txt",
                 ltl_task=("until", "True", "a"),
                 # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
-                prob=1
+                prob=prob
             ) ,max_episode_steps=max_episode_steps, do_transpose=False, reward_scale=10, ltl_progress_is_term=ltl_progress_is_term, no_info=no_info) \
                 for _ in range(NUM_PARALLEL_JOBS)]
         )
@@ -56,7 +65,7 @@ def generate_envs(game_name="miniworld_simp_no_vis", map_id=13, parallel=False, 
                 map_fpath=f"../experiments/maps/map_{map_id}.txt",
                 ltl_task=("until", "True", "a"),
                 # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
-                prob=1
+                prob=prob
             ) ,max_episode_steps=max_episode_steps, do_transpose=False, reward_scale=10, ltl_progress_is_term=ltl_progress_is_term, no_info=no_info) \
                 for _ in range(NUM_PARALLEL_JOBS)]
         )
