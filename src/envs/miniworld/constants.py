@@ -33,14 +33,16 @@ DEFAULT_MAP_SIZE = 10
 IGNORE_MAP_AGENT_LOC = True
 
 DEFAULT_GAME_PARAMS = deepcopy(DEFAULT_PARAMS)
+DEFAULT_DETERM_GAME_PARAMS = deepcopy(DEFAULT_PARAMS)
 # stochastic parameters
-# DEFAULT_GAME_PARAMS.set("forward_step", 0.2, 0.18, 0.24)
-# DEFAULT_GAME_PARAMS.set("cam_fov_y", 90, 85, 95)
+DEFAULT_GAME_PARAMS.set("forward_step", 0.15, 0.12, 0.17)
+DEFAULT_GAME_PARAMS.set("forward_drift", 0, -0.05, 0.05)
+DEFAULT_GAME_PARAMS.set("turn_step", 15, 10, 20)
 
 # deterministic parameters
-DEFAULT_GAME_PARAMS.set("forward_step", 0.12, 0.12, 0.12)
-DEFAULT_GAME_PARAMS.set("forward_drift", 0, 0.0, 0.0)
-DEFAULT_GAME_PARAMS.set("turn_step", 15, 15, 15)
+DEFAULT_DETERM_GAME_PARAMS.set("forward_step", 0.12, 0.12, 0.12)
+DEFAULT_DETERM_GAME_PARAMS.set("forward_drift", 0, 0.0, 0.0)
+DEFAULT_DETERM_GAME_PARAMS.set("turn_step", 15, 15, 15)
 
 
 def get_ent_str(ent):
