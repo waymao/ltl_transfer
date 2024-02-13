@@ -40,9 +40,12 @@ DEFAULT_GAME_PARAMS.set("forward_drift", 0, -0.05, 0.05)
 DEFAULT_GAME_PARAMS.set("turn_step", 15, 10, 20)
 
 # deterministic parameters
-DEFAULT_DETERM_GAME_PARAMS.set("forward_step", 0.12, 0.12, 0.12)
-DEFAULT_DETERM_GAME_PARAMS.set("forward_drift", 0, 0.0, 0.0)
+DEFAULT_DETERM_GAME_PARAMS.set("forward_step", 0.15, 0.15, 0.15)
+DEFAULT_DETERM_GAME_PARAMS.set("forward_drift", 0, 0, 0.0, 0.0)
 DEFAULT_DETERM_GAME_PARAMS.set("turn_step", 15, 15, 15)
+# DEFAULT_DETERM_GAME_PARAMS.set("forward_step", 0.12, 0.12, 0.12)
+# DEFAULT_DETERM_GAME_PARAMS.set("forward_drift", 0, 0.0, 0.0)
+# DEFAULT_DETERM_GAME_PARAMS.set("turn_step", 15, 15, 15)
 
 
 def get_ent_str(ent):
