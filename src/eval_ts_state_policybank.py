@@ -25,7 +25,7 @@ from tianshou.utils.logger.tensorboard import TensorboardLogger
 from tianshou.data import Collector
 import os
 
-NUM_PARALLEL_JOBS = 12
+NUM_PARALLEL_JOBS = 20
 PARALLEL_TRAIN = True
 
 device = "cpu"
