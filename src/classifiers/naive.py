@@ -1,31 +1,8 @@
-# result
-
 from typing import Mapping, Tuple, List
 import json
 import gzip
 import numpy as np
-
-
-class Classifier:
-    def __init__(self):
-        self.possible_edges = set()
-        pass
-
-    def predict(self, x) -> Tuple[float, float]:
-        """
-        returns success rate and length.
-        """
-        pass
-
-    def add_data(self, state, result):
-        # To work on later
-        pass
-
-    def save(self, path, id):
-        pass
-
-    def load(self, path, id):
-        pass
+from .classifier import Classifier
 
 
 class NaiveMatcher(Classifier):
@@ -46,9 +23,9 @@ class NaiveMatcher(Classifier):
             edges = (data.get('self_edge', None), data['edge'])
             # print(data)  # uncomment to test distance_threshold
             if edges not in results:
-                results[edges] = [int(data["success"]), data["steps"]]
+                results[edges] = [1, data["steps"]]
             else:
-                results[edges][0] += int(data["success"])
+                results[edges][0] += 1
                 results[edges][1] += data["steps"]
         final_result: Mapping[str, Tuple[float, float]] = {}
         for key, val in results.items():
@@ -101,16 +78,6 @@ class NaiveMatcher(Classifier):
 
         # find the nearest neighbor
         nearest_idx = np.argmin(distance_sq_N + angle_diff / 100)
-
-        # find the nearest neighbor, naive approach
-        # nearest = None
-        # nearest_distance = float('inf')
-        # for loc in self.data.keys():
-        #     distance = (x - loc[0])**2 + (y - loc[1])**2
-        #     if distance < nearest_distance:
-        #         nearest = loc
-        #         nearest_distance = distance
-
         data = self.data[tuple(all_point_loc[nearest_idx])]
         return (data.get('self_edge', None), data['edge']), int(data["success"]), data["steps"]
 
@@ -129,12 +96,13 @@ class NaiveMatcher(Classifier):
         for loc in self.data:
             self.possible_edges.add(self.data[loc]['edge'])
 
+
 def test_load_knn():
     import os
     path = os.environ['HOME'] + "/data/shared/ltl-transfer-ts/results/miniworld_simp_no_vis_minecraft/sequence_p1.0/lpopl_dsac/map13/0/alpha=0.03/"
     matcher = NaiveMatcher()
     matcher.load(path, 0)
-    print(matcher.predict([3, 3, 0]))
+    print(matcher.predict([3.5, 3.5, 60]))
 
 if __name__ == "__main__":
     test_load_knn()
