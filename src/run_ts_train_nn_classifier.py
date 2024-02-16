@@ -2,41 +2,17 @@ import json
 import os
 import sys
 
-import gymnasium
 from classifiers.nn_classifier import NNClassifier
-from ltl.dfa import DFA
 from torch_policies.learning_params import LearningParameters, \
     add_fields_to_parser, get_learning_parameters
 
-from ts_utils.ts_policy_bank import create_discrete_sac_policy, TianshouPolicyBank, load_ts_policy_bank, load_individual_policy, save_individual_policy
 from ts_utils.ts_envs import generate_envs
 from ts_utils.ts_argparse import add_parser_cmds
 
-import gzip
-
-# %%
-from tianshou.policy import PPOPolicy, DiscreteSACPolicy, TD3Policy
-from tianshou.utils.net.common import ActorCritic
-from tianshou.utils.net.discrete import Actor, Critic
-from tianshou.trainer import OffpolicyTrainer
-from tianshou.data import Collector, ReplayBuffer, VectorReplayBuffer, Batch
-from torch_policies.network import get_CNN_preprocess
-from torch.optim import Adam
-import torch
-from torch import nn
-import numpy as np
-
 from test_utils import Tester, TestingParameters
 
-import time
 import argparse
-import pickle
 
-from torch.utils.tensorboard import SummaryWriter
-from tianshou.utils.logger.tensorboard import TensorboardLogger
-import os
-
-from rollout_utils.sampler import BoxSpaceIterator, RandomIterator
 
 NUM_PARALLEL_JOBS = 10
 PARALLEL_TRAIN = False
