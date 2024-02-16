@@ -147,7 +147,7 @@ class NNClassifier(Classifier):
         self.outcome_model = get_model(in_features, out_features)
         self.len_model = get_model(in_features, 1)
 
-    def train(self):
+    def train(self, verbose=False):
         ds_train, ds_test = random_split(self.dataset, [.8, .2], torch.Generator().manual_seed(self.seed))
         optim_outcome = Adam(params=self.outcome_model.parameters(), lr=1e-2)
         optim_len = Adam(params=self.len_model.parameters(), lr=1e-2)
@@ -170,13 +170,13 @@ class NNClassifier(Classifier):
                 optim_outcome.step()
             loss_test, acc_test = eval_test_outcome(self.outcome_model, ds_test)
             lr_scheduler_outcome.step()
-            if (iter + 1) % 100 == 0 or iter < 5:
-                print(f"iter {iter + 1} loss_outcome_train: {total_loss_outcome/num_iter} acc_train: {total_acc/num_iter} " + \
+            if (iter + 1) % 100 == 0 or (verbose and iter < 5):
+                print(f"    [outcome] iter {iter + 1} loss_outcome_train: {total_loss_outcome/num_iter} acc_train: {total_acc/num_iter} " + \
                     f"loss_test: {loss_test} acc_test: {acc_test} " + \
                     f"lr: {lr_scheduler_outcome.get_last_lr()}")
             if acc_test > 0.95 and acc_max - acc_test > 0.01:
                 print("Early stopping.")
-                print(f"iter {iter + 1} loss_outcome_train: {total_loss_outcome/num_iter} acc_train: {total_acc/num_iter} " + \
+                print(f"    [outcome] iter {iter + 1} loss_outcome_train: {total_loss_outcome/num_iter} acc_train: {total_acc/num_iter} " + \
                     f"loss_test: {loss_test} acc_test: {acc_test} " + \
                     f"lr: {lr_scheduler_outcome.get_last_lr()}")
                 break
@@ -194,8 +194,8 @@ class NNClassifier(Classifier):
                 optim_len.step()
             lr_scheduler_len.step()
             loss_test = eval_test_len(self.len_model, ds_test)
-            if (iter + 1) % 100 == 0 or iter < 5:
-                print(f"iter {iter + 1} loss_len: {total_loss_len/num_iter} loss_len_test: {loss_test} lr: {lr_scheduler_len.get_last_lr()}")
+            if (iter + 1) % 100 == 0 or (verbose and iter < 5):
+                print(f"    [length]  iter {iter + 1} loss_len: {total_loss_len/num_iter} loss_len_test: {loss_test} lr: {lr_scheduler_len.get_last_lr()}")
 
 def test_load_classifier():
     import os
