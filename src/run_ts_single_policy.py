@@ -1,25 +1,16 @@
 
 # %%
 import os
-from ltl.dfa import DFA
 from torch_policies.learning_params import LearningParameters, \
     add_fields_to_parser, get_learning_parameters
 
-from ts_utils.ts_policy_bank import create_discrete_sac_policy, TianshouPolicyBank, load_ts_policy_bank, load_individual_policy, save_individual_policy
+from ts_utils.ts_policy_bank import load_individual_policy, save_individual_policy
 from ts_utils.ts_envs import generate_envs
 from ts_utils.ts_argparse import add_parser_cmds
 
 # %%
-from tianshou.policy import PPOPolicy, DiscreteSACPolicy, TD3Policy
-from tianshou.utils.net.common import ActorCritic
-from tianshou.utils.net.discrete import Actor, Critic
 from tianshou.trainer import OffpolicyTrainer
-from tianshou.data import Collector, ReplayBuffer, VectorReplayBuffer
-from torch_policies.network import get_CNN_preprocess
-from torch.optim import Adam
-import torch
-from torch import nn
-import numpy as np
+from tianshou.data import Collector, VectorReplayBuffer
 
 from test_utils import Tester, TestingParameters
 

@@ -12,7 +12,7 @@ from torch_policies.learning_params import LearningParameters, \
 from ts_utils.matcher import dfa2graph, get_training_edges, match_remove_edges
 from ts_utils.policy_switcher import PolicySwitcher
 
-from ts_utils.ts_policy_bank import TianshouPolicyBank, load_ts_policy_bank
+from ts_utils.ts_policy_bank import load_ts_policy_bank
 from ts_utils.ts_envs import generate_envs
 from ts_utils.ts_argparse import add_parser_cmds
 

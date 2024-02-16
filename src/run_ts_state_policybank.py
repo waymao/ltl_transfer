@@ -9,19 +9,8 @@ from ts_utils.ts_policy_bank import create_discrete_sac_policy, TianshouPolicyBa
 from ts_utils.ts_argparse import add_parser_cmds
 
 # %%
-from envs.game_creator import get_game
-from envs.miniworld.params import GameParams
-from tianshou.policy import PPOPolicy, DiscreteSACPolicy, TD3Policy
-from tianshou.env import DummyVectorEnv, SubprocVectorEnv, ShmemVectorEnv, DummyVectorEnv
-from tianshou.utils.net.common import ActorCritic
-from tianshou.utils.net.discrete import Actor, Critic
 from tianshou.trainer import OffpolicyTrainer
-from tianshou.data import Collector, ReplayBuffer, VectorReplayBuffer
-from torch_policies.network import get_CNN_preprocess
-from torch.optim import Adam
-import torch
-from torch import nn
-import numpy as np
+from tianshou.data import Collector, VectorReplayBuffer
 
 from test_utils import Tester, TestingParameters
 

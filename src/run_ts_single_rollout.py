@@ -6,22 +6,14 @@ from ltl.dfa import DFA
 from torch_policies.learning_params import LearningParameters, \
     add_fields_to_parser, get_learning_parameters
 
-from ts_utils.ts_policy_bank import create_discrete_sac_policy, TianshouPolicyBank, load_ts_policy_bank, load_individual_policy, save_individual_policy
+from ts_utils.ts_policy_bank import load_individual_policy
 from ts_utils.ts_envs import generate_envs
 from ts_utils.ts_argparse import add_parser_cmds
 
 import gzip
 
 # %%
-from tianshou.policy import PPOPolicy, DiscreteSACPolicy, TD3Policy
-from tianshou.utils.net.common import ActorCritic
-from tianshou.utils.net.discrete import Actor, Critic
-from tianshou.trainer import OffpolicyTrainer
-from tianshou.data import Collector, ReplayBuffer, VectorReplayBuffer, Batch
-from torch_policies.network import get_CNN_preprocess
-from torch.optim import Adam
-import torch
-from torch import nn
+from tianshou.data import Batch
 import numpy as np
 
 from test_utils import Tester, TestingParameters
@@ -146,11 +138,6 @@ if __name__ == "__main__":
 
 
     # run training
-    global_time_steps = 0
-    with open(os.path.join(tb_log_path, "logs", f"policy{args.ltl_id}_status.txt"), "w") as f:
-        f.write(f"{time.time()},started\n")
-    train_buffer = VectorReplayBuffer(int(1e6), buffer_num=NUM_PARALLEL_JOBS if PARALLEL_TRAIN else 1)
-
     ltl_id = args.ltl_id
     policy, ltl = load_individual_policy(
         tb_log_path, ltl_id, 

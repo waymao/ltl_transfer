@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 
 import gymnasium
 from classifiers.nn_classifier import NNClassifier
@@ -53,6 +54,7 @@ if __name__ == "__main__":
     # add all fields of Learning Parameters to parser
     LEARNING_ARGS_PREFIX = "lp."
     add_fields_to_parser(parser, LearningParameters, prefix=LEARNING_ARGS_PREFIX)
+    parser.add_argument("--resume_from", default=0, type=int, help="Resume from a specific policy ID.")
 
     args = parser.parse_args()
 
@@ -113,8 +115,14 @@ if __name__ == "__main__":
         ltl_list = json.load(f)
 
     for i in range(len(ltl_list)):
+        if i < args.resume_from:
+            continue
         print(f"Running training for {i}")
         classifier = NNClassifier()
-        classifier.load_raw_data(tb_log_path, i)
-        classifier.train(verbose=False)
-        classifier.save(tb_log_path, i)
+        try:
+            classifier.load_raw_data(tb_log_path, i)
+            classifier.train(verbose=False)
+            classifier.save(tb_log_path, i)
+        except Exception as e:
+            print(f"Failed to train classifier for {i}: {e}", file=sys.stderr)
+            continue

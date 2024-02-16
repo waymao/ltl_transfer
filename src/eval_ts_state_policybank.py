@@ -4,14 +4,10 @@ import os
 from ltl.dfa import DFA
 from torch_policies.learning_params import LearningParameters, add_fields_to_parser, get_learning_parameters
 
-from ts_utils.ts_policy_bank import create_discrete_sac_policy, TianshouPolicyBank, load_ts_policy_bank
+from ts_utils.ts_policy_bank import TianshouPolicyBank, load_ts_policy_bank
 from ts_utils.ts_argparse import add_parser_cmds
 # %%
 from ts_utils.ts_envs import generate_envs
-from torch_policies.network import get_CNN_preprocess
-from torch.optim import Adam
-import torch
-from torch import nn
 import numpy as np
 
 from test_utils import Tester, TestingParameters
