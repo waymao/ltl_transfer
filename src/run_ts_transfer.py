@@ -249,13 +249,14 @@ def run_experiment():
             if trunc[0] or term[0] or FAIL_STATUS != "": # env game over
                 success = bool(term[0] and info[0]['dfa_state'] != -1 and not trunc[0])
                 env_state = test_envs.get_env_attr("curr_state", 0)[0]
-                if FAIL_STATUS == "":
-                    if trunc:
-                        FAIL_STATUS = "Truncated by ENV"
-                    elif info[0]['dfa_state'] == -1:
-                        FAIL_STATUS = "DFA Dead end"
-                    elif info[0]['dfa_state'] != task_dfa.terminal[0]:
-                        FAIL_STATUS = "DFA not terminal"
+                if info[0]['dfa_state'] == -1:
+                    FAIL_STATUS = "DFA Dead end"
+                elif trunc:
+                    FAIL_STATUS = "Truncated by ENV"
+                elif term and not success:
+                    FAIL_STATUS = "ENV Dead end"
+                elif FAIL_STATUS == "" and info[0]['dfa_state'] != task_dfa.terminal[0]:
+                    FAIL_STATUS = "DFA not terminal"
                 result = {
                     "success": success,
                     "steps": i1 + 1,
