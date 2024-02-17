@@ -12,7 +12,7 @@ from ltl.formula_sampler import sample_formula
 
 ENV2PROPS = {
     "minecraft": ('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 's'),
-    "spot": ('a', 'b', 'c', 'd', 'k', 's')
+    "spot": ('a', 'b', 'c', 'd', 'e', 'f', 'g')
     # "spot": ('a', 'b', 'c', 'd', 'j', 'p')
 }
 SET_TYPES = ('hard', 'soft', 'soft_strict', 'no_orders', 'mixed')
@@ -101,5 +101,5 @@ def read_train_test_formulas(dataset_dpath, env_name, train_set_type='mixed', te
 
 if __name__ == '__main__':
     env_name = "spot"
-    create_datasets(save_dpath=os.path.join(os.path.expanduser('~'), "data", "shared", "ltl-transfer"), env_name=env_name, props=ENV2PROPS[env_name],
-                    set_types=["mixed"], duplicate_ok=False, train_sizes=[50])
+    create_datasets(save_dpath=os.path.join(os.path.expanduser('~'), "data", "shared", "ltl-transfer-ts"), env_name=env_name, props=ENV2PROPS[env_name],
+                    set_types=SET_TYPES, duplicate_ok=False, train_sizes=TRAIN_SIZES, test_size=TEST_SIZE)
