@@ -142,7 +142,7 @@ class NNClassifier(Classifier):
         self.dataset = TensorDataset(X, len_y, outcome_y)
         
         # defining the network
-        in_features = len(loc)
+        in_features = X.shape[1]
         out_features = self.edge_count
         self.outcome_model = get_model(in_features, out_features)
         self.len_model = get_model(in_features, 1)
