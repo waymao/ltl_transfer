@@ -10,6 +10,7 @@ class NaiveMatcher(Classifier):
         self.distance_threshold = distance_threshold
         self.data = {}
         self.possible_edges = set()
+        self.locs = []
 
 
     def group_gather_data(self, locs: List[List]) -> Mapping[str, Tuple[float, float]]:
@@ -63,7 +64,7 @@ class NaiveMatcher(Classifier):
         x, y, angle = point
 
         # gather information
-        all_point_loc = np.array(list(self.data.keys()))
+        all_point_loc = self.locs
         all_point_xy_N2 = all_point_loc[:, :2]
         all_point_angle_N = all_point_loc[:, 2]
         point = np.array([[x, y]])
@@ -95,6 +96,7 @@ class NaiveMatcher(Classifier):
         }
         for loc in self.data:
             self.possible_edges.add(self.data[loc]['edge'])
+        self.locs = np.array(list(self.data.keys()))
 
 
 def test_load_knn():
