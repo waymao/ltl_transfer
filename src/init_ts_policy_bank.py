@@ -5,7 +5,9 @@ from ltl.dfa import DFA
 from torch_policies.learning_params import LearningParameters, \
     add_fields_to_parser, get_learning_parameters
 
-from ts_utils.ts_policy_bank import create_discrete_sac_policy, TianshouPolicyBank, load_ts_policy_bank
+from ts_utils.ts_policy_bank import \
+    create_discrete_sac_policy, TianshouPolicyBank, load_ts_policy_bank, \
+    create_vis_discrete_sac_policy
 from ts_utils.ts_argparse import add_parser_cmds
 # %%
 from ts_utils.ts_envs import generate_envs
@@ -103,16 +105,26 @@ if __name__ == "__main__":
     for task in tasks:
         dfa = DFA(task)
         for ltl in dfa.ltl2state.keys():
-            policy = create_discrete_sac_policy(
-                num_actions=test_envs.action_space[0].n, 
-                num_features=test_envs.observation_space[0].shape[0], 
-                hidden_layers=[256, 256, 256],
-                learning_params=learning_params,
-                device=device
-            )
+            if len(test_envs.observation_space[0].shape) == 1:
+                policy = create_discrete_sac_policy(
+                    num_actions=test_envs.action_space[0].n, 
+                    num_features=test_envs.observation_space[0].shape[0], 
+                    hidden_layers=[256, 256, 256],
+                    learning_params=learning_params,
+                    device=device
+                )
+            else:
+                policy = create_vis_discrete_sac_policy(
+                    num_actions=test_envs.action_space[0].n, 
+                    input_size=test_envs.observation_space[0].shape, 
+                    hidden_layers=[256, 256, 256],
+                    learning_params=learning_params,
+                    device=device
+                )
             policy_bank.add_LTL_policy(ltl, policy)
 
     # save policy bank
+    print("Created bank with {} policies.".format(len(policy_bank.policies)))
     policy_bank.save_pb_index(tb_log_path)
     policy_bank.save_ckpt(tb_log_path)
     print("Saved bank to", tb_log_path)

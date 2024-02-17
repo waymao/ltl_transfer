@@ -11,7 +11,7 @@ from tianshou.policy import PPOPolicy, DiscreteSACPolicy, TD3Policy
 from utils.print_ltl import ltl_to_print
 from classifiers import Classifier, RadiusMatcher, KNNMatcher, NNClassifier
 from tianshou.utils.net.discrete import Actor, Critic
-from torch_policies.network import get_CNN_preprocess
+from torch_policies.network import get_whole_CNN
 from torch.optim import Adam
 import torch
 from torch import nn
@@ -100,6 +100,33 @@ def create_discrete_sac_policy(
         alpha=learning_params.alpha,
         gamma=learning_params.gamma,
         # TODO add more
+    ).to(device)
+    return policy
+
+
+def create_vis_discrete_sac_policy(
+    num_actions: int, 
+    input_size: Tuple[int, int, int],
+    hidden_layers: List[int] = [256, 256, 256],
+    learning_params: LearningParameters = get_learning_parameters("dsac", "miniworld_no_vis"), 
+    device="cpu"
+) -> DiscreteSACPolicy:
+    net_actor = get_whole_CNN(input_size[-1], num_actions, device=device)
+    net_critic1 = get_whole_CNN(input_size[-1], num_actions, device=device)
+    net_critic2 = get_whole_CNN(input_size[-1], num_actions, device=device)
+    actor = Actor(net_actor, num_actions, device=device, softmax_output=False)
+    actor_optim = Adam(actor.parameters(), lr=learning_params.pi_lr)
+    critic1 = Critic(net_critic1, device=device)
+    critic1_optim = Adam(critic1.parameters(), lr=learning_params.lr)
+    critic2 = Critic(net_critic2, hidden_sizes=hidden_layers, last_size=num_actions, device=device)
+    critic2_optim = Adam(critic2.parameters(), lr=learning_params.lr)
+
+    policy = DiscreteSACPolicy(
+        actor, actor_optim, 
+        critic1, critic1_optim, 
+        critic2, critic2_optim,
+        alpha=learning_params.alpha,
+        gamma=learning_params.gamma,
     ).to(device)
     return policy
 
