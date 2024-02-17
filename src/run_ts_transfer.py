@@ -31,6 +31,8 @@ from torch.utils.tensorboard import SummaryWriter
 from tianshou.utils.logger.tensorboard import TensorboardLogger
 import os
 
+import time
+
 
 NUM_PARALLEL_JOBS = 10
 PARALLEL_TRAIN = False
@@ -170,10 +172,12 @@ def run_experiment():
 
     # look for infeasible edges in the testing ("eval") DFA and remove it
     if args.verbose: print("Matching training/testing edges and removing infeasible edges...")
+    begin_time = time.time()
     test2trains = match_remove_edges(
         dfa_graph, train_edges, task_dfa.state, task_dfa.terminal[0], tester.edge_matcher
     )
     policy_switcher = PolicySwitcher(policy_bank, test2trains, t_edge2ltls, ltl)
+    print("Time taken to match training and testing edges:", (time.time() - begin_time), "seconds.")
 
     # TODO save some metrics
     run_info = {

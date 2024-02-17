@@ -1,3 +1,4 @@
+import cProfile
 from typing import Mapping, Tuple, List
 import json
 import gzip
@@ -5,7 +6,7 @@ import numpy as np
 from .classifier import Classifier
 
 
-class NaiveMatcher(Classifier):
+class RadiusMatcher(Classifier):
     def __init__(self, distance_threshold=.5):
         self.distance_threshold = distance_threshold
         self.data = {}
@@ -58,8 +59,28 @@ class NaiveMatcher(Classifier):
         locs = all_point_loc[best_items_index] # N x dim
         return self.group_gather_data(list(locs))
 
+    def load(self, path, id):
+        file_path = f"{path}/classifier/policy{id}_status.json.gz"
+        with gzip.open(file_path, 'rt', encoding='UTF-8') as f:
+            data: Mapping[str, dict] = json.load(f)
+        # post-process data
+        # split "x, y, angle" into a tuple of floats
+        self.data = {
+            tuple(
+                [float(item) for item in loc.split(", ")]
+            ): val
+            for loc, val in data.items()
+        }
+        for loc in self.data:
+            self.possible_edges.add(self.data[loc]['edge'])
+        self.locs = np.array(list(self.data.keys()))
 
-    def predict_one(self, point) -> Tuple[str, float, float]:
+class KNNMatcher(RadiusMatcher):
+    def __init__(self, k=5):
+        super().__init__()
+        self.k = k
+
+    def predict_n(self, point) -> Tuple[str, float, float]:
         # returns success rate and length.
         x, y, angle = point
 
@@ -78,34 +99,20 @@ class NaiveMatcher(Classifier):
         distance_sq_N[angle_diff > 60] = float('inf')
 
         # find the nearest neighbor
-        nearest_idx = np.argmin(distance_sq_N + angle_diff / 100)
-        data = self.data[tuple(all_point_loc[nearest_idx])]
-        return (data.get('self_edge', None), data['edge']), int(data["success"]), data["steps"]
-
-    def load(self, path, id):
-        file_path = f"{path}/classifier/policy{id}_status.json.gz"
-        with gzip.open(file_path, 'rt', encoding='UTF-8') as f:
-            data: Mapping[str, dict] = json.load(f)
-        # post-process data
-        # split "x, y, angle" into a tuple of floats
-        self.data = {
-            tuple(
-                [float(item) for item in loc.split(", ")]
-            ): val
-            for loc, val in data.items()
-        }
-        for loc in self.data:
-            self.possible_edges.add(self.data[loc]['edge'])
-        self.locs = np.array(list(self.data.keys()))
+        nearest_idx = np.argpartition(distance_sq_N + angle_diff / 100, self.k)[:self.k]
+        return self.group_gather_data(list(all_point_loc[nearest_idx]))
 
 
 def test_load_knn():
     import os
-    path = os.environ['HOME'] + "/data/shared/ltl-transfer-ts/results/miniworld_simp_no_vis_minecraft/sequence_p1.0/lpopl_dsac/map13/0/alpha=0.03/"
-    matcher = NaiveMatcher()
+    path = os.environ['HOME'] + "/data/shared/ltl-transfer-ts/results/miniworld_simp_no_vis_minecraft/mixed_p1.0/lpopl_dsac/map17/0/alpha=0.03/"
+    matcher = KNNMatcher()
     matcher.load(path, 0)
-    print(matcher.predict([3.5, 3.5, 60]))
+    point = np.array([3.5, 3.5, 60])
+    for i in range(10000):
+        matcher.predict(point)
 
 if __name__ == "__main__":
-    test_load_knn()
+    # test_load_knn()
+    cProfile.run("test_load_knn()", filename="transfer_prof2.prof")
     print("Done!")

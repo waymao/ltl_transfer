@@ -9,7 +9,7 @@ from tianshou.policy import BasePolicy, DiscreteSACPolicy
 from tianshou.policy import PPOPolicy, DiscreteSACPolicy, TD3Policy
 
 from utils.print_ltl import ltl_to_print
-from classifiers import Classifier, NaiveMatcher
+from classifiers import Classifier, RadiusMatcher, KNNMatcher, NNClassifier
 from tianshou.utils.net.discrete import Actor, Critic
 from torch_policies.network import get_CNN_preprocess
 from torch.optim import Adam
@@ -134,7 +134,13 @@ def load_ts_policy_bank(
         # loading the classifier
         try:
             if load_classifier == "knn":
-                classifier = NaiveMatcher()
+                classifier = KNNMatcher()
+                classifier.load(policy_bank_path, id)
+            elif load_classifier == "radius":
+                classifier = RadiusMatcher()
+                classifier.load(policy_bank_path, id)
+            elif load_classifier == "nn":
+                classifier = NNClassifier()
                 classifier.load(policy_bank_path, id)
             else:
                 classifier = None
@@ -189,7 +195,7 @@ def save_individual_policy(
 ########################## TESTING ##########################
 def test_load_knn_pb():
     path = "/home/wyc/data/shared/ltl-transfer-ts/results/miniworld_simp_no_vis_minecraft/mixed_p1.0/lpopl_dsac/map13/0/alpha=0.03/"
-    matcher = NaiveMatcher()
+    matcher = RadiusMatcher()
     matcher.load(path, 0)
     return load_ts_policy_bank(path, 4, 22)
 
