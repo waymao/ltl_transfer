@@ -19,16 +19,19 @@ print("Renderer Vendor:", ctypes.string_at(glGetString(GL_VENDOR)).decode())
 print("Renderer Hardware:", ctypes.string_at(glGetString(GL_RENDERER)).decode())
 
 def mat_to_opengl(i, j, num_rows, offset=0.5):
-    i = float(i)
-    j = float(j)
-    offset *= BLOCK_SCALE
-    return (j * BLOCK_SCALE + offset, i * BLOCK_SCALE + offset)
+    return xy_to_opengl(j, i, num_rows, offset=offset)
 
-def opengl_to_2dcoord(coord, offset=0.5):
+def xy_to_opengl(x, y, num_rows, offset=0.5):
+    x = float(x)
+    y = float(y)
+    offset *= BLOCK_SCALE
+    return (x * BLOCK_SCALE + offset, y * BLOCK_SCALE + offset)
+
+def opengl_to_xy(coord, offset=0.5):
     # for loging TODO correct the errors
     x, _, y = coord
     offset *= BLOCK_SCALE
-    return (x / BLOCK_SCALE - offset, y / BLOCK_SCALE - offset)
+    return ((x - offset) / BLOCK_SCALE, (y - offset) / BLOCK_SCALE)
 
 def get_map_size(map_mat):
     width = 0
@@ -218,9 +221,9 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
             pos = None
             angle = None
             if self.custom_params.init_loc is not None:
-                i, j = self.custom_params.init_loc
-                x, z = mat_to_opengl(i, j, num_rows=self.size)
-                pos = [x, 0.0, z]
+                x_input, y_input = self.custom_params.init_loc
+                x_opengl, z_opengl = xy_to_opengl(x_input, y_input, num_rows=self.size)
+                pos = [x_opengl, 0.0, z_opengl]
             if self.custom_params.init_angle is not None:
                 angle = self.custom_params.init_angle / 180 * np.pi
             self.place_entity(ent=self.agent, pos=pos, dir=angle)
@@ -250,7 +253,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
     @property
     def curr_state(self):
         agent_loc = self.agent.pos # for transfer
-        agent_loc = opengl_to_2dcoord(agent_loc)
+        agent_loc = opengl_to_xy(agent_loc)
         agent_angle = self.agent.dir / np.pi * 180
         return *agent_loc, agent_angle % 360
     
@@ -265,7 +268,7 @@ class NavigateEnv(MiniWorldEnv, utils.EzPickle):
         # obs = np.transpose(obs, (2, 0, 1))
 
         agent_loc = self.agent.pos # for transfer
-        agent_loc = opengl_to_2dcoord(agent_loc)
+        agent_loc = opengl_to_xy(agent_loc)
         info = {
             "agent_init_loc": (agent_loc[0], agent_loc[1]),
             "map_size": (self.max_x, self.max_z),
