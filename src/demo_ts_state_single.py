@@ -40,6 +40,7 @@ if __name__ == "__main__":
                         help='Location of the bank and the learning parameters.')
     parser.add_argument('--ltl_id', type=int, required=True, help='Policy ID to demo')
     parser.add_argument('--no_deterministic_eval', action="store_true", help='Whether to run deterministic evaluation or not.')
+    parser.add_argument('--init_state', type=str, help='Initial state of the agent', required=False, default=None)
 
     args = parser.parse_args()
     # if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")
@@ -50,11 +51,15 @@ if __name__ == "__main__":
     # Running the experiment
     tasks_id = 0
     map_id = args.map
+    
+    # enable rendering
+    if args.game_name == "miniworld_no_vis":
+        save_game_name = "miniworld_simp_no_vis"
 
     # learning params
     learning_params = get_learning_parameters(
         policy_name=args.rl_algo, 
-        game_name=args.game_name,
+        game_name=save_game_name,
         **{
             key.removeprefix(LEARNING_ARGS_PREFIX): val 
             for (key, val) in args._get_kwargs() 
@@ -64,11 +69,15 @@ if __name__ == "__main__":
     testing_params = TestingParameters(custom_metric_folder=args.run_subfolder)
     print("Initialized Learning Params:", learning_params)
 
-    train_envs, test_envs = generate_envs(prob=args.prob,game_name=args.game_name, parallel=PARALLEL_TRAIN, map_id=map_id, seed=args.run_id)
+    train_envs, test_envs = generate_envs(
+        prob=args.prob,game_name=args.game_name, 
+        parallel=PARALLEL_TRAIN, map_id=map_id, seed=args.run_id,
+        no_info=False
+    )
 
     # path for logger
     tb_log_path = os.path.join(
-        args.save_dpath, "results", f"{args.game_name}_{args.domain_name}", f"{args.train_type}_p{args.prob}", 
+        args.save_dpath, "results", f"{save_game_name}_{args.domain_name}", f"{args.train_type}_p{args.prob}", 
         f"{args.algo}_{args.rl_algo}", f"map{map_id}", str(args.run_id), 
         f"alpha={'auto' if learning_params.auto_alpha else learning_params.alpha}",
     ) if args.run_prefix is None else args.run_prefix
@@ -135,14 +144,18 @@ if __name__ == "__main__":
     # collect and rollout
     #uncomment for the coordinates
     # for x in range(2, 10, 0.1):
+    if args.init_state is not None: 
+        if "miniworld" in args.game_name:
+            task_params.init_loc = map(float, args.init_state.split(",")[:2])
+            task_params.init_angle = float(args.init_state.split(",")[2])
     for x in range(1000):
-        # uncomment for a specific location
-        # task_params.init_loc = [x, 5.0]
         obs, info = test_envs.reset(options=dict(task_params=task_params))
+        print(args.init_state, info[0]['loc'])
         test_envs.render()
         for i in range(200):
             a = policy.forward(Batch(obs=obs, info=info)).act
             obs, reward, term, trunc, info = test_envs.step(a.numpy())
             test_envs.render()
             if term or trunc:
+                print("Finished. info:", info)
                 break
