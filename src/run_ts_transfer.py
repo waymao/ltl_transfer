@@ -270,6 +270,7 @@ def run_experiment():
                 run_info["result"].append(result)
                 break
     print("Done! Success Rate:", succ_count / args.num_epi)
+    run_info['success_rate'] = succ_count / args.num_epi
 
     save_folder = os.path.join(tb_log_path, "transfer_results")
     os.makedirs(save_folder, exist_ok=True)
