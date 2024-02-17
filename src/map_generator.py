@@ -78,7 +78,7 @@ def getAdversarialMaps(conf_params, num_adv_maps, num_eval_maps):
 
 def createMap(conf_params, seed, show):
     # configuration parameters
-    map_width, map_height, resources, fancy_resources, workstations, num_resource_per_type, num_fancy_resources_per_type, num_workstations_per_type, shelter_locations, tasks = conf_params
+    map_width, map_height, resources, fancy_resources, workstations, num_resource_per_type, num_fancy_resources_per_type, num_workstations_per_type, shelter_locations = conf_params
     random.seed(seed)
 
     # Creating a new map layout
@@ -108,30 +108,33 @@ def createMap(conf_params, seed, show):
             print("".join(row))
 
         # computing optimal policies for the three set of tasks (in number of steps)
-        print("Computing optimal policies using Value Iteration...")
-        evaluate_optimal_policy(map, agent_i, agent_j, False, get_sequence_of_subtasks(), 1)
-        evaluate_optimal_policy(map, agent_i, agent_j, False, get_interleaving_subtasks(), 2)
-        evaluate_optimal_policy(map, agent_i, agent_j, True, get_safety_constraints(), 3)
+        # print("Computing optimal policies using Value Iteration...")
+        # evaluate_optimal_policy(map, agent_i, agent_j, False, get_sequence_of_subtasks(), 1)
+        # evaluate_optimal_policy(map, agent_i, agent_j, False, get_interleaving_subtasks(), 2)
+        # evaluate_optimal_policy(map, agent_i, agent_j, True, get_safety_constraints(), 3)
 
     # Computing optimal and myopic optimals for each task
-    return computeOptimalSolutions(map, tasks)
+    # return computeOptimalSolutions(map, tasks)
+    return
 
 
 if __name__ == '__main__':
     # configuration parameters for creating a map
-    map_width  = 50
-    map_height = 50
-    resources = 'adf'
-    fancy_resources = 'gh'
+    map_width  = 15
+    map_height = 15
+    resources = 'ad'
+    fancy_resources = 'g'
     workstations = 'bce'
-    num_resource_per_type = 5
-    num_fancy_resources_per_type = 2
+    num_resource_per_type = 3
+    num_fancy_resources_per_type = 1
     num_workstations_per_type = 2
     shelter_locations = []
     # shelter_locations = [(i, j) for i in range(8, 13) for j in range(11, 20)]
     # NOTE: the map's difficulty is measure by the difference between the reward obtained by an optimal myopic policy vs a globally optimal policy (over the sequential tasks)
-    tasks = ["ab", "ac", "de", "db", "fae", "abdc", "acfb", "acfc", "faeg", "acfbh"]
-    conf_params = map_width, map_height, resources, fancy_resources, workstations, num_resource_per_type, num_fancy_resources_per_type, num_workstations_per_type, shelter_locations, tasks
+    # tasks = ["ab", "ac", "de", "db", "fae", "abdc", "acfb", "acfc", "faeg", "acfbh"]
+    conf_params = map_width, map_height, resources, \
+        fancy_resources, workstations, num_resource_per_type, \
+            num_fancy_resources_per_type, num_workstations_per_type, shelter_locations
 
     # EXAMPLE 1 (create a map):
     #    python3 map_generator.py --create_map --seed=0
@@ -150,10 +153,10 @@ if __name__ == '__main__':
 
     if args.create_map:
         # Creating a new map
-        print('Map computed using seed '+str(args.seed)+'...')
+        # print('Map computed using seed '+str(args.seed)+'...')
         createMap(conf_params, args.seed, show=True)
 
-    if args.adversarial:
-        # Collecting seeds for adversarial maps
-        print('Searching for adversarial maps...')
-        getAdversarialMaps(conf_params, args.num_adv_maps, args.num_eval_maps)
+    # if args.adversarial:
+    #     # Collecting seeds for adversarial maps
+    #     print('Searching for adversarial maps...')
+    #     getAdversarialMaps(conf_params, args.num_adv_maps, args.num_eval_maps)
