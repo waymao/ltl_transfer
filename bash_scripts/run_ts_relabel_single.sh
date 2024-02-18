@@ -18,22 +18,33 @@ map=13
 train_size=50
 train_type="mixed"
 
+rollout_method="random"
+
 # domain name
 prob=1.0
 domain_name="spot"
 game_name="miniworld_simp_no_vis"
 alpha=0.03
 
+map=21
+run_id=42
+
+######### PREDEFINED ARRAYS #########
 # run id array
 # run_id=`expr $SLURM_ARRAY_TASK_ID / 460`
-# map=21
 
 # map array
-map=`expr $SLURM_ARRAY_TASK_ID / 460 + 21`
-run_id=42
+# map=`expr $SLURM_ARRAY_TASK_ID / 460 + 21`
+
+# relabel method
+k=`expr $SLURM_ARRAY_TASK_ID / 460`
+relabel_methods=( "random" "uniform" )
+relabel_method=${relabel_methods[$k]}
 
 # ltl id
 ltl_id=`expr $SLURM_ARRAY_TASK_ID % 460`
+######### END PREDEFINED ARRAYS #########
+
 
 source /users/ywei75/.bashrc
 conda activate ltl
