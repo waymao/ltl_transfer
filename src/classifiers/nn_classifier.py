@@ -103,8 +103,8 @@ class NNClassifier(Classifier):
             self.len_model.load_state_dict(state_dict["len_model"])
 
 
-    def load_raw_data(self, path, id):
-        file_path = f"{path}/classifier/policy{id}_status.json.gz"
+    def load_raw_data(self, path, id, rollout_method="random"):
+        file_path = f"{path}/classifier/policy{id}_{rollout_method}_rollout.json.gz"
         with gzip.open(file_path, 'rt', encoding='UTF-8') as f:
             data: Mapping[str, dict] = json.load(f)
 

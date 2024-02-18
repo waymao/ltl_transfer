@@ -57,6 +57,7 @@ def run_experiment():
     parser.add_argument('--render', action="store_true", help='Whether to run rendering.')
     parser.add_argument('--verbose', '-v', action="store_true", help='Whether to print debug info.')
     parser.add_argument('--num_epi', default=100, type=int, help="Number of Episodes to Run.")
+    parser.add_argument('--init_set_classifier', default="random_knn", type=str, help="Initial set classifier to use.")
 
     args = parser.parse_args()
     # if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")
@@ -65,21 +66,7 @@ def run_experiment():
     # if not(-2 <= args.map < 20): raise NotImplementedError("The map must be a number between -1 and 9")
 
     # Running the experiment
-    tasks_id = 0
     map_id = args.map
-
-    # learning params
-    learning_params = get_learning_parameters(
-        policy_name=args.rl_algo, 
-        game_name=args.game_name,
-        **{
-            key.removeprefix(LEARNING_ARGS_PREFIX): val 
-            for (key, val) in args._get_kwargs() 
-            if key.startswith(LEARNING_ARGS_PREFIX)
-        }
-    )
-    testing_params = TestingParameters(custom_metric_folder=args.run_subfolder)
-    print("Initialized Learning Params:", learning_params)
 
     train_envs, test_envs = generate_envs(prob=args.prob,
         game_name=args.game_name, 
@@ -91,7 +78,6 @@ def run_experiment():
         max_episode_steps=9000
     )
     
-    
 
     # tester
     task_loader = TaskLoader(args)
@@ -100,6 +86,8 @@ def run_experiment():
     # load the proper lp
     with open(os.path.join(task_loader.get_save_path(), "learning_params.pkl"), "rb") as f:
         learning_params = pickle.load(f)
+    print("Initialized Learning Params:", learning_params)
+
 
     # sampler
     env_size = test_envs.get_env_attr("size", 0)[0]
@@ -116,6 +104,7 @@ def run_experiment():
         hidden_layers=[256, 256, 256],
         learning_params=learning_params,
         device=device,
+        load_classifier=args.init_set_classifier,
         verbose=True
     )
     tasks = task_loader.get_LTL_tasks()

@@ -137,7 +137,7 @@ def load_ts_policy_bank(
     num_features: int, 
     hidden_layers: List[int] = [256, 256, 256],
     learning_params: LearningParameters = get_learning_parameters("dsac", "miniworld_no_vis"),
-    load_classifier="knn",
+    load_classifier="knn_random",
     device="cpu",
     verbose=False
 ) -> TianshouPolicyBank:
@@ -160,19 +160,29 @@ def load_ts_policy_bank(
         
         # loading the classifier
         try:
-            if load_classifier == "knn":
-                classifier = KNNMatcher()
-                classifier.load(policy_bank_path, id)
-            elif load_classifier == "radius":
-                classifier = RadiusMatcher()
-                classifier.load(policy_bank_path, id)
-            elif load_classifier == "nn":
-                classifier = NNClassifier()
-                classifier.load(policy_bank_path, id)
+            if load_classifier is not None:
+                classifier_name = load_classifier.split('_')
+                if classifier_name[0] == "knn" or classifier_name[0] == "radius":
+                    # direct data-match classifier
+                    if classifier_name == "knn":
+                        classifier = KNNMatcher()
+                    else:
+                        classifier = RadiusMatcher()
+                    if load_classifier == "knn_uniform":
+                        classifier.load(policy_bank_path, id, "uniform")
+                    else:
+                        classifier.load(policy_bank_path, id)
+                elif load_classifier == "nn":
+                    # neural network prediction
+                    classifier = NNClassifier()
+                    classifier.load(policy_bank_path, id)
+                else:
+                    classifier = None
             else:
                 classifier = None
-        except:
-            print("unable to load classifier for policy ", id, file=sys.stderr)
+        except Exception as e:
+            print("Unable to load classifier for policy ", id, file=sys.stderr)
+            print("   Error:", e, file=sys.stderr)
             classifier = None
         
         policy_bank.add_LTL_policy(ltl, policy, classifier)

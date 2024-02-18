@@ -59,8 +59,8 @@ class RadiusMatcher(Classifier):
         locs = all_point_loc[best_items_index] # N x dim
         return self.group_gather_data(list(locs))
 
-    def load(self, path, id):
-        file_path = f"{path}/classifier/policy{id}_status.json.gz"
+    def load(self, path, id, rollout_method="random"):
+        file_path = f"{path}/classifier/policy{id}_{rollout_method}_rollout.json.gz"
         with gzip.open(file_path, 'rt', encoding='UTF-8') as f:
             data: Mapping[str, dict] = json.load(f)
         # post-process data

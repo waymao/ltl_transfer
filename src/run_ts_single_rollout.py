@@ -95,7 +95,7 @@ if __name__ == "__main__":
     if args.rollout_method == "uniform":
         space_iter = BoxSpaceIterator(state_space, interval=[.5, .5, 45])
     elif args.rollout_method == "random":
-        space_iter = RandomIterator(state_space, num_samples=500)
+        space_iter = RandomIterator(state_space, num_samples=1000)
     else:
         raise NotImplementedError("Rollout method " + str(args.rollout_method) + " not implemented.")
 
@@ -124,7 +124,11 @@ if __name__ == "__main__":
 
     # collect and rollout
     results = {}
-    outfile = os.path.join(task_loader.get_save_path(), "classifier", f"policy{args.ltl_id}_status.json.gz")
+    outfile = os.path.join(
+        task_loader.get_save_path(), 
+        "classifier", 
+        f"policy{args.ltl_id}_{args.rollout_method}_rollout.json.gz"
+    )
     
     # clear output file
     os.makedirs(os.path.join(task_loader.get_save_path(), "classifier"), exist_ok=True)

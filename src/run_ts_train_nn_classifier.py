@@ -31,6 +31,7 @@ if __name__ == "__main__":
     LEARNING_ARGS_PREFIX = "lp."
     add_fields_to_parser(parser, LearningParameters, prefix=LEARNING_ARGS_PREFIX)
     parser.add_argument("--resume_from", default=0, type=int, help="Resume from a specific policy ID.")
+    parser.add_argument("--rollout_method", default="random", type=str, help="Resume from a specific policy ID.")
 
     args = parser.parse_args()
 
@@ -49,7 +50,7 @@ if __name__ == "__main__":
         print(f"Running training for {i}")
         classifier = NNClassifier()
         try:
-            classifier.load_raw_data(task_loader.get_save_path(), i)
+            classifier.load_raw_data(task_loader.get_save_path(), i, args.rollout_method)
             classifier.train(verbose=False)
             classifier.save(task_loader.get_save_path(), i)
         except Exception as e:
