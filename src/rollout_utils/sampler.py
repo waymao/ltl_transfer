@@ -47,7 +47,7 @@ class RandomIterator:
         self.count += 1
         if self.count > self.num_samples:
             raise StopIteration
-        return self.space.sample()
+        return None
 
     def __len__(self):
         return self.num_samples

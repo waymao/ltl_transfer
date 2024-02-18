@@ -9,7 +9,7 @@ from ts_utils.ts_argparse import add_parser_cmds
 # %%
 from ts_utils.ts_envs import generate_envs
 
-from test_utils import Tester, TestingParameters
+from test_utils import TaskLoader, TestingParameters
 
 import argparse
 import pickle
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     )
 
     # tester
-    tester = Tester(
+    tester = TaskLoader(
         learning_params=learning_params, 
         testing_params=testing_params,
         map_id=args.map,

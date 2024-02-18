@@ -10,10 +10,6 @@ from envs.miniworld.params import GameParams as MiniWorldGameParams
 from exp_dataset_creator import read_train_test_formulas
 from torch.utils.tensorboard import SummaryWriter
 import ltl.tasks as tasks
-from tqdm import tqdm
-import h5py
-
-from utils.replay_buffer import ReplayBuffer
 
 
 class TestingParameters:
@@ -36,90 +32,87 @@ class TestingParameters:
         self.custom_metric_folder = custom_metric_folder
 
 
-class Tester:
+class TaskLoader:
     def __init__(self, 
-                 learning_params, testing_params, 
-                 map_id, prob, tasks_id, 
-                 dataset_name, train_type, 
-                 train_size, test_type, 
-                 edge_matcher, rl_algo, 
-                 save_dpath, game_name="grid", logger=None, file_results=None
+                 args, create_logger=False
         ):
         # setting the test attributes
-        self.learning_params = learning_params
-        self.testing_params = testing_params
-        self.map_id = map_id
-        self.transition_type = "deterministic" if prob == 1.0 else "stochastic"
-        self.prob = prob
-        self.tasks_id = tasks_id
-        self.dataset_name = dataset_name
-        self.train_type = train_type
-        self.train_size = train_size
-        self.test_type = test_type
-        self.edge_matcher = edge_matcher
-        self.save_dpath = save_dpath
-        self.experiment = f"{train_type}/map_{map_id}"
-        self.game_name = game_name
-        if map_id == -2:
+        self.map_id = args.map
+        self.transition_type = "deterministic" if args.prob == 1.0 else "stochastic"
+        self.prob = args.prob
+        self.dataset_name = args.domain_name
+        self.train_type = args.train_type
+        self.train_size = args.train_size
+        self.test_type = args.test_type
+        self.edge_matcher = args.edge_matcher
+        self.save_dpath = args.save_dpath
+        self.experiment = f"{self.train_type}/map_{self.map_id}"
+        self.game_name = args.game_name
+        if self.map_id == -2:
             self.map = None
         else:
-            self.map = f"{save_dpath}/experiments/maps/map_{map_id}.txt"
+            self.map = f"{self.save_dpath}/experiments/maps/map_{self.map_id}.txt"
         self.consider_night = False
-        self.rl_algo = rl_algo
+        self.rl_algo = args.rl_algo
 
+        results_path = os.path.join(self.save_dpath, "saves", args.rl_algo)
 
-        results_path = os.path.join(save_dpath, "results", rl_algo)
-        results_mixed_path = os.path.join(save_dpath, "results_icra24", rl_algo)
-        results_test_path = os.path.join("..", "results_test", rl_algo)
-
-        self.tb_log_path = os.path.join(
-            args.save_dpath, "results", 
+        # get the base run path
+        self.log_path = os.path.join(
+            results_path,
             f"{args.game_name}_{args.domain_name}_p{args.prob}", 
             f"{args.train_type}_{args.train_size}", 
             f"{args.rl_algo}", 
-            f"map{map_id}", str(args.run_id), 
-            f"alpha={'auto' if learning_params.auto_alpha else learning_params.alpha}",
+            f"map{self.map_id}", str(args.run_id), 
         )
+        if args.run_subfolder is not None:
+            self.log_path = os.path.join(self.log_path, args.run_subfolder)
 
-        self.logger: SummaryWriter = logger
+        # logger
+        if create_logger:
+            from tianshou.utils.logger.tensorboard import TensorboardLogger
+            self.writer = SummaryWriter(log_dir=os.path.join(self.log_path, "logs", f"policy_{args.ltl_id}"))
+            self.logger = TensorboardLogger(self.writer)
+        else:
+            self.logger = None
+            self.writer = None
 
-        if train_type == "sequence":
+        # loading tasks
+        if self.train_type == "sequence":
             # original LPOPL code, testing use only
-            self.experiment = f"{train_type}/map_{map_id}/prob_{self.prob}"
-            self.experiment_train = f"{train_type}/map_{map_id}/prob_{self.prob}"
             self.tasks = tasks.get_sequence_of_subtasks()
-        elif train_type == "test_until":
+        elif self.train_type == "test_until":
             # testing use only
-            self.experiment = f"{train_type}/map_{map_id}/prob_{self.prob}"
-            self.experiment_train = f"{train_type}/map_{map_id}/prob_{self.prob}"
             self.tasks = tasks.get_sequence_of_until()
         # elif train_type == "interleaving":
         #     self.tasks = tasks.get_interleaving_subtasks()
         # elif train_type == "safety":
         #     self.tasks = tasks.get_safety_constraints()
         #     self.consider_night = True
-        elif train_type == 'random':
-            self.experiment = f"{train_type}/map_{map_id}/prob_{self.prob}"
-            self.experiment_train = f"{train_type}/map_{map_id}/prob_{self.prob}"
-            train_tasks, self.transfer_tasks = read_train_test_formulas(dataset_name, 'hard', test_type, train_size)
-            self.tasks = train_tasks[0: train_size]
+        elif self.train_type == 'random':
+            train_tasks, self.transfer_tasks = read_train_test_formulas(self.dataset_name, 'hard', self.test_type, self.train_size)
+            self.tasks = train_tasks[0: self.train_size]
         else:  # transfer tasks
-            if train_type == 'transfer_sequence':
+            if self.train_type == 'transfer_sequence':
                 self.tasks = tasks.get_sequence_training_tasks()
                 self.transfer_tasks = tasks.get_transfer_tasks()
-                self.transfer_results_dpath = os.path.join(results_path, train_type, f"map_{map_id}", f"prob_{self.prob}")
-            elif train_type == 'transfer_interleaving':
+                self.transfer_results_dpath = os.path.join(results_path, self.train_type, f"map_{self.map_id}", f"prob_{self.prob}")
+            elif self.train_type == 'transfer_interleaving':
                 self.tasks = tasks.get_interleaving_training_tasks()
                 self.transfer_tasks = tasks.get_transfer_tasks()
-                self.transfer_results_dpath = os.path.join(results_path, train_type, f"map_{map_id}", f"prob_{self.prob}")
+                self.transfer_results_dpath = os.path.join(results_path, self.train_type, f"map_{self.map_id}", f"prob_{self.prob}")
             else:
-                self.experiment = f"{train_type}_{train_size}/map_{map_id}/prob_{self.prob}"
-                self.experiment_train = f"{train_type}_50/map_{map_id}/prob_{self.prob}"
-                train_tasks, self.transfer_tasks = read_train_test_formulas(save_dpath, dataset_name, train_type, test_type, train_size)
-                self.tasks = train_tasks[0: train_size]
+                self.experiment = f"{self.train_type}_{self.train_size}/map_{self.map_id}/prob_{self.prob}"
+                self.experiment_train = f"{self.train_type}_50/map_{self.map_id}/prob_{self.prob}"
+                train_tasks, self.transfer_tasks = read_train_test_formulas(
+                    self.save_dpath, self.dataset_name, self.train_type, self.test_type, self.train_size)
+                self.tasks = train_tasks[0: self.train_size]
 
         # load pre-computed optimal steps for 'task_type' in 'map_id'
         # optimal_aux = _get_optimal_values(f'{save_dpath}/experiments/optimal_policies/map_{map_id}.txt', tasks_id)
+    
+    def get_save_path(self):
+        return self.log_path
 
     def get_LTL_tasks(self):
         return self.tasks

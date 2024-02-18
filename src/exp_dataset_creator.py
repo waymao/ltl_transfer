@@ -12,7 +12,7 @@ from ltl.formula_sampler import sample_formula
 
 ENV2PROPS = {
     "minecraft": ('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 's'),
-    "spot": ('a', 'b', 'c', 'd', 'e', 'f', 'g')
+    "spot": ('a', 'b', 'c', 'd', 'e', 'f')
     # "spot": ('a', 'b', 'c', 'd', 'j', 'p')
 }
 SET_TYPES = ('hard', 'soft', 'soft_strict', 'no_orders', 'mixed')

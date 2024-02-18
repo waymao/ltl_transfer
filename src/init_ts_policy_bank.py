@@ -15,7 +15,7 @@ import torch
 from torch import nn
 import numpy as np
 
-from test_utils import Tester, TestingParameters
+from test_utils import TaskLoader, TestingParameters
 
 import time
 import argparse
@@ -66,37 +66,14 @@ if __name__ == "__main__":
 
     train_envs, test_envs = generate_envs(prob=args.prob,game_name=args.game_name, parallel=PARALLEL_TRAIN, map_id=map_id, seed=args.run_id)
 
-    # logger
-    tb_log_path = os.path.join(
-        args.save_dpath, "results", f"{args.game_name}_{args.domain_name}", f"{args.train_type}_p{args.prob}", 
-        f"{args.algo}_{args.rl_algo}", f"map{map_id}", str(args.run_id), 
-        f"alpha={'auto' if learning_params.auto_alpha else learning_params.alpha}",
-    )
-    if testing_params.custom_metric_folder is not None:
-        tb_log_path = os.path.join(tb_log_path, testing_params.custom_metric_folder)
-    # writer = SummaryWriter(log_dir=tb_log_path)
-    # logger = TensorboardLogger(writer)
-    os.makedirs(tb_log_path, exist_ok=True)
-    with open(os.path.join(tb_log_path, "learning_params.pkl"), "wb") as f:
+    task_loader = TaskLoader(args)
+
+    os.makedirs(task_loader.get_save_path(), exist_ok=True)
+    with open(os.path.join(task_loader.get_save_path(), "learning_params.pkl"), "wb") as f:
         pickle.dump(learning_params, f)
 
     # tester
-    tester = Tester(
-        learning_params=learning_params, 
-        testing_params=testing_params,
-        map_id=args.map,
-        prob=map_id,
-        train_size=args.train_size,
-        rl_algo=args.rl_algo,
-        tasks_id=tasks_id,
-        dataset_name=args.domain_name,
-        train_type=args.train_type,
-        test_type=args.test_type,
-        edge_matcher=args.edge_matcher, 
-        save_dpath=args.save_dpath,
-        game_name=args.game_name,
-        logger=None
-    )
+    tester = TaskLoader(args)
     tasks = tester.tasks
 
     # initalize policy bank
@@ -125,16 +102,16 @@ if __name__ == "__main__":
 
     # save policy bank
     print("Created bank with {} policies.".format(len(policy_bank.policies)))
-    policy_bank.save_pb_index(tb_log_path)
-    policy_bank.save_ckpt(tb_log_path)
-    print("Saved bank to", tb_log_path)
+    policy_bank.save_pb_index(task_loader.get_save_path())
+    policy_bank.save_ckpt(task_loader.get_save_path())
+    print("Saved bank to", task_loader.get_save_path())
 
 
     # sanity check
     # load policy bank
     print("Running Sanity Check, Loading Policy Bank.")
     policy_bank = load_ts_policy_bank(
-        tb_log_path,
+        task_loader.get_save_path(),
         num_actions=test_envs.action_space[0].n,
         num_features=test_envs.observation_space[0].shape[0],
         learning_params=learning_params,
@@ -142,5 +119,5 @@ if __name__ == "__main__":
         device=device
     )
     print("Successfully loaded policy bank. Sanity Check Complete.")
-    print("Policy Bank saved at:", tb_log_path)
+    print("Policy Bank saved at:", task_loader.get_save_path())
 

@@ -12,7 +12,7 @@ from ts_utils.ts_argparse import add_parser_cmds
 from tianshou.trainer import OffpolicyTrainer
 from tianshou.data import Collector, VectorReplayBuffer
 
-from test_utils import Tester, TestingParameters
+from test_utils import TaskLoader, TestingParameters
 
 import time
 import argparse
@@ -65,55 +65,26 @@ if __name__ == "__main__":
 
     train_envs, test_envs = generate_envs(prob=args.prob,game_name=args.game_name, parallel=PARALLEL_TRAIN, map_id=map_id, seed=args.run_id)
 
-    # path for logger
-    tb_log_path = os.path.join(
-        args.save_dpath, "results", f"{args.game_name}_{args.domain_name}", f"{args.train_type}_p{args.prob}", 
-        f"{args.algo}_{args.rl_algo}", f"map{map_id}", str(args.run_id), 
-        f"alpha={'auto' if learning_params.auto_alpha else learning_params.alpha}",
-    )
-    if testing_params.custom_metric_folder is not None:
-        tb_log_path = os.path.join(tb_log_path, testing_params.custom_metric_folder)
     
+    # loading tasks
+    task_loader = TaskLoader(args, create_logger=True)
+    tasks = task_loader.tasks
+    logger = task_loader.logger
+    writer = task_loader.writer
+
     # load the proper lp
-    with open(os.path.join(tb_log_path, "learning_params.pkl"), "rb") as f:
+    with open(os.path.join(task_loader.get_save_path(), "learning_params.pkl"), "rb") as f:
         learning_params = pickle.load(f)
-    
-    # logger
-    writer = SummaryWriter(log_dir=os.path.join(tb_log_path, "logs", f"policy_{args.ltl_id}"))
-    logger = TensorboardLogger(writer)
-
-    # dump lp again
-    # with open(os.path.join(tb_log_path, "learning_params.pkl"), "wb") as f:
-    #     pickle.dump(learning_params, f)
-
-    # tester
-    tester = Tester(
-        learning_params=learning_params, 
-        testing_params=testing_params,
-        map_id=args.map,
-        prob=map_id,
-        train_size=args.train_size,
-        rl_algo=args.rl_algo,
-        tasks_id=tasks_id,
-        dataset_name=args.domain_name,
-        train_type=args.train_type,
-        test_type=args.test_type,
-        edge_matcher=args.edge_matcher, 
-        save_dpath=args.save_dpath,
-        game_name=args.game_name,
-        logger=logger
-    )
-    tasks = tester.tasks
 
     # run training
     global_time_steps = 0
-    with open(os.path.join(tb_log_path, "logs", f"policy{args.ltl_id}_status.txt"), "w") as f:
+    with open(os.path.join(task_loader.get_save_path(), "logs", f"policy{args.ltl_id}_status.txt"), "w") as f:
         f.write(f"{time.time()},started\n")
     train_buffer = VectorReplayBuffer(int(1e6), buffer_num=NUM_PARALLEL_JOBS if PARALLEL_TRAIN else 1)
 
     policy_id = args.ltl_id
     policy, ltl = load_individual_policy(
-        tb_log_path, policy_id, 
+        task_loader.get_save_path(), policy_id, 
         num_actions=test_envs.action_space[0].n, 
         num_features=test_envs.observation_space[0].shape[0], 
         learning_params=learning_params, 
@@ -123,7 +94,7 @@ if __name__ == "__main__":
     writer.add_text("task", str(ltl))
     
     # reset with the correct ltl
-    task_params = tester.get_task_params(ltl)
+    task_params = task_loader.get_task_params(ltl)
     train_envs.reset(options=dict(task_params=task_params))
     test_envs.reset(options=dict(task_params=task_params))
     print(f"Training Sub-Task {policy_id}:", ltl)
@@ -147,8 +118,8 @@ if __name__ == "__main__":
         logger=logger,
         test_in_train=False,
         stop_fn=lambda rew: rew >= 9.5, # mean test reward,
-        save_best_fn=lambda x: save_individual_policy(tb_log_path, policy_id, ltl, policy),
-        # save_checkpoint_fn=lambda epoch, env_step, grad_step: save_individual_policy(tb_log_path, policy_id, ltl, policy)
+        save_best_fn=lambda x: save_individual_policy(task_loader.get_save_path(), policy_id, ltl, policy),
+        # save_checkpoint_fn=lambda epoch, env_step, grad_step: save_individual_policy(task_loader.get_save_path(), policy_id, ltl, policy)
         show_progress=("SLURM_JOB_ID" not in os.environ)
     )
 
@@ -157,5 +128,5 @@ if __name__ == "__main__":
 
     print("Done! Final Training Result:")
     print(train_result)
-    with open(os.path.join(tb_log_path, "logs", f"policy{args.ltl_id}_status.txt"), "a") as f:
+    with open(os.path.join(task_loader.get_save_path(), "logs", f"policy{args.ltl_id}_status.txt"), "a") as f:
         f.write(f"{time.time()},done\n")

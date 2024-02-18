@@ -16,7 +16,7 @@ import gzip
 from tianshou.data import Batch
 import numpy as np
 
-from test_utils import Tester, TestingParameters
+from test_utils import TaskLoader, TestingParameters
 
 import time
 import argparse
@@ -62,18 +62,8 @@ if __name__ == "__main__":
     tasks_id = 0
     map_id = args.map
 
-    # learning params
-    learning_params = get_learning_parameters(
-        policy_name=args.rl_algo, 
-        game_name=args.game_name,
-        **{
-            key.removeprefix(LEARNING_ARGS_PREFIX): val 
-            for (key, val) in args._get_kwargs() 
-            if key.startswith(LEARNING_ARGS_PREFIX)
-        }
-    )
+    task_loader = TaskLoader(args)
     testing_params = TestingParameters(custom_metric_folder=args.run_subfolder)
-    print("Initialized Learning Params:", learning_params)
 
     train_envs, test_envs = generate_envs(prob=args.prob,
         game_name=args.game_name, 
@@ -82,45 +72,18 @@ if __name__ == "__main__":
         seed=args.run_id,
         no_info=False
     )
-
-    # path for logger
-    tb_log_path = os.path.join(
-        args.save_dpath, "results", f"{args.game_name}_{args.domain_name}", f"{args.train_type}_p{args.prob}", 
-        f"{args.algo}_{args.rl_algo}", f"map{map_id}", str(args.run_id), 
-        f"alpha={'auto' if learning_params.auto_alpha else learning_params.alpha}",
-    ) if args.run_prefix is None else args.run_prefix
-    if testing_params.custom_metric_folder is not None:
-        tb_log_path = os.path.join(tb_log_path, testing_params.custom_metric_folder)
     
     # load the proper lp
-    with open(os.path.join(tb_log_path, "learning_params.pkl"), "rb") as f:
+    with open(os.path.join(task_loader.get_save_path(), "learning_params.pkl"), "rb") as f:
         learning_params = pickle.load(f)
+    print("Initialized Learning Params:", learning_params)
     
     # logger
-    writer = SummaryWriter(log_dir=os.path.join(tb_log_path, "logs", f"policy_{args.ltl_id}"))
-    logger = TensorboardLogger(writer)
-
-    # dump lp again
-    # with open(os.path.join(tb_log_path, "learning_params.pkl"), "wb") as f:
-    #     pickle.dump(learning_params, f)
+    writer = task_loader.writer
+    logger = task_loader.logger
 
     # tester
-    tester = Tester(
-        learning_params=learning_params, 
-        testing_params=testing_params,
-        map_id=args.map,
-        prob=map_id,
-        train_size=args.train_size,
-        rl_algo=args.rl_algo,
-        tasks_id=tasks_id,
-        dataset_name=args.domain_name,
-        train_type=args.train_type,
-        test_type=args.test_type,
-        edge_matcher=args.edge_matcher, 
-        save_dpath=args.save_dpath,
-        game_name=args.game_name,
-        logger=logger
-    )
+    tester = TaskLoader(args)
     tasks = tester.tasks
 
     # sampler
@@ -130,9 +93,9 @@ if __name__ == "__main__":
         high=np.array([env_size - 1, env_size - 1, 359.9])
     )
     if args.rollout_method == "uniform":
-        space_iter = BoxSpaceIterator(state_space, interval=[.5, .5, 30])
+        space_iter = BoxSpaceIterator(state_space, interval=[.5, .5, 45])
     elif args.rollout_method == "random":
-        space_iter = RandomIterator(state_space, num_samples=100)
+        space_iter = RandomIterator(state_space, num_samples=500)
     else:
         raise NotImplementedError("Rollout method " + str(args.rollout_method) + " not implemented.")
 
@@ -140,7 +103,7 @@ if __name__ == "__main__":
     # run training
     ltl_id = args.ltl_id
     policy, ltl = load_individual_policy(
-        tb_log_path, ltl_id, 
+        task_loader.get_save_path(), ltl_id, 
         num_actions=test_envs.action_space[0].n, 
         num_features=test_envs.observation_space[0].shape[0], 
         learning_params=learning_params, 
@@ -161,10 +124,10 @@ if __name__ == "__main__":
 
     # collect and rollout
     results = {}
-    outfile = os.path.join(tb_log_path, "classifier", f"policy{args.ltl_id}_status.json.gz")
+    outfile = os.path.join(task_loader.get_save_path(), "classifier", f"policy{args.ltl_id}_status.json.gz")
     
     # clear output file
-    os.makedirs(os.path.join(tb_log_path, "classifier"), exist_ok=True)
+    os.makedirs(os.path.join(task_loader.get_save_path(), "classifier"), exist_ok=True)
     with gzip.open(outfile, 'wt', encoding='UTF-8') as f:
         json.dump(results, f)
     
@@ -172,12 +135,14 @@ if __name__ == "__main__":
         test_envs.render()
         input("Press Enter When Ready...")
     for loc in space_iter:
-        x, y, angle = loc
-        dict_key = ", ".join([str(a) for a in loc])
-        task_params.init_loc = [x, y]
-        task_params.init_angle = angle
+        if loc is not None:
+            x, y, angle = loc
+            task_params.init_loc = [x, y]
+            task_params.init_angle = angle
         obs, info = test_envs.reset(options=dict(task_params=task_params))
+
         dfa = DFA(ltl)
+        init_loc = ", ".join([f"{item:.3f}" for item in info[0]['loc']])
         original_state = dfa.state
         if args.render:
             test_envs.render()
@@ -193,7 +158,7 @@ if __name__ == "__main__":
                 true_prop = info[0]['true_props']
                 success = info[0]['dfa_state'] != -1 and not trunc
                 state = test_envs.get_env_attr("curr_state", 0)[0]
-                results[dict_key] = {
+                results[init_loc] = {
                     "success": success,
                     "true_proposition": info[0]['true_props'] if success else '',
                     "steps": i + 1, 
@@ -202,10 +167,10 @@ if __name__ == "__main__":
                     "edge": info[0]['traversed_edge']
                 }
                 if args.verbose or args.render:
-                    print(f"{x:.2f}, {y:.2f}, {angle}", results[dict_key])
+                    print(f"{x:.2f}, {y:.2f}, {angle}", results[init_loc])
                 break
 
-    os.makedirs(os.path.join(tb_log_path, "classifier"), exist_ok=True)
+    os.makedirs(os.path.join(task_loader.get_save_path(), "classifier"), exist_ok=True)
     with gzip.open(outfile, 'wt', encoding='UTF-8') as f:
         json.dump(results, f)
     print("Saved rollout result to", outfile)

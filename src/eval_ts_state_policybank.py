@@ -10,7 +10,7 @@ from ts_utils.ts_argparse import add_parser_cmds
 from ts_utils.ts_envs import generate_envs
 import numpy as np
 
-from test_utils import Tester, TestingParameters
+from test_utils import TaskLoader, TestingParameters
 
 import time
 import argparse
@@ -63,42 +63,18 @@ if __name__ == "__main__":
     )
 
     # path for saves
-    tb_log_path = os.path.join(
-        args.save_dpath, "results", f"{args.game_name}_{args.domain_name}", f"{args.train_type}_p{args.prob}", 
-        f"{args.algo}_{args.rl_algo}", f"map{map_id}", str(args.run_id), 
-        f"alpha={'auto' if learning_params.auto_alpha else learning_params.alpha}",
-    ) if args.run_prefix is None else args.run_prefix
-
-    # learning params
-    with open(os.path.join(tb_log_path, "learning_params.pkl"), "rb") as f:
-        learning_params = pickle.load(f)
     testing_params = TestingParameters(custom_metric_folder=args.run_subfolder)
     print("Initialized Learning Params:", learning_params)
 
     train_envs, test_envs = generate_envs(prob=args.prob,game_name=args.game_name, parallel=PARALLEL_TRAIN, map_id=map_id, seed=args.run_id)
 
     # tester
-    tester = Tester(
-        learning_params=learning_params, 
-        testing_params=testing_params,
-        map_id=args.map,
-        prob=map_id,
-        train_size=args.train_size,
-        rl_algo=args.rl_algo,
-        tasks_id=tasks_id,
-        dataset_name=args.domain_name,
-        train_type=args.train_type,
-        test_type=args.test_type,
-        edge_matcher=args.edge_matcher, 
-        save_dpath=args.save_dpath,
-        game_name=args.game_name,
-        logger=None
-    )
-    tasks = tester.tasks
+    task_loader = TaskLoader(args)
+    tasks = task_loader.tasks
 
     # initalize policy bank
     policy_bank: TianshouPolicyBank = load_ts_policy_bank(
-        os.path.join(tb_log_path),
+        os.path.join(task_loader.get_save_path()),
         num_actions=test_envs.action_space[0].n,
         num_features=test_envs.observation_space[0].shape[0],
         load_classifier=None
@@ -120,7 +96,7 @@ if __name__ == "__main__":
         if ltl == "True" or ltl == "False": continue
         
         # reset with the correct ltl
-        task_params = tester.get_task_params(ltl)
+        task_params = task_loader.get_task_params(ltl)
         test_envs.reset(options=dict(task_params=task_params))
         
         # collecting results

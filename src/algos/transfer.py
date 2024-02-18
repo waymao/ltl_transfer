@@ -22,7 +22,7 @@ from envs.grid.game import *
 from test_utils import Loader, save_pkl, load_pkl, save_json
 from run_single_worker import single_worker_rollouts
 from utils.curriculum import CurriculumLearner
-from test_utils import TestingParameters, Tester, Saver
+from test_utils import TestingParameters, TaskLoader, Saver
 
 RELABEL_CHUNK_SIZE = 21
 TRANSFER_CHUNK_SIZE = 100
@@ -30,7 +30,7 @@ TRANSFER_CHUNK_SIZE = 100
 
 def run_experiments(
         game_name: str,
-        tester: Tester, 
+        tester: TaskLoader, 
         curriculum: CurriculumLearner, 
         saver: Saver, 
         run_id: int, 
@@ -91,7 +91,7 @@ def run_experiments(
 
 
 def relabel_cluster(
-        tester: Tester, 
+        tester: TaskLoader, 
         saver: Saver, 
         curriculum: CurriculumLearner, 
         run_id: int, 

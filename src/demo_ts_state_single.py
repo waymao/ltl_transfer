@@ -10,7 +10,7 @@ from ts_utils.ts_argparse import add_parser_cmds
 # %%
 from tianshou.data import VectorReplayBuffer, Batch
 
-from test_utils import Tester, TestingParameters
+from test_utils import TaskLoader, TestingParameters
 
 import time
 import argparse
@@ -49,7 +49,6 @@ if __name__ == "__main__":
     # if not(-2 <= args.map < 20): raise NotImplementedError("The map must be a number between -1 and 9")
 
     # Running the experiment
-    tasks_id = 0
     map_id = args.map
     
     # enable rendering
@@ -75,55 +74,24 @@ if __name__ == "__main__":
         no_info=False
     )
 
-    # path for logger
-    tb_log_path = os.path.join(
-        args.save_dpath, "results", f"{save_game_name}_{args.domain_name}", f"{args.train_type}_p{args.prob}", 
-        f"{args.algo}_{args.rl_algo}", f"map{map_id}", str(args.run_id), 
-        f"alpha={'auto' if learning_params.auto_alpha else learning_params.alpha}",
-    ) if args.run_prefix is None else args.run_prefix
-    if testing_params.custom_metric_folder is not None:
-        tb_log_path = os.path.join(tb_log_path, testing_params.custom_metric_folder)
+    # tester
+    task_loader = TaskLoader(args)
+    tasks = task_loader.tasks
     
     # load the proper lp
-    with open(os.path.join(tb_log_path, "learning_params.pkl"), "rb") as f:
+    with open(os.path.join(task_loader.get_save_path(), "learning_params.pkl"), "rb") as f:
         learning_params = pickle.load(f)
-    
-    # logger
-    writer = SummaryWriter(log_dir=os.path.join(tb_log_path, "logs", f"policy_{args.ltl_id}"))
-    logger = TensorboardLogger(writer)
 
-    # dump lp again
-    # with open(os.path.join(tb_log_path, "learning_params.pkl"), "wb") as f:
-    #     pickle.dump(learning_params, f)
-
-    # tester
-    tester = Tester(
-        learning_params=learning_params, 
-        testing_params=testing_params,
-        map_id=args.map,
-        prob=map_id,
-        train_size=args.train_size,
-        rl_algo=args.rl_algo,
-        tasks_id=tasks_id,
-        dataset_name=args.domain_name,
-        train_type=args.train_type,
-        test_type=args.test_type,
-        edge_matcher=args.edge_matcher, 
-        save_dpath=args.save_dpath,
-        game_name=args.game_name,
-        logger=logger
-    )
-    tasks = tester.tasks
 
     # run training
     global_time_steps = 0
-    with open(os.path.join(tb_log_path, "logs", f"policy{args.ltl_id}_status.txt"), "w") as f:
+    with open(os.path.join(task_loader.get_save_path(), "logs", f"policy{args.ltl_id}_status.txt"), "w") as f:
         f.write(f"{time.time()},started\n")
     train_buffer = VectorReplayBuffer(int(1e6), buffer_num=NUM_PARALLEL_JOBS if PARALLEL_TRAIN else 1)
 
     ltl_id = args.ltl_id
     policy, ltl = load_individual_policy(
-        tb_log_path, ltl_id, 
+        task_loader.get_save_path(), ltl_id, 
         num_actions=test_envs.action_space[0].n, 
         num_features=test_envs.observation_space[0].shape[0], 
         learning_params=learning_params, 
@@ -132,7 +100,7 @@ if __name__ == "__main__":
     print("Running policy", ltl)
     
     # reset with the correct ltl
-    task_params = tester.get_task_params(ltl)
+    task_params = task_loader.get_task_params(ltl)
     test_envs.reset()
     
     # collecting results

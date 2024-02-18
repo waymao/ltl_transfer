@@ -41,10 +41,6 @@ def add_parser_cmds(parser: ArgumentParser):
                         help='This parameter indicated which map to use. It must be a number between -2 and 9. Use "-1" to run experiments over the 10 maps, 3 times per map. Use "-2" to generate a random map.s')
     parser.add_argument('--prob', default=1.0, type=float,
                         help='probability of intended action succeeding')
-    parser.add_argument('--total_steps', default=500000, type=int,
-                        help='This parameter indicated the total training steps to learn all tasks')
-    parser.add_argument('--incremental_steps', default=150000, type=int,
-                        help='This parameter indicated the increment to the total training steps for additional training')
     parser.add_argument('--run_id', default=0, type=int,
                         help='This parameter indicated the policy bank saved after which run will be used for transfer')
     # parser.add_argument('--load_trained', action="store_true",

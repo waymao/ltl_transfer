@@ -22,7 +22,7 @@ from utils.print_ltl import ltl_to_print
 from tianshou.data import  Batch
 import numpy as np
 
-from test_utils import Tester, TestingParameters
+from test_utils import TaskLoader, TestingParameters
 
 import argparse
 import pickle
@@ -90,38 +90,16 @@ def run_experiment():
         ltl_progress_is_term=False,
         max_episode_steps=9000
     )
-
-    # path for logger
-    tb_log_path = os.path.join(
-        args.save_dpath, "results", f"{args.game_name}_{args.domain_name}", f"{args.train_type}_p{args.prob}", 
-        f"{args.algo}_{args.rl_algo}", f"map{map_id}", str(args.run_id), 
-        f"alpha={'auto' if learning_params.auto_alpha else learning_params.alpha}",
-    ) if args.run_prefix is None else args.run_prefix
-    if testing_params.custom_metric_folder is not None:
-        tb_log_path = os.path.join(tb_log_path, testing_params.custom_metric_folder)
     
-    # load the proper lp
-    with open(os.path.join(tb_log_path, "learning_params.pkl"), "rb") as f:
-        learning_params = pickle.load(f)
+    
 
     # tester
-    tester = Tester(
-        learning_params=learning_params, 
-        testing_params=testing_params,
-        map_id=map_id,
-        prob=args.prob,
-        train_size=args.train_size,
-        rl_algo=args.rl_algo,
-        tasks_id=tasks_id,
-        dataset_name=args.domain_name,
-        train_type=args.train_type,
-        test_type=args.test_type,
-        edge_matcher=args.edge_matcher, 
-        save_dpath=args.save_dpath,
-        game_name=args.game_name,
-        logger=None
-    )
-    tasks = tester.tasks
+    task_loader = TaskLoader(args)
+    tasks = task_loader.transfer_tasks
+    
+    # load the proper lp
+    with open(os.path.join(task_loader.get_save_path(), "learning_params.pkl"), "rb") as f:
+        learning_params = pickle.load(f)
 
     # sampler
     env_size = test_envs.get_env_attr("size", 0)[0]
@@ -132,7 +110,7 @@ def run_experiment():
 
     # run training
     policy_bank = load_ts_policy_bank(
-        tb_log_path, 
+        task_loader.get_save_path(), 
         num_actions=test_envs.action_space[0].n,
         num_features=test_envs.observation_space[0].shape[0],
         hidden_layers=[256, 256, 256],
@@ -140,7 +118,7 @@ def run_experiment():
         device=device,
         verbose=True
     )
-    tasks = tester.get_LTL_tasks()
+    tasks = task_loader.get_LTL_tasks()
     try:
         ltl = tasks[args.task_id]
     except IndexError:
@@ -150,7 +128,7 @@ def run_experiment():
     print("Running task", ltl_to_print(ltl))
     
     # reset with the correct ltl
-    task_params = tester.get_task_params(ltl)
+    task_params = task_loader.get_task_params(ltl)
     obs, info = test_envs.reset(options=dict(task_params=task_params))
     env_state = test_envs.get_env_attr("curr_state", 0)[0]
 
@@ -174,7 +152,7 @@ def run_experiment():
     if args.verbose: print("Matching training/testing edges and removing infeasible edges...")
     begin_time = time.time()
     test2trains = match_remove_edges(
-        dfa_graph, train_edges, task_dfa.state, task_dfa.terminal[0], tester.edge_matcher
+        dfa_graph, train_edges, task_dfa.state, task_dfa.terminal[0], task_loader.edge_matcher
     )
     policy_switcher = PolicySwitcher(policy_bank, test2trains, t_edge2ltls, ltl)
     print("Time taken to match training and testing edges:", (time.time() - begin_time), "seconds.")
@@ -272,9 +250,9 @@ def run_experiment():
     print("Done! Success Rate:", succ_count / args.num_epi)
     run_info['success_rate'] = succ_count / args.num_epi
 
-    save_folder = os.path.join(tb_log_path, "transfer_results")
+    save_folder = os.path.join(task_loader.get_save_path(), "transfer_results")
     os.makedirs(save_folder, exist_ok=True)
-    file_name = os.path.join(save_folder, f"task_{tester.test_type}_{args.task_id}.json.gz")
+    file_name = os.path.join(save_folder, f"task_{task_loader.test_type}_{args.task_id}.json.gz")
     with gzip.open(file_name, 'wt') as f:
         json.dump(run_info, f)
     print("Saved result to", file_name)

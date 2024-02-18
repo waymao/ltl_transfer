@@ -21,7 +21,7 @@ from envs.game_base import BaseGame
 from test_utils import Loader, TestingParameters, load_pkl
 
 from utils.curriculum import CurriculumLearner
-from test_utils import Tester, Saver
+from test_utils import TaskLoader, Saver
 from succ_logger import SuccLogger, SuccEntry
 from torch.profiler import profile, record_function, ProfilerActivity
 import random
@@ -34,7 +34,7 @@ FAIL_REW = 0
 
 def run_experiments(
         game_name: str,
-        tester: Tester, 
+        tester: TaskLoader, 
         curriculum: CurriculumLearner, 
         saver: Saver, run_id: int, 
         num_times, incremental_steps, show_print, 
@@ -145,7 +145,7 @@ def run_experiments(
     print("Time:", "%0.2f" % ((time.time() - time_init)/60), "mins")
 
 
-def _initialize_policy_bank(game_name, learning_params: LearningParameters, curriculum: CurriculumLearner, tester: Tester, load_tf=True, rl_algo="dqn", device="cpu"):
+def _initialize_policy_bank(game_name, learning_params: LearningParameters, curriculum: CurriculumLearner, tester: TaskLoader, load_tf=True, rl_algo="dqn", device="cpu"):
     task_aux = get_game(game_name, tester.get_task_params(curriculum.get_current_task()))
     num_actions = task_aux.action_space.n
     num_features = task_aux.observation_space.shape[0]
@@ -184,7 +184,7 @@ def _run_LPOPL(
         game: BaseGame, 
         testing_game: Optional[BaseGame],
         policy_bank: PolicyBank, 
-        tester: Tester, curriculum: CurriculumLearner, 
+        tester: TaskLoader, curriculum: CurriculumLearner, 
         replay_buffer: ReplayBuffer, 
         show_print: bool, 
         succ_logger: SuccLogger,

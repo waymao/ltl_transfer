@@ -8,7 +8,7 @@ from ts_utils.ts_argparse import add_parser_cmds
 # %%
 from ts_utils.ts_envs import generate_envs
 
-from test_utils import Tester, TestingParameters
+from test_utils import TaskLoader, TestingParameters
 
 import argparse
 import os

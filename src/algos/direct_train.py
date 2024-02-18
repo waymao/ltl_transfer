@@ -21,7 +21,7 @@ from envs.game_base import BaseGame
 from test_utils import Loader, TestingParameters, load_pkl
 
 from utils.curriculum import CurriculumLearner
-from test_utils import Tester, Saver
+from test_utils import TaskLoader, Saver
 from succ_logger import SuccLogger, SuccEntry
 from torch.profiler import profile, record_function, ProfilerActivity
 import random
@@ -37,7 +37,7 @@ FAIL_REW = 0
 
 def run_experiments(
         game_name: str,
-        tester: Tester, 
+        tester: TaskLoader, 
         curriculum: CurriculumLearner, 
         saver: Saver, run_id: int, 
         num_times, incremental_steps, show_print, 
@@ -89,7 +89,7 @@ def _run_train(
         game: SubprocVecEnv, 
         testing_game: SubprocVecEnv,
         policy_bank: PolicyBank, 
-        tester: Tester, curriculum: CurriculumLearner, 
+        tester: TaskLoader, curriculum: CurriculumLearner, 
         replay_buffer: ReplayBuffer, 
         show_print: bool, 
         succ_logger: SuccLogger,
