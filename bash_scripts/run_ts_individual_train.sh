@@ -1,10 +1,11 @@
 #!/bin/bash
 #SBATCH -n 4
 #SBATCH -N 1
-#SBATCH --mem=16G
-#SBATCH -t 48:00:00
-##SBATCH --array=0-648
-#SBATCH --array=0-27
+#SBATCH --mem=8G
+#SBATCH -t 24:00:00
+####### 460 tasks per map.
+#SBATCH --array=0-1840
+##SBATCH --array=0-27
 
 # Use '%A' for array-job ID, '%J' for job ID and '%a' for task ID
 #SBATCH -e sbatch_out/arrayjob-train-%A-%a.err
@@ -14,7 +15,6 @@
 #SBATCH --mail-user=yichen_wei@brown.edu
 
 map=13
-run_id=0
 train_size=50
 train_type="mixed"
 
@@ -24,7 +24,17 @@ domain_name="spot"
 game_name="miniworld_simp_no_vis"
 alpha=0.03
 
-ltl_id=`expr $SLURM_ARRAY_TASK_ID`
+# run id array
+# run_id=`expr $SLURM_ARRAY_TASK_ID / 460`
+# map=21
+
+# map array
+map=`expr $SLURM_ARRAY_TASK_ID / 460 + 21`
+run_id=42
+
+# ltl id
+ltl_id=`expr $SLURM_ARRAY_TASK_ID % 460`
+
 
 source /users/ywei75/.bashrc
 conda activate ltl
