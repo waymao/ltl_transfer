@@ -69,7 +69,7 @@ class RadiusMatcher(Classifier):
             tuple(
                 [float(item) for item in loc.split(", ")]
             ): val
-            for loc, val in data.items()
+            for loc, val in data['results'].items()
         }
         for loc in self.data:
             self.possible_edges.add(self.data[loc]['edge'])

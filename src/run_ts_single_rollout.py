@@ -123,7 +123,6 @@ if __name__ == "__main__":
         policy.eval()
 
     # collect and rollout
-    results = {}
     outfile = os.path.join(
         task_loader.get_save_path(), 
         "classifier", 
@@ -133,11 +132,14 @@ if __name__ == "__main__":
     # clear output file
     os.makedirs(os.path.join(task_loader.get_save_path(), "classifier"), exist_ok=True)
     with gzip.open(outfile, 'wt', encoding='UTF-8') as f:
-        json.dump(results, f)
+        json.dump({}, f)
     
     if args.render:
         test_envs.render()
         input("Press Enter When Ready...")
+
+    begin_time = time.time()
+    result = {}
     for loc in space_iter:
         if loc is not None:
             x, y, angle = loc
@@ -162,7 +164,7 @@ if __name__ == "__main__":
                 true_prop = info[0]['true_props']
                 success = info[0]['dfa_state'] != -1 and not trunc
                 state = test_envs.get_env_attr("curr_state", 0)[0]
-                results[init_loc] = {
+                result[init_loc] = {
                     "success": success,
                     "true_proposition": info[0]['true_props'] if success else '',
                     "steps": i + 1, 
@@ -171,10 +173,18 @@ if __name__ == "__main__":
                     "edge": info[0]['traversed_edge']
                 }
                 if args.verbose or args.render:
-                    print(f"{x:.2f}, {y:.2f}, {angle}", results[init_loc])
+                    print(f"{x:.2f}, {y:.2f}, {angle}", result[init_loc])
                 break
 
+    end_time = time.time()
     os.makedirs(os.path.join(task_loader.get_save_path(), "classifier"), exist_ok=True)
+    report_json = {
+        "ltl": ltl,
+        "time_spent": end_time - begin_time,
+        "policy_last_updated": os.path.getmtime(os.path.join(task_loader.get_save_path(), "policies", f"{ltl_id}_ckpt.pth")),
+        "rollout_method": args.rollout_method,
+        "results": result
+    }
     with gzip.open(outfile, 'wt', encoding='UTF-8') as f:
-        json.dump(results, f)
+        json.dump(report_json, f)
     print("Saved rollout result to", outfile)
