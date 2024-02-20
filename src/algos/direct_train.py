@@ -16,7 +16,7 @@ from torch_policies.policy_bank_cnn_goal import PolicyBankCNNGoalCond
 from utils.schedules import LinearSchedule
 from utils.replay_buffer import ReplayBuffer
 from ltl.dfa import *
-from envs.game_creator import get_game, get_parallel_games
+from envs.game_creator import get_game
 from envs.game_base import BaseGame
 from test_utils import Loader, TestingParameters, load_pkl
 
