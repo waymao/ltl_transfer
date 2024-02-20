@@ -30,7 +30,7 @@ alpha=0.03
 
 # map array
 map=`expr $SLURM_ARRAY_TASK_ID / 460 + 21`
-run_id=42
+run_id=0
 
 # ltl id
 ltl_id=`expr $SLURM_ARRAY_TASK_ID % 460`
