@@ -55,7 +55,7 @@ class TaskLoader:
         self.consider_night = False
         self.rl_algo = args.rl_algo
 
-        results_path = os.path.join(self.save_dpath, "saves", args.rl_algo)
+        results_path = os.path.join(self.save_dpath, "saves")
 
         # get the base run path
         self.log_path = os.path.join(
