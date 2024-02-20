@@ -20,7 +20,7 @@ train_type="sequence"
 
 task_id=`expr $SLURM_ARRAY_TASK_ID`
 
-source /users/ywei75/.bashrc
+source $HOME/.bashrc
 conda activate ltl
 
 

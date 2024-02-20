@@ -36,7 +36,7 @@ run_id=0
 ltl_id=`expr $SLURM_ARRAY_TASK_ID % 460`
 
 
-source /users/ywei75/.bashrc
+source $HOME/.bashrc
 conda activate ltl
 
 #echo PYGLET_HEADLESS=true python3 run_ts_single_policy.py \

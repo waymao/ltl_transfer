@@ -46,7 +46,7 @@ ltl_id=`expr $SLURM_ARRAY_TASK_ID % 460`
 ######### END PREDEFINED ARRAYS #########
 
 
-source /users/ywei75/.bashrc
+source $HOME/.bashrc
 conda activate ltl
 
 
