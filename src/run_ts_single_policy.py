@@ -1,5 +1,6 @@
 
 # %%
+import json
 import os
 from torch_policies.learning_params import LearningParameters, \
     add_fields_to_parser, get_learning_parameters
@@ -130,3 +131,5 @@ if __name__ == "__main__":
     print(train_result)
     with open(os.path.join(task_loader.get_save_path(), "logs", f"policy{args.ltl_id}_status.txt"), "a") as f:
         f.write(f"{time.time()},done\n")
+    with open(os.path.join(task_loader.get_save_path(), "logs", f"policy{args.ltl_id}_result.json"), "w") as f:
+        json.dump(train_result, f)
