@@ -31,7 +31,7 @@ class BoxSpaceIterator:
         length = 1
         for i in range(len(self.prog)):
             # include the last element
-            length *= math.floor((self.space.high[i] - self.space.low[i]) / self.interval) + 1
+            length *= math.floor((self.space.high[i] - self.space.low[i]) / self.interval[i]) + 1
         return length
 
 class RandomIterator:

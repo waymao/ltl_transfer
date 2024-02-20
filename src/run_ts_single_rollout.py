@@ -24,6 +24,7 @@ import pickle
 
 from torch.utils.tensorboard import SummaryWriter
 from tianshou.utils.logger.tensorboard import TensorboardLogger
+import tqdm
 import os
 
 from rollout_utils.sampler import BoxSpaceIterator, RandomIterator
@@ -51,6 +52,7 @@ if __name__ == "__main__":
     parser.add_argument('--rollout_method', type=str, default="uniform", choices=['uniform', 'random'], help='How to rollout the policy.')
     parser.add_argument('--render', action="store_true", help='Whether to run rendering.')
     parser.add_argument('--verbose', '-v', action="store_true", help='Verbose printing of results.')
+    parser.add_argument('--relabel_seed', type=int, default=42, help="Seed for relabeling.")
 
     args = parser.parse_args()
     # if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")
@@ -62,6 +64,14 @@ if __name__ == "__main__":
     tasks_id = 0
     map_id = args.map
 
+    print("########################################")
+    print("Running rollout for:")
+    print("policy:", args.ltl_id)
+    print("map:", map_id)
+    print("seed:", args.relabel_seed)
+    print("rollout method:", args.rollout_method)
+    print("########################################")
+
     task_loader = TaskLoader(args)
     testing_params = TestingParameters(custom_metric_folder=args.run_subfolder)
 
@@ -69,7 +79,7 @@ if __name__ == "__main__":
         game_name=args.game_name, 
         parallel=PARALLEL_TRAIN, 
         map_id=map_id, 
-        seed=args.run_id,
+        seed=args.relabel_seed,
         no_info=False
     )
     
@@ -122,15 +132,14 @@ if __name__ == "__main__":
         policy.training = False
         policy.eval()
 
-    # collect and rollout
-    outfile = os.path.join(
+    # clear output file
+    outpath = os.path.join(
         task_loader.get_save_path(), 
         "classifier", 
-        f"policy{args.ltl_id}_{args.rollout_method}_rollout.json.gz"
+        f"{args.rollout_method}_seed{args.relabel_seed}"
     )
-    
-    # clear output file
-    os.makedirs(os.path.join(task_loader.get_save_path(), "classifier"), exist_ok=True)
+    os.makedirs(outpath, exist_ok=True)
+    outfile = os.path.join(outpath, f"policy{ltl_id}_rollout.json.gz")
     with gzip.open(outfile, 'wt', encoding='UTF-8') as f:
         json.dump({}, f)
     
@@ -138,6 +147,12 @@ if __name__ == "__main__":
         test_envs.render()
         input("Press Enter When Ready...")
 
+    # tqdm pretty print bar
+    print("Expected total # of samples:", space_iter.__len__())
+    if os.environ.get("SLURM_ARRAY_TASK_ID") is None:
+        space_iter = tqdm.tqdm(space_iter)
+    
+    # begin rollout
     begin_time = time.time()
     result = {}
     for loc in space_iter:

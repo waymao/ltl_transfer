@@ -14,7 +14,6 @@
 #SBATCH --mail-type=END,FAIL,TIME_LIMIT_90
 #SBATCH --mail-user=yichen_wei@brown.edu
 
-map=13
 train_size=50
 train_type="mixed"
 
@@ -27,22 +26,38 @@ game_name="miniworld_simp_no_vis"
 alpha=0.03
 
 map=21
-run_id=42
+run_id=0
 
 ######### PREDEFINED ARRAYS #########
-# run id array
-# run_id=`expr $SLURM_ARRAY_TASK_ID / 460`
-
-# map array
-# map=`expr $SLURM_ARRAY_TASK_ID / 460 + 21`
-
-# relabel method
-k=`expr $SLURM_ARRAY_TASK_ID / 460`
-relabel_methods=( "random" "uniform" )
-relabel_method=${relabel_methods[$k]}
-
 # ltl id
 ltl_id=`expr $SLURM_ARRAY_TASK_ID % 460`
+i=`expr $SLURM_ARRAY_TASK_ID / 460`
+
+# relabel method
+seeds=( 0 1 2 )
+
+seed_len=${#seeds[@]}
+seed_id=`expr $i % $seed_len`
+seed=${seeds[$seed_id]}
+
+j=`expr $i / $seed_len`
+
+# echo i=$i
+# echo seed_len=$seed_len
+# echo seed=$seed
+
+
+# map
+map_ids=( 21 22 23 )
+
+map_len=${#map_ids[@]}
+map_id=`expr $j % $map_len`
+map=${map_ids[$map_id]}
+
+# echo j=$j
+# echo map_len=$map_len
+# echo map=$map
+
 ######### END PREDEFINED ARRAYS #########
 
 
@@ -55,9 +70,10 @@ conda activate ltl
 #         --game_name miniworld_simp_no_vis --train_type $train_type \
 #         --save_dpath=$HOME/data/shared/ltl-transfer-ts
 
-PYGLET_HEADLESS=true python run_ts_single_rollout.py \
+PYGLET_HEADLESS=true python3 run_ts_single_rollout.py \
         --save_dpath=$HOME/data/shared/ltl-transfer-ts \
         --game_name miniworld_simp_no_vis \
+        --domain_name $domain_name --prob $prob \
         --map $map --train_type $train_type \
-        --run_id $run_id \
+        --run_id $run_id --relabel_seed $seed_id \
         --ltl $ltl_id --rollout_method $rollout_method
