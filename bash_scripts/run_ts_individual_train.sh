@@ -48,5 +48,5 @@ PYGLET_HEADLESS=true python3 run_ts_single_policy.py \
         --train_size $train_size --rl_algo dsac --domain_name $domain_name \
         --map $map --ltl_id $ltl_id \
         --game_name $game_name --train_type $train_type \
-        --lp.alpha=$alpha --prob=$prob \
+        --lp.alpha=$alpha --prob=$prob --run_id $run_id \
         --save_dpath=$HOME/data/shared/ltl-transfer-ts
