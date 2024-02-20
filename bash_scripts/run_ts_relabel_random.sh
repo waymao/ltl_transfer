@@ -33,30 +33,31 @@ run_id=0
 ltl_id=`expr $SLURM_ARRAY_TASK_ID % 460`
 i=`expr $SLURM_ARRAY_TASK_ID / 460`
 
-# relabel method
-seeds=( 0 1 2 )
-
-seed_len=${#seeds[@]}
-seed_id=`expr $i % $seed_len`
-seed=${seeds[$seed_id]}
-
-j=`expr $i / $seed_len`
-
-# echo i=$i
-# echo seed_len=$seed_len
-# echo seed=$seed
-
 
 # map
 map_ids=( 21 22 23 )
 
 map_len=${#map_ids[@]}
-map_id=`expr $j % $map_len`
+map_id=`expr $i % $map_len`
 map=${map_ids[$map_id]}
 
-# echo j=$j
-# echo map_len=$map_len
-# echo map=$map
+j=`expr $i / $map_len`
+
+echo i=$i
+echo map_len=$map_len
+echo map=$map
+
+
+# relabel method
+seeds=( 0 1 2 )
+
+seed_len=${#seeds[@]}
+seed_id=`expr $j % $seed_len`
+seed=${seeds[$seed_id]}
+
+echo j=$j
+echo seed_len=$seed_len
+echo seed=$seed
 
 ######### END PREDEFINED ARRAYS #########
 
