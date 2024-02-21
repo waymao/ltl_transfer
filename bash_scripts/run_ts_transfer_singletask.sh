@@ -2,7 +2,7 @@
 #SBATCH -n 2
 #SBATCH -N 1
 #SBATCH --mem=12G
-#SBATCH -t 48:00:00
+#SBATCH -t 4:00:00
 ##SBATCH --array=0-1199
 #SBATCH --array=0-27
 
