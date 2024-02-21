@@ -26,17 +26,23 @@ game_name="miniworld_simp_no_vis"
 alpha=0.03
 
 map=21
+map_ids=( 21 22 23 )
 run_id=0
+rl_algo="dsac"
+
+# count the number of policies in the save path
+save_path=$HOME/data/shared/ltl-transfer-ts/saves/${game_name}_${domain_name}_p${prob}/${train_type}_50/$rl_algo/map${map_ids[0]}/${run_id}/policies/
+num_policies="$(ls $save_path | wc -l)"
+
+echo "Detected $num_policies policies."
 
 ######### PREDEFINED ARRAYS #########
 # ltl id
-ltl_id=`expr $SLURM_ARRAY_TASK_ID % 460`
-i=`expr $SLURM_ARRAY_TASK_ID / 460`
+ltl_id=`expr $SLURM_ARRAY_TASK_ID % $num_policies`
+i=`expr $SLURM_ARRAY_TASK_ID / $num_policies`
 
 
 # map
-map_ids=( 21 22 23 )
-
 map_len=${#map_ids[@]}
 map_id=`expr $i % $map_len`
 map=${map_ids[$map_id]}
