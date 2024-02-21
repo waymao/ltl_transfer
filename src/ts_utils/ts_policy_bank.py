@@ -138,6 +138,7 @@ def load_ts_policy_bank(
     hidden_layers: List[int] = [256, 256, 256],
     learning_params: LearningParameters = get_learning_parameters("dsac", "miniworld_no_vis"),
     load_classifier="knn_random",
+    classifier_seed=0,
     device="cpu",
     verbose=False
 ) -> TianshouPolicyBank:
@@ -164,19 +165,20 @@ def load_ts_policy_bank(
                 classifier_name = load_classifier.split('_')
                 if classifier_name[0] == "knn" or classifier_name[0] == "radius":
                     # direct data-match classifier
-                    if classifier_name == "knn":
+                    if classifier_name[0] == "random":
                         classifier = KNNMatcher()
                     else:
                         classifier = RadiusMatcher()
-                    if load_classifier == "knn_uniform":
-                        classifier.load(policy_bank_path, id, "uniform")
+                    if classifier_name[1] == "uniform":
+                        classifier.load(policy_bank_path, id, classifier_seed, "uniform")
                     else:
-                        classifier.load(policy_bank_path, id)
+                        classifier.load(policy_bank_path, id, classifier_seed)
                 elif load_classifier == "nn":
                     # neural network prediction
                     classifier = NNClassifier()
                     classifier.load(policy_bank_path, id)
                 else:
+                    print("Unknown classifier type", load_classifier, file=sys.stderr)
                     classifier = None
             else:
                 classifier = None

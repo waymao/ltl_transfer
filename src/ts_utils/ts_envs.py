@@ -31,15 +31,6 @@ def generate_envs(
             max_episode_steps=max_episode_steps, do_transpose=False, 
             reward_scale=10, ltl_progress_is_term=ltl_progress_is_term, no_info=no_info)]
         )
-        # test_envs = ShmemVectorEnv(
-        #     [lambda: get_game(name=game_name, params=GameParams(
-        #         map_fpath=f"../experiments/maps/map_{map_id}.txt",
-        #         ltl_task=("until", "True", "a"),
-        #         # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
-        #         prob=prob
-        #     ) ,max_episode_steps=max_episode_steps, do_transpose=False, reward_scale=10, ltl_progress_is_term=ltl_progress_is_term, no_info=no_info) \
-        #         for _ in range(NUM_PARALLEL_JOBS)]
-        # )
         train_envs = DummyVectorEnv(
             [lambda: get_game(name=game_name, params=GameParams(
                 map_fpath=f"../experiments/maps/map_{map_id}.txt",

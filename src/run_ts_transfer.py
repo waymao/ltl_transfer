@@ -57,7 +57,7 @@ def run_experiment():
     parser.add_argument('--render', action="store_true", help='Whether to run rendering.')
     parser.add_argument('--verbose', '-v', action="store_true", help='Whether to print debug info.')
     parser.add_argument('--num_epi', default=100, type=int, help="Number of Episodes to Run.")
-    parser.add_argument('--init_set_classifier', default="random_knn", type=str, help="Initial set classifier to use.")
+    parser.add_argument('--relabel_method', default="random", type=str, help="Initial set classifier to use.")
     parser.add_argument('--relabel_seed', type=int, default=42, help="Seed for relabeling.")
 
     args = parser.parse_args()
@@ -105,7 +105,8 @@ def run_experiment():
         hidden_layers=[256, 256, 256],
         learning_params=learning_params,
         device=device,
-        load_classifier=args.init_set_classifier,
+        load_classifier=args.relabel_method,
+        classifier_seed=args.relabel_seed,
         verbose=True
     )
     tasks = task_loader.get_LTL_tasks()

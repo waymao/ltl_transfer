@@ -45,8 +45,6 @@ def add_parser_cmds(parser: ArgumentParser):
                         help='This parameter indicated the policy bank saved after which run will be used for transfer')
     # parser.add_argument('--load_trained', action="store_true",
     #                     help='This parameter indicated whether to load trained policy models. Include it in command line to load trained policies')
-    parser.add_argument('--relabel_method', default='cluster', type=str, choices=["cluster", "local"],
-                        help='This parameter indicated which method is used to relabel state-centric options')
     parser.add_argument('--transfer_num_times', default=1, type=int,
                         help='This parameter indicated the number of times to run a transfer experiment')
     parser.add_argument('--edge_matcher', default='relaxed', type=str, choices=['rigid', 'relaxed'],
