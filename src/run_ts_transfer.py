@@ -259,7 +259,7 @@ def run_experiment():
     run_info['option_fail_hist'] = option_fail_hist
     run_info['violation_rate'] = violation_count / args.num_epi
 
-    save_folder = os.path.join(task_loader.get_save_path(), "transfer_results")
+    save_folder = os.path.join(task_loader.get_save_path(), "transfer_results", f"{args.relabel_method}_{args.relabel_seed}")
     os.makedirs(save_folder, exist_ok=True)
     file_name = os.path.join(save_folder, f"task_{task_loader.test_type}_{args.task_id}.json.gz")
     with gzip.open(file_name, 'wt') as f:
