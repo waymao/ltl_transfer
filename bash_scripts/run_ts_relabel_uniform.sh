@@ -4,7 +4,7 @@
 #SBATCH --mem=2G
 #SBATCH -t 24:00:00
 ####### 460 tasks per map.
-#SBATCH --array=0-1840
+#SBATCH --array=0-1379
 ##SBATCH --array=0-27
 
 # Use '%A' for array-job ID, '%J' for job ID and '%a' for task ID
@@ -17,7 +17,7 @@
 train_size=50
 train_type="mixed"
 
-rollout_method="random"
+rollout_method="uniform"
 
 # domain name
 prob=1.0
@@ -49,7 +49,7 @@ echo map=$map
 
 
 # relabel method
-seeds=( 0 1 2 )
+seeds=( 0 )
 
 seed_len=${#seeds[@]}
 seed_id=`expr $j % $seed_len`
