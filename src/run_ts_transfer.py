@@ -155,6 +155,9 @@ def run_experiment():
     }
     if args.verbose: print("Running the experiment...")
     succ_count = 0
+    violation_count = 0
+    option_fail_count = 0
+    option_fail_hist = []
     for epi in range(args.num_epi):
         if args.verbose: print("Episode", epi)
         # reset
@@ -186,7 +189,8 @@ def run_experiment():
                     FAIL_STATUS = f"No policy available for goal {ltl_to_print(info[0]['ltl_goal'])}"
                     if args.verbose: print("No policy available / works for node", curr_node, "; goal: ", ltl_to_print(info[0]['ltl_goal']))
                     break
-
+                
+                # collect infos
                 if args.verbose: 
                     print("Executing policy", ltl_to_print(ltl), 
                           "with training edges", training_edges,
@@ -194,7 +198,14 @@ def run_experiment():
                           "with env state", env_state
                     )
                     print("       test stats: prob:", stats[0], "| len:", stats[1])
+                option_exec_info = {
+                    "train_edges": training_edges,
+                    "node": curr_node, 
+                    "init_env_state": env_state,
+                    "train_policy_ltl": ltl
+                }
 
+                # run the policy
                 for _ in range(500): # option step limit
                     a = best_policy.forward(Batch(obs=obs, info=info)).act
                     obs, reward, term, trunc, info = test_envs.step(a.numpy())
@@ -214,16 +225,20 @@ def run_experiment():
                     # we are stuck in the same node
                     policy_switcher.exclude_policy(curr_node, best_policy)
                     if args.verbose: print("   Policy failed to finish. Excluding policy", ltl_to_print(ltl), "on node", curr_node)
+                    option_fail_count += 1
+                    option_fail_hist.append(option_exec_info)
 
             if trunc[0] or term[0] or FAIL_STATUS != "": # env game over
                 success = bool(term[0] and info[0]['dfa_state'] != -1 and not trunc[0])
                 env_state = test_envs.get_env_attr("curr_state", 0)[0]
                 if info[0]['dfa_state'] == -1:
                     FAIL_STATUS = "DFA Dead end"
+                    violation_count += 1
                 elif trunc:
                     FAIL_STATUS = "Truncated by ENV"
                 elif term and not success:
                     FAIL_STATUS = "ENV Dead end"
+                    violation_count += 1
                 elif FAIL_STATUS == "" and info[0]['dfa_state'] != task_dfa.terminal[0]:
                     FAIL_STATUS = "DFA not terminal"
                 result = {
@@ -240,6 +255,9 @@ def run_experiment():
                 break
     print("Done! Success Rate:", succ_count / args.num_epi)
     run_info['success_rate'] = succ_count / args.num_epi
+    run_info['option_fail_count'] = option_fail_count
+    run_info['option_fail_hist'] = option_fail_hist
+    run_info['violation_rate'] = violation_count / args.num_epi
 
     save_folder = os.path.join(task_loader.get_save_path(), "transfer_results")
     os.makedirs(save_folder, exist_ok=True)
