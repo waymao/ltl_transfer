@@ -67,7 +67,6 @@ class RadiusMatcher(Classifier):
             f"{rollout_method}_seed{seed}",
             f"policy{id}_rollout.json.gz"
         )
-        print(file_path)
         with gzip.open(file_path, 'rt', encoding='UTF-8') as f:
             data: Mapping[str, dict] = json.load(f)
         # post-process data
