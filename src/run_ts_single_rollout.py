@@ -99,10 +99,12 @@ if __name__ == "__main__":
     # sampler
     env_size = test_envs.get_env_attr("size", 0)[0]
     state_space = gymnasium.spaces.Box(
-        low=np.array([1, 1, 0]), 
-        high=np.array([env_size - 1, env_size - 1, 359.9])
+        low=np.array([1.5, 1.5, 0]), 
+        high=np.array([env_size - 1.5, env_size - 1.5, 359.9])
     )
     if args.rollout_method == "uniform":
+        space_iter = BoxSpaceIterator(state_space, interval=[.75, .75, 90])
+    elif args.rollout_method == "uniform_dense":
         space_iter = BoxSpaceIterator(state_space, interval=[.5, .5, 45])
     elif args.rollout_method == "random":
         space_iter = RandomIterator(state_space, num_samples=1000)
