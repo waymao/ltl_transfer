@@ -109,7 +109,7 @@ def run_experiment():
         classifier_seed=args.relabel_seed,
         verbose=True
     )
-    tasks = task_loader.get_LTL_tasks()
+    tasks = task_loader.get_transfer_tasks()
     try:
         ltl = tasks[args.task_id]
     except IndexError:
