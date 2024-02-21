@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -n 4
+#SBATCH -n 1
 #SBATCH -N 1
 #SBATCH --mem=2G
 #SBATCH -t 24:00:00
