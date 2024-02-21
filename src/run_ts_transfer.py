@@ -107,7 +107,7 @@ def run_experiment():
         device=device,
         load_classifier=args.relabel_method,
         classifier_seed=args.relabel_seed,
-        verbose=True
+        verbose=args.verbose
     )
     tasks = task_loader.get_transfer_tasks()
     try:
