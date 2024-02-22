@@ -1,7 +1,9 @@
 from collections import defaultdict
-from typing import Mapping, Optional, Tuple, Union
+from typing import List, Mapping, Optional, Tuple, Union
+from ltl.ltl_utils import LTL, DFAEdge
 
 from ts_utils.matcher import dfa2graph
+from utils.print_ltl import ltl_to_print
 from .ts_policy_bank import TianshouPolicyBank
 from ltl.dfa import DFA
 import networkx as nx
@@ -12,7 +14,7 @@ class PolicySwitcher:
     def __init__(self, 
                  pb: TianshouPolicyBank, 
                  test2trains: Mapping[Union[tuple, str], list],
-                 edges2ltls: Mapping[str, list], 
+                 edges2ltls: Mapping[str, Tuple[int, LTL]], 
                  ltl_task
         ):
         self.pb = pb
@@ -37,7 +39,8 @@ class PolicySwitcher:
         """
         Given the current ltl state and env state, compute the optimal policy for the next step.
         """
-        option2problen = {} # (ltl, edge_pair) -> (prob, len)
+        option2problen: Mapping[Tuple[int, LTL, DFAEdge], Tuple[float, float]] = {} # (idx, ltl, edge_pair) -> (prob, len)
+        skipped_policies: List[Tuple[int, LTL, DFAEdge]] = []
         for feasible_path_node, feasible_path_edge in zip(self.feasible_paths_node, self.feasible_paths_edge):
             # for each feasible path, find the current position and the next edge
             if curr_dfa_state in feasible_path_node:
@@ -50,7 +53,7 @@ class PolicySwitcher:
 
                 # for each matched training edge, find the probability
                 for train_self_edge, train_out_edge in self.test2trains[test_edge_pair]:
-                    for ltl in self.edge2ltls[(train_self_edge, train_out_edge)]:
+                    for i, ltl in self.edge2ltls[(train_self_edge, train_out_edge)]:
                         if ltl not in self.exclude_list[curr_dfa_state]:
                             ltl_id = self.pb.policy2id[ltl]
                             result_dict = self.pb.classifiers[ltl_id].predict(env_state)
@@ -58,15 +61,29 @@ class PolicySwitcher:
                                 # if the predicted outcome given the current state 
                                 #     does not match the wanted outcome, skip.
                                 # Only add the policy if the edge is the same.
-                                option2problen[(ltl, test_self_edge, test_out_edge)] = result_dict[(train_self_edge, train_out_edge)]
-        return option2problen
+                                option2problen[(i, ltl, (test_self_edge, test_out_edge))] = result_dict[(train_self_edge, train_out_edge)]
+                            else:
+                                skipped_policies.append((i, ltl, (test_self_edge, test_out_edge)))
+        return option2problen, skipped_policies
 
     def get_best_policy(self, curr_dfa_state, env_state, verbose=False):
         """
         Given current env state and dfa state, 
         get the corresponding edge pair, ltl, and the best policy to execute.
         """
-        option2problen = self._compute_option_ranking(curr_dfa_state, env_state)
+        option2problen, skipped_policies = self._compute_option_ranking(curr_dfa_state, env_state)
+
+        # print result if debugging
+        if verbose:
+            # print("    New goal:", ltl_to_print(self.dfa.get_LTL()))
+            # print("        Skipped Policies:")
+            for item in skipped_policies:
+                print("            ", item[0], ltl_to_print(item[1]), item[2])
+            print("          Skipped Policies Count:", len(skipped_policies))
+            print("        Options ranked:")
+            for item in sorted(option2problen.items(), key=lambda x: (-x[1][0], x[1][1])):
+                print("            ", item[0][0], ":", ltl_to_print(item[0][1]), item[0][2], item[1])
+        
         if option2problen == {}:
             return None, None, None, None
         else:
@@ -80,8 +97,8 @@ class PolicySwitcher:
             #     print("          item:", item)
             
             best = min(option2problen.items(), key=lambda x: (-x[1][0], x[1][1]))
-            (ltl, train_self_edge, train_out_edge), (prob, len) = best
-            return self.pb.policies[self.pb.policy2id[ltl]], (train_self_edge, train_out_edge), ltl, (prob, len)
+            (i, ltl, train_edges), (prob, length) = best
+            return self.pb.policies[self.pb.policy2id[ltl]], train_edges, ltl, (prob, length)
     
     def exclude_policy(self, node: int, ltl: str):
         self.exclude_list[node].add(ltl)

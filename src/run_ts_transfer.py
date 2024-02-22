@@ -76,8 +76,10 @@ def run_experiment():
         seed=args.run_id,
         no_info=False,
         ltl_progress_is_term=False,
-        max_episode_steps=9000
+        max_episode_steps=9000,
+        render=args.render
     )
+    if args.render: test_envs.render()
     
 
     # tester
@@ -129,9 +131,6 @@ def run_experiment():
 
     # collect and rollout
     results = {}
-    if args.render:
-        test_envs.render()
-        input("Press Enter When Ready...")
 
     # edge matching
     if args.verbose: print("Gathering training edges from the bank...")
@@ -142,11 +141,21 @@ def run_experiment():
     # look for infeasible edges in the testing ("eval") DFA and remove it
     if args.verbose: print("Matching training/testing edges and removing infeasible edges...")
     begin_time = time.time()
-    test2trains = match_remove_edges(
-        dfa_graph, train_edges, task_dfa.state, task_dfa.terminal[0], task_loader.edge_matcher
-    )
+    ## load saved matched edges if available, for faster caching
+    try:
+        with open(os.path.join(task_loader.get_save_path(), f"matched_edges_task{args.task_id}.pkl"), "rb") as f:
+            test2trains = pickle.load(f)
+        print("Loaded matched edges from file.")
+    except FileNotFoundError:
+        test2trains = match_remove_edges(
+            dfa_graph, train_edges, task_dfa.state, task_dfa.terminal[0], task_loader.edge_matcher
+        )
+        print("Time taken to match training and testing edges:", (time.time() - begin_time), "seconds.")
+        print("Saving matched edges to file...")
+        with open(os.path.join(task_loader.get_save_path(), f"matched_edges_task{args.task_id}.pkl"), "wb") as f:
+            pickle.dump(test2trains, f)
+    
     policy_switcher = PolicySwitcher(policy_bank, test2trains, t_edge2ltls, ltl)
-    print("Time taken to match training and testing edges:", (time.time() - begin_time), "seconds.")
 
     # TODO save some metrics
     run_info = {
@@ -160,6 +169,7 @@ def run_experiment():
     option_fail_hist = []
     for epi in range(args.num_epi):
         if args.verbose: print("Episode", epi)
+        if args.render: input("Press Enter to continue...")
         # reset
         policy_switcher.reset_excluded_policy()
         obs, info = test_envs.reset()
@@ -184,7 +194,7 @@ def run_experiment():
             while next_node == curr_node and not term[0] and not trunc[0]:
                 # try every possible option
                 env_state = info[0]['loc']
-                best_policy, training_edges, ltl, stats = policy_switcher.get_best_policy(curr_node, env_state)
+                best_policy, training_edges, ltl, stats = policy_switcher.get_best_policy(curr_node, env_state, verbose=args.verbose)
                 if best_policy is None:
                     FAIL_STATUS = f"No policy available for goal {ltl_to_print(info[0]['ltl_goal'])}"
                     if args.verbose: print("No policy available / works for node", curr_node, "; goal: ", ltl_to_print(info[0]['ltl_goal']))
@@ -198,6 +208,7 @@ def run_experiment():
                           "with env state", env_state
                     )
                     print("       test stats: prob:", stats[0], "| len:", stats[1])
+                
                 option_exec_info = {
                     "train_edges": training_edges,
                     "node": curr_node, 
@@ -227,6 +238,9 @@ def run_experiment():
                     if args.verbose: print("   Policy failed to finish. Excluding policy", ltl_to_print(ltl), "on node", curr_node)
                     option_fail_count += 1
                     option_fail_hist.append(option_exec_info)
+            
+                # debug state for every option
+                if args.render: input("Press Enter to continue...")
 
             if trunc[0] or term[0] or FAIL_STATUS != "": # env game over
                 success = bool(term[0] and info[0]['dfa_state'] != -1 and not trunc[0])

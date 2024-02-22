@@ -1,4 +1,4 @@
-from typing import Mapping, Tuple, List
+from typing import Mapping, Set, Tuple, List
 
 from ltl.dfa import DFA
 
@@ -7,17 +7,19 @@ from collections import defaultdict
 import networkx as nx
 import numpy as np
 import sympy
+from ltl.ltl_utils import LTL, DFAEdge
 
 from ts_utils.ts_policy_bank import TianshouPolicyBank
+from typing import Iterable, Tuple
 
 
 def match_remove_edges(
         test_dfa: nx.DiGraph, 
-        train_edges: List[Tuple[str, str]], 
+        train_edges: List[Tuple[str, str]],
         start_state: int, 
         goal_state: int, 
         edge_matcher: str
-    ) -> List[Tuple[str, str]]:
+    ) -> Mapping[Tuple[str, str], Set[Tuple[str, str]]]:
     """
     Remove infeasible edges from DFA graph
     Optimization: construct a mapping 'test2trains' from test_edge_pair to a set of matching train_edge_pairs
@@ -168,19 +170,19 @@ def dfa2graph(dfa: DFA):
     return nx.DiGraph(nodelist)
 
 
-def get_training_edges(policy_bank: TianshouPolicyBank):
+def get_training_edges(policy_bank: TianshouPolicyBank) -> Tuple[Iterable[DFAEdge], Mapping[DFAEdge, List[Tuple[int, LTL]]]]:
     """
     Pair every outgoing edge that each state-centric policy have achieved during training,
     with the self-edge of the DFA progress state corresponding to the state-centric policy.
     Map each edge pair to corresponding LTLs, possibly one to many.
     """
-    edges2ltls = defaultdict(list)
+    edges2ltls: Mapping[Tuple[str, str], Tuple[int, LTL]] = defaultdict(list)
     for i, ltl in enumerate(policy_bank.policy_ltls):
         dfa: DFA = policy_bank.dfas[i]
         dfa_state = dfa.ltl2state[ltl]
         self_edge = dfa.nodelist[dfa_state][dfa_state]
         for out_edge in policy_bank.classifiers[i].possible_edges:
-            edges2ltls[(self_edge, out_edge)].append(ltl)
+            edges2ltls[(self_edge, out_edge)].append((i, ltl))
     return edges2ltls.keys(), dict(edges2ltls)
 
 if __name__ == '__main__':

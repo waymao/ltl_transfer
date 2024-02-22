@@ -18,8 +18,11 @@ def generate_envs(
         no_info=True, 
         ltl_progress_is_term=True, 
         max_episode_steps=1500,
-        prob=1.0
+        prob=1.0,
+        render=False
     ):
+    if render and game_name == "miniworld_simp_no_vis":
+        game_name = "miniworld_no_vis"
     if not parallel:
         test_envs = DummyVectorEnv(
             [lambda: get_game(name=game_name, params=GameParams(
