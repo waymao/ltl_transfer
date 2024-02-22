@@ -2,6 +2,7 @@ import json
 import os
 
 import gymnasium
+import torch
 from ltl.dfa import DFA
 from torch_policies.learning_params import LearningParameters, \
     add_fields_to_parser, get_learning_parameters
@@ -167,7 +168,8 @@ if __name__ == "__main__":
         if args.render:
             test_envs.render()
         for i in range(1500):
-            a = policy.forward(Batch(obs=obs, info=info)).act
+            with torch.no_grad():
+                a = policy.forward(Batch(obs=obs, info=info)).act
             obs, reward, term, trunc, info = test_envs.step(a.numpy())
             if args.render:
                 test_envs.render()

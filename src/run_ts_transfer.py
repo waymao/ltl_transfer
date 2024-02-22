@@ -6,6 +6,7 @@ import os
 
 import gymnasium
 import networkx as nx
+import torch
 from ltl.dfa import DFA
 from torch_policies.learning_params import LearningParameters, \
     add_fields_to_parser, get_learning_parameters
@@ -218,7 +219,8 @@ def run_experiment():
 
                 # run the policy
                 for _ in range(500): # option step limit
-                    a = best_policy.forward(Batch(obs=obs, info=info)).act
+                    with torch.no_grad():
+                        a = best_policy.forward(Batch(obs=obs, info=info)).act
                     obs, reward, term, trunc, info = test_envs.step(a.numpy())
 
                     next_node = info[0]['dfa_state']
