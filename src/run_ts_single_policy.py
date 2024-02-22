@@ -84,6 +84,7 @@ if __name__ == "__main__":
     train_buffer = VectorReplayBuffer(int(1e6), buffer_num=NUM_PARALLEL_JOBS if PARALLEL_TRAIN else 1)
 
     policy_id = args.ltl_id
+    print("Save path:", task_loader.get_save_path())
     policy, ltl = load_individual_policy(
         task_loader.get_save_path(), policy_id, 
         num_actions=test_envs.action_space[0].n, 
