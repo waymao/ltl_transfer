@@ -48,7 +48,7 @@ if __name__ == "__main__":
     parser.add_argument('--run_prefix', type=str,
                         help='Location of the bank and the learning parameters.')
     parser.add_argument('--ltl_id', type=int, required=True, help='Policy ID to demo')
-    parser.add_argument('--no_deterministic_eval', action="store_true", help='Whether to run deterministic evaluation or not.')
+    parser.add_argument('--stochastic_eval', action="store_true", help='Whether to run deterministic evaluation or not.')
     parser.add_argument('--rollout_method', type=str, default="uniform", choices=['uniform', 'random'], help='How to rollout the policy.')
     parser.add_argument('--render', action="store_true", help='Whether to run rendering.')
     parser.add_argument('--verbose', '-v', action="store_true", help='Verbose printing of results.')
@@ -119,7 +119,8 @@ if __name__ == "__main__":
         num_actions=test_envs.action_space[0].n, 
         num_features=test_envs.observation_space[0].shape[0], 
         learning_params=learning_params, 
-        device=device)
+        device=device,
+        eval_mode=not args.stochastic_eval)
 
     print("Running policy", ltl)
     
@@ -127,23 +128,19 @@ if __name__ == "__main__":
     task_params = tester.get_task_params(ltl)
     test_envs.reset()
     test_envs.get_env_attr("unwrapped", 0)
-    
-    # collecting results
-    # set policy to be deterministic if set up to do so
-    if not args.no_deterministic_eval:
-        policy.training = False
-        policy.eval()
 
     # clear output file
+    eval_mode_str = "stoc_eval" if args.stochastic_eval else "det_eval"
     outpath = os.path.join(
         task_loader.get_save_path(), 
         "classifier", 
-        f"{args.rollout_method}_seed{args.relabel_seed}"
+        f"{args.rollout_method}_seed{args.relabel_seed}_{eval_mode_str}"
     )
     os.makedirs(outpath, exist_ok=True)
     outfile = os.path.join(outpath, f"policy{ltl_id}_rollout.json.gz")
     with gzip.open(outfile, 'wt', encoding='UTF-8') as f:
         json.dump({}, f)
+    print("Results will be stored at", outfile)
     
     if args.render:
         test_envs.render()

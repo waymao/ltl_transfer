@@ -52,7 +52,7 @@ echo map=$map
 relabel_args_list=( 
         "--relabel_method knn_random --relabel_seed 0" 
         "--relabel_method knn_random --relabel_seed 1" 
-        "--relabel_method knn_random --relabel_seed 2"
+        "--relabel_method radius_random --relabel_seed 2"
         "--relabel_method knn_uniform --relabel_seed 0" 
 )
 relabel_args_list_len=${#relabel_args_list[@]}
@@ -74,13 +74,13 @@ conda activate ltl
 #         --game_name miniworld_simp_no_vis --train_type $train_type \
 #         --save_dpath=$HOME/data/shared/ltl-transfer-ts
 
-cmd="PYGLET_HEADLESS=true python run_ts_transfer.py \
+cmd="python run_ts_transfer.py \
         --save_dpath=$HOME/data/shared/ltl-transfer-ts \
         --game_name miniworld_simp_no_vis \
         --domain_name $domain_name --prob $prob \
         --map $map --train_type $train_type \
         --run_id $run_id \
-        $relabel_args \
+        $relabel_args --render -v \
         --task_id $task_id"
 echo $cmd
 echo

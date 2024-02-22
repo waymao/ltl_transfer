@@ -40,7 +40,7 @@ if __name__ == "__main__":
     add_fields_to_parser(parser, LearningParameters, prefix=LEARNING_ARGS_PREFIX)
 
     parser.add_argument('-o', '--output_file', type=str, default=None, help='Output file to save the results.')
-    parser.add_argument('--no_deterministic_eval', action="store_true", help='Whether to run deterministic evaluation or not.')
+    parser.add_argument('--stochastic_eval', action="store_true", help='Whether to run deterministic evaluation or not.')
     args = parser.parse_args()
     # if args.algo not in algos: raise NotImplementedError("Algorithm " + str(args.algo) + " hasn't been implemented yet")
     # if args.train_type not in train_types: raise NotImplementedError("Training tasks " + str(args.train_type) + " hasn't been defined yet")
@@ -91,6 +91,8 @@ if __name__ == "__main__":
     global_time_steps = 0
     result_list = []
     num_policies = len(policy_bank.policies)
+    print("Number of policies:", num_policies)
+    print("EVAL mode is stochastic:", args.stochastic_eval)
     for i, (ltl, policy) in enumerate(policy_bank.get_all_policies().items()):
         # skip if it's a dummy policy
         if ltl == "True" or ltl == "False": continue
@@ -101,8 +103,8 @@ if __name__ == "__main__":
         
         # collecting results
         # set policy to be deterministic if set up to do so
-        if not args.no_deterministic_eval:
-            policy.training = False
+        if not args.stochastic_eval:
+            # policy.training = False
             policy.eval()
 
         # collect and rollout

@@ -139,6 +139,7 @@ def load_ts_policy_bank(
     learning_params: LearningParameters = get_learning_parameters("dsac", "miniworld_no_vis"),
     load_classifier="knn_random",
     classifier_seed=0,
+    eval_mode=False,
     device="cpu",
     verbose=False
 ) -> TianshouPolicyBank:
@@ -156,7 +157,7 @@ def load_ts_policy_bank(
             policy_bank_path, 
             id, num_actions, 
             num_features, hidden_layers, 
-            learning_params, device)
+            learning_params, eval_mode, device)
         assert ltl == ltl_stored
         
         # loading the classifier
@@ -198,6 +199,7 @@ def load_individual_policy(
     num_features: int,
     hidden_layers: List[int] = [256, 256, 256],
     learning_params: LearningParameters = get_learning_parameters("dsac", "miniworld_no_vis"),
+    eval_mode=False,
     device="cpu"
 ) -> Tuple[BasePolicy, str]:
     policy = create_discrete_sac_policy(
@@ -212,6 +214,9 @@ def load_individual_policy(
     policy.actor_optim.load_state_dict(save_data['actor_optim'])
     policy.critic1_optim.load_state_dict(save_data['critic1_optim'])
     policy.critic2_optim.load_state_dict(save_data['critic2_optim'])
+    if eval_mode:
+        print(eval_mode)
+        policy.eval()
     return policy, save_data['ltl']
 
 
