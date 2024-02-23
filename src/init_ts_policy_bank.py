@@ -82,6 +82,8 @@ if __name__ == "__main__":
     for task in tasks:
         dfa = DFA(task)
         for ltl in dfa.ltl2state.keys():
+            if ltl[0] == 'always': continue # skip always statements as they are treated as eventual
+            
             if len(test_envs.observation_space[0].shape) == 1:
                 policy = create_discrete_sac_policy(
                     num_actions=test_envs.action_space[0].n, 

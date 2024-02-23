@@ -34,7 +34,7 @@ class TestingParameters:
 
 class TaskLoader:
     def __init__(self, 
-                 args, create_logger=False
+                 args, create_logger=False, render=False
         ):
         # setting the test attributes
         self.map_id = args.map

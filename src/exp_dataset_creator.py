@@ -40,7 +40,9 @@ def create_datasets(save_dpath, env_name, props, set_types, duplicate_ok=False, 
 
 def create_dataset(props, save_dpath, set_name, set_type, duplicate_ok, set_sizes):
     n_formulas = np.max(set_sizes)
-    if duplicate_ok:
+    if set_type == "individual":
+        formulas = sample_individual_formulas(props)
+    elif duplicate_ok:
         formulas = sample_dataset_formulas(props=props, set_type=set_type, n=n_formulas)
     else:
         formulas = sample_dataset_unique_formulas(props=props, set_type=set_type, n=n_formulas)
@@ -53,6 +55,20 @@ def create_dataset(props, save_dpath, set_name, set_type, duplicate_ok, set_size
         with open(os.path.join(save_dpath, human_readable_filename), 'w') as file:
             for idx, formula in enumerate(formulas[0: size]):
                 file.write(f"{idx}: {str(formula)}\n")
+
+def sample_individual_formulas(props):
+    formulas = []
+    for prop in props:
+        always_not_formula = ()
+        for prop_not in props:
+            if prop_not != prop:
+                if always_not_formula == (): # if the formula is empty, then it is the first prop
+                    always_not_formula = ("not", prop_not)
+                else:
+                    always_not_formula = ("and", ("not", prop_not), always_not_formula)
+        formula = ("and", ("until", "True", prop), ("always", always_not_formula))
+        formulas.append(formula)
+    return formulas
 
 
 def sample_dataset_formulas(props, set_type='mixed', n=50):
@@ -101,5 +117,6 @@ def read_train_test_formulas(dataset_dpath, env_name, train_set_type='mixed', te
 
 if __name__ == '__main__':
     env_name = "spot"
+    set_types = ['individual']
     create_datasets(save_dpath=os.path.join(os.path.expanduser('~'), "data", "shared", "ltl-transfer-ts"), env_name=env_name, props=ENV2PROPS[env_name],
-                    set_types=SET_TYPES, duplicate_ok=False, train_sizes=TRAIN_SIZES, test_size=TEST_SIZE)
+                    set_types=set_types, duplicate_ok=False, train_sizes=TRAIN_SIZES, test_size=TEST_SIZE)

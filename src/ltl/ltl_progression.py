@@ -29,9 +29,12 @@ def get_dfa(ltl_formula: tuple):
     edge2assignments = {}
 
     visited, queue = set([ltl_formula]), collections.deque([ltl_formula])
+    terminal_states = set()
     while queue:
         formula = queue.popleft()
+        # print("processing formula", formula)
         if formula in ['True', 'False']:
+            terminal_states.add(formula)
             continue
         for truth_assignment in truth_assignments:
             # progressing formula
@@ -48,21 +51,34 @@ def get_dfa(ltl_formula: tuple):
             if f_progressed not in visited:
                 visited.add(f_progressed)
                 queue.append(f_progressed)
+        if formula[0] == "always":
+            terminal_states.add(formula)
 
     # Adding initial and accepting states
     initial_state = 0
-    accepting_states = [ltl2states['True']]
+    if 'True' not in ltl2states:
+        accepting_formulas = [formula for formula in terminal_states if formula != 'False']
+        accepting_states = [ltl2states[formula] for formula in accepting_formulas]
+
+        # create dummy true state
+        new_node = len(ltl2states) - 1
+        ltl2states['True'] = new_node
+    else:
+        accepting_states = [ltl2states['True']]
 
     # Reducing edges formulas to its minimal form...
     # NOTE: this might take a while since we are using a very
     #       inefficient python library for logic manipulations
+    # print("edge2assignments:", edge2assignments)
     edges_tuple: List[Tuple[int, int, str]] = []
     for edge, truth_assignments in edge2assignments.items():
         f = _get_formula(truth_assignments, propositions)
+        # print(f, edge, truth_assignments)
         edges_tuple.append((edge[0], edge[1], f))
     # Adding self-loops for 'True' and 'False'
     edges_tuple.append((ltl2states['True'], ltl2states['True'], 'True'))
     edges_tuple.append((ltl2states['False'], ltl2states['False'], 'True'))
+    # print("edges_tuple:", edges_tuple)
 
     return initial_state, accepting_states, ltl2states, edges_tuple
 
@@ -77,7 +93,7 @@ def _get_propositions(ltl_formula):
             return []
         return [ltl_formula]
 
-    if ltl_formula[0] in ['not', 'next']:
+    if ltl_formula[0] in ['not', 'next', 'always']:
         return _get_propositions(ltl_formula[1])
 
     # 'and', 'or', 'until'
@@ -117,6 +133,12 @@ def _progress(ltl_formula: tuple, truth_assignment: str) -> tuple:
                 return 'False'
         # ltl_formula is True or False
         return ltl_formula
+
+    if ltl_formula[0] == 'always':
+        if _progress(ltl_formula[1], truth_assignment) != 'True':
+            return 'False'
+        else:
+            return ltl_formula
 
     if ltl_formula[0] == 'not':
         # negations should be over propositions only according to the cosafe ltl syntactic restriction

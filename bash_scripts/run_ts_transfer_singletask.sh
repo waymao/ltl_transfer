@@ -80,7 +80,7 @@ cmd="python run_ts_transfer.py \
         --domain_name $domain_name --prob $prob \
         --map $map --train_type $train_type \
         --run_id $run_id \
-        $relabel_args --render -v \
+        $relabel_args \
         --task_id $task_id"
 echo $cmd
 echo

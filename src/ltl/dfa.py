@@ -29,9 +29,13 @@ class DFA:
         self.state = self._get_next_state(self.state, true_props)
 
     def _get_next_state(self, v1, true_props):
+        # print("v1:", v1, "true_props:", true_props)
         for v2 in self.nodelist[v1]:
+            # print("nodelist", self.nodelist[v1])
             if _evaluate_DNF(self.nodelist[v1][v2], true_props):
+                # print("v2 matched:", v2, "self.nodelist[v1][v2]:", self.nodelist[v1][v2])
                 return v2
+        # print("no v2 found")
         return -1  # we broke the LTL :/
 
     def progress_LTL(self, ltl_formula, true_props):
@@ -75,6 +79,7 @@ Evaluates 'formula' assuming 'true_props' are the only true propositions and the
 e.g. _evaluate_DNF("a&b|!c&d","d") returns True
 """
 def _evaluate_DNF(formula, true_props):
+    # print("   formula:", formula, "true_props:", true_props)
     # ORs
     if "|" in formula:
         for f in formula.split("|"):
@@ -95,3 +100,29 @@ def _evaluate_DNF(formula, true_props):
     if formula == "True":  return True
     if formula == "False": return False
     return formula in true_props
+
+
+if __name__ == "__main__":
+    def test_formula(formula, props):
+        print("formula:", formula)
+        # print("props:", props)
+        for prop in props:
+            dfa = DFA(formula)
+            dfa.progress(prop)
+            print(f"progress with {prop}:", dfa.get_LTL(), " is terminal:", dfa.in_terminal_state())
+    formula = ("and", ("until", "True", "a"), ("always", ("not", "b")))
+    test_formula(formula, ['c'])
+    print()
+
+    # formula = ("and", ("until", "True", ("and", "a", ("until", "True", "c"))), ("always", ("not", "b")))
+    # test_formula(formula, ['a', 'b', 'c'])
+    # print()
+
+    # formula = ("and", ("until", "True", "a"), ("always", ("and", ("not", "b"), ("not", "c"))))
+    # test_formula(formula, ['a', 'b', 'c'])
+    # print()
+
+    print(ltl_progression._progress(("not", "b"), "c"))
+    dfa = DFA(("until", "True", "b"))
+    dfa.progress("c")
+    print(dfa.get_LTL())
