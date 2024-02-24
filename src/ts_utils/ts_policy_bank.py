@@ -7,8 +7,8 @@ from ltl.dfa import DFA
 from torch_policies.learning_params import LearningParameters, get_learning_parameters
 from tianshou.policy import BasePolicy, DiscreteSACPolicy
 from tianshou.policy import PPOPolicy, DiscreteSACPolicy, TD3Policy
+from ltl.ltl_utils import convert_ltl
 
-from utils.print_ltl import ltl_to_print
 from classifiers import Classifier, RadiusMatcher, KNNMatcher, NNClassifier
 from tianshou.utils.net.discrete import Actor, Critic
 from torch_policies.network import get_whole_CNN
@@ -152,7 +152,7 @@ def load_ts_policy_bank(
     # loading each individual policy file
     for ltl, id in sorted(ltl_list, key=lambda x: x[1]):
         ltl = list_to_tuple(ltl)
-        if verbose: print("Loading policy for LTL: ", ltl_to_print(ltl))
+        if verbose: print("Loading policy for LTL: ", convert_ltl(ltl))
         policy, ltl_stored = load_individual_policy(
             policy_bank_path, 
             id, num_actions, 

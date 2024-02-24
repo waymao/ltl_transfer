@@ -113,7 +113,7 @@ if __name__ == "__main__":
         test_collector, 
         max_epoch=100, 
         step_per_epoch=5000,
-        episode_per_test=20, 
+        episode_per_test=100, 
         batch_size=64, 
         update_per_step=1,
         step_per_collect=12,

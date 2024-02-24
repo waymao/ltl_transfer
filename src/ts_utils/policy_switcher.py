@@ -3,7 +3,7 @@ from typing import List, Mapping, Optional, Tuple, Union
 from ltl.ltl_utils import LTL, DFAEdge
 
 from ts_utils.matcher import dfa2graph
-from utils.print_ltl import ltl_to_print
+from ltl.ltl_utils import convert_ltl
 from .ts_policy_bank import TianshouPolicyBank
 from ltl.dfa import DFA
 import networkx as nx
@@ -75,14 +75,14 @@ class PolicySwitcher:
 
         # print result if debugging
         if verbose:
-            # print("    New goal:", ltl_to_print(self.dfa.get_LTL()))
+            # print("    New goal:", convert_ltl(self.dfa.get_LTL()))
             # print("        Skipped Policies:")
             for item in skipped_policies:
-                print("            ", item[0], ltl_to_print(item[1]), item[2])
+                print("            ", item[0], convert_ltl(item[1]), item[2])
             print("          Skipped Policies Count:", len(skipped_policies))
             print("        Options ranked:")
             for item in sorted(option2problen.items(), key=lambda x: (-x[1][0], x[1][1])):
-                print("            ", item[0][0], ":", ltl_to_print(item[0][1]), item[0][2], item[1])
+                print("            ", item[0][0], ":", convert_ltl(item[0][1]), item[0][2], item[1])
         
         if option2problen == {}:
             return None, None, None, None

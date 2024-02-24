@@ -13,9 +13,13 @@ DFAEdge = Tuple[str, str]
 def convert_ltl(a: LTL) -> str:
     if isinstance(a, str):
         return a
-    elif isinstance(a, list):
+    elif isinstance(a, list) or isinstance(a, tuple):
         if a[0] == "and":
             return " & ".join([convert_ltl(a_) for a_ in a[1:]])
+        elif a[0] == "or":
+            return " | ".join([convert_ltl(a_) for a_ in a[1:]])
+        elif a[0] == "always":
+            return "G(" + convert_ltl(a[1]) + ")"
         elif a[0] == "until":
             if a[1] == "True":
                 return "F(" + convert_ltl(a[2]) + ")"
@@ -31,4 +35,5 @@ def convert_ltl(a: LTL) -> str:
             print(a)
             raise NotImplementedError
     else:
+        print(a)
         raise NotImplementedError

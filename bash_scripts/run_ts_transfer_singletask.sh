@@ -14,7 +14,7 @@
 #SBATCH --mail-user=yichen_wei@brown.edu
 
 train_size=50
-train_type="mixed"
+train_type="individual"
 
 rollout_method="uniform"
 
@@ -50,9 +50,9 @@ echo map=$map
 
 # relabel method
 relabel_args_list=( 
-        "--relabel_method knn_random --relabel_seed 0" 
-        "--relabel_method knn_random --relabel_seed 1" 
-        "--relabel_method radius_random --relabel_seed 2"
+        # "--relabel_method knn_random --relabel_seed 0" 
+        # "--relabel_method knn_random --relabel_seed 1" 
+        # "--relabel_method radius_random --relabel_seed 2"
         "--relabel_method knn_uniform --relabel_seed 0" 
 )
 relabel_args_list_len=${#relabel_args_list[@]}
@@ -80,7 +80,7 @@ cmd="python run_ts_transfer.py \
         --domain_name $domain_name --prob $prob \
         --map $map --train_type $train_type \
         --run_id $run_id \
-        $relabel_args \
+        $relabel_args -v \
         --task_id $task_id"
 echo $cmd
 echo

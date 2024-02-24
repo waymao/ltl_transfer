@@ -83,7 +83,7 @@ if __name__ == "__main__":
     for task in tasks:
         dfa = DFA(task)
         for ltl in dfa.ltl2state.keys():
-            if ltl != 'True' and ltl != 'False': 
+            if ltl != 'True' and ltl != 'False' and ltl[0] != 'always': 
                 assert ltl in policy_bank.policy2id, \
                     ("LTL " + str(ltl) + " not found in policy bank.")
 

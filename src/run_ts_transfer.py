@@ -17,7 +17,7 @@ from ts_utils.ts_policy_bank import load_ts_policy_bank
 from ts_utils.ts_envs import generate_envs
 from ts_utils.ts_argparse import add_parser_cmds
 
-from utils.print_ltl import ltl_to_print
+from ltl.ltl_utils import convert_ltl
 
 # %%
 from tianshou.data import  Batch
@@ -86,6 +86,11 @@ def run_experiment():
     # tester
     task_loader = TaskLoader(args)
     tasks = task_loader.transfer_tasks
+    tasks = [
+        ("and", ("until", "True", "e"), ("until", "True", "c")),
+        ("until", "True", ("and", "e", ("until", "True", "c"))),
+        ("and", ("until", ("not", "c"), "e"), ("until", "True", "c"))
+    ]
     
     # load the proper lp
     with open(os.path.join(task_loader.get_save_path(), "learning_params.pkl"), "rb") as f:
@@ -112,14 +117,13 @@ def run_experiment():
         classifier_seed=args.relabel_seed,
         verbose=args.verbose
     )
-    tasks = task_loader.get_transfer_tasks()
     try:
         ltl = tasks[args.task_id]
     except IndexError:
         print("Task ID", args.task_id, "not found in the task list.")
         exit(1)
 
-    print("Running task", ltl_to_print(ltl))
+    print("Running task", convert_ltl(ltl))
     
     # reset with the correct ltl
     task_params = task_loader.get_task_params(ltl)
@@ -197,13 +201,13 @@ def run_experiment():
                 env_state = info[0]['loc']
                 best_policy, training_edges, ltl, stats = policy_switcher.get_best_policy(curr_node, env_state, verbose=args.verbose)
                 if best_policy is None:
-                    FAIL_STATUS = f"No policy available for goal {ltl_to_print(info[0]['ltl_goal'])}"
-                    if args.verbose: print("No policy available / works for node", curr_node, "; goal: ", ltl_to_print(info[0]['ltl_goal']))
+                    FAIL_STATUS = f"No policy available for goal {convert_ltl(info[0]['ltl_goal'])}"
+                    if args.verbose: print("No policy available / works for node", curr_node, "; goal: ", convert_ltl(info[0]['ltl_goal']))
                     break
                 
                 # collect infos
                 if args.verbose: 
-                    print("Executing policy", ltl_to_print(ltl), 
+                    print("Executing policy", convert_ltl(ltl), 
                           "with training edges", training_edges,
                           "on node", curr_node,
                           "with env state", env_state
@@ -237,7 +241,7 @@ def run_experiment():
                 if not term[0] and not trunc[0] and next_node == curr_node:
                     # we are stuck in the same node
                     policy_switcher.exclude_policy(curr_node, best_policy)
-                    if args.verbose: print("   Policy failed to finish. Excluding policy", ltl_to_print(ltl), "on node", curr_node)
+                    if args.verbose: print("   Policy failed to finish. Excluding policy", convert_ltl(ltl), "on node", curr_node)
                     option_fail_count += 1
                     option_fail_hist.append(option_exec_info)
             
@@ -250,7 +254,7 @@ def run_experiment():
                 if info[0]['dfa_state'] == -1:
                     FAIL_STATUS = "DFA Dead end"
                     violation_count += 1
-                elif trunc:
+                elif trunc[0]:
                     FAIL_STATUS = "Truncated by ENV"
                 elif term and not success:
                     FAIL_STATUS = "ENV Dead end"

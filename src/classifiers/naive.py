@@ -64,7 +64,7 @@ class RadiusMatcher(Classifier):
         file_path = os.path.join(
             path,
             "classifier", 
-            f"{rollout_method}_seed{seed}",
+            f"{rollout_method}_seed{seed}_det_eval",
             f"policy{id}_rollout.json.gz"
         )
         with gzip.open(file_path, 'rt', encoding='UTF-8') as f:
