@@ -8,8 +8,7 @@ import numpy as np
 class NonVisualWrapper(ObservationWrapper):
     def __init__(self, env: NavigateEnv):
         super().__init__(env)
-        obs = self.observation(None)
-        num_objs = int(len(obs) / 2)
+        num_objs = len(self.unwrapped.entities)
 
         dist_min = np.zeros(num_objs)
         dist_max = np.ones(num_objs) * np.sqrt(self.unwrapped.size ** 2)
@@ -37,7 +36,7 @@ class NonVisualWrapper(ObservationWrapper):
         y_list = np.array(y_list)
         dist = np.sqrt((x_list - agent_x) ** 2 + (y_list - agent_y) ** 2)
         # angle starts from the right size, + is counter clockwise
-        angles = agent.dir - (np.pi / 2 - (np.arctan2(x_list - x, y_list - y)))
+        angles = (np.arctan2(x_list - agent_x, -(y_list - agent_y))) - agent.dir # OpenGL has y axis flipped
         angles = np.mod(angles, 2*np.pi) - np.pi
 
         return np.stack([dist, angles], axis=1).reshape(-1)

@@ -1,3 +1,4 @@
+from collections import defaultdict
 from gymnasium import utils, spaces
 from gymnasium.spaces import Box
 import numpy as np
@@ -23,6 +24,7 @@ class NavigateNoVisEnv(NavigateEnv):
             high=np.stack([dist_max, angle_max], axis=1).reshape(-1),
         )
 
+
     def observation(self, _):
         # generates angle and direction to any object in the world
         agent = self.agent
@@ -40,7 +42,7 @@ class NavigateNoVisEnv(NavigateEnv):
         y_list = np.array(y_list)
         dist = np.sqrt((x_list - agent_x) ** 2 + (y_list - agent_y) ** 2)
         # angle starts from the right size, + is counter clockwise
-        angles = agent.dir - (np.pi / 2 - (np.arctan2(x_list - x, y_list - y)))
+        angles = np.arctan2(x_list - agent_x, -(y_list - agent_y)) - agent.dir # OpenGL has y axis flipped
         angles = np.mod(angles, 2*np.pi) - np.pi
 
         return np.stack([dist, angles], axis=1).reshape(-1)
