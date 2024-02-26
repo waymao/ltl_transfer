@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Mapping, Optional, Tuple, Union
+from typing import List, Mapping, Optional, Set, Tuple, Union
 from ltl.ltl_utils import LTL, DFAEdge
 
 from ts_utils.matcher import dfa2graph
@@ -40,7 +40,7 @@ class PolicySwitcher:
         Given the current ltl state and env state, compute the optimal policy for the next step.
         """
         option2problen: Mapping[Tuple[int, LTL, DFAEdge], Tuple[float, float]] = {} # (idx, ltl, edge_pair) -> (prob, len)
-        skipped_policies: List[Tuple[int, LTL, DFAEdge]] = []
+        skipped_policies: Set[Tuple[int, LTL, DFAEdge]] = set()
         for feasible_path_node, feasible_path_edge in zip(self.feasible_paths_node, self.feasible_paths_edge):
             # for each feasible path, find the current position and the next edge
             if curr_dfa_state in feasible_path_node:
@@ -54,7 +54,9 @@ class PolicySwitcher:
                 # for each matched training edge, find the probability
                 for train_self_edge, train_out_edge in self.test2trains[test_edge_pair]:
                     for i, ltl in self.edge2ltls[(train_self_edge, train_out_edge)]:
-                        if ltl not in self.exclude_list[curr_dfa_state]:
+                        # only run the policy when it's not excluded and not already computed
+                        if ltl not in self.exclude_list[curr_dfa_state] and \
+                                    (i, ltl, (test_self_edge, test_out_edge)) not in option2problen:
                             ltl_id = self.pb.policy2id[ltl]
                             result_dict = self.pb.classifiers[ltl_id].predict(env_state)
                             if (train_self_edge, train_out_edge) in result_dict:
@@ -63,8 +65,10 @@ class PolicySwitcher:
                                 # Only add the policy if the edge is the same.
                                 option2problen[(i, ltl, (test_self_edge, test_out_edge))] = result_dict[(train_self_edge, train_out_edge)]
                             else:
-                                skipped_policies.append((i, ltl, (test_self_edge, test_out_edge)))
-        return option2problen, skipped_policies
+                                skipped_policies.add((i, ltl, (test_self_edge, test_out_edge)))
+                                # print("Skipped policy:", i, convert_ltl(ltl), (test_self_edge, test_out_edge))
+                                # print("    Train edges:", (train_self_edge, train_out_edge))
+        return option2problen, list(skipped_policies)
 
     def get_best_policy(self, curr_dfa_state, env_state, verbose=False):
         """
