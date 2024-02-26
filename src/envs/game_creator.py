@@ -14,9 +14,11 @@ def get_game(name, params,
     if name == "grid":
         from .grid.game import Game as GridGame
         return GridGame(params)
-    elif name == "miniworld" or name == "miniworld_no_vis" or name == "miniworld_simp_no_vis":
+    elif name in [
+            "miniworld", "miniworld_lidar_no_vis", "miniworld_no_vis", "miniworld_simp_no_vis"
+        ]:
         from .miniworld import NavigateEnv, MiniWorldLTLWrapper, NonVisualWrapper, \
-            NavigateNoVisEnv, ProgressionTerminateWrapper
+            NavigateNoVisEnv, ProgressionTerminateWrapper, LidarWrapper
         if name == "miniworld_simp_no_vis":
             env = NavigateNoVisEnv(params, render_mode="human", view="top", max_episode_steps=max_episode_steps)
             do_transpose = False
@@ -29,6 +31,8 @@ def get_game(name, params,
         env = MiniWorldLTLWrapper(env, params, do_transpose=do_transpose, reward_scale=reward_scale)
         if name == "miniworld_no_vis":
             env = NonVisualWrapper(env)
+        elif name == "miniworld_lidar_no_vis":
+            env = LidarWrapper(env)
         if ltl_progress_is_term:
             env = ProgressionTerminateWrapper(env, params, reward_scale=reward_scale)
         if no_info:

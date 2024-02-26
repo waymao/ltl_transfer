@@ -43,12 +43,18 @@ if __name__ == "__main__":
 
     testing_params = TestingParameters(custom_metric_folder=args.run_subfolder)
     train_envs, test_envs = generate_envs(prob=args.prob,
-        game_name="miniworld_no_vis", parallel=False, map_id=map_id, seed=args.run_id)
+        game_name=args.game_name, parallel=False, no_info=False, map_id=map_id, seed=args.run_id)
 
     obs = test_envs.reset()
     test_envs.render()
-    for i in range(1000):
+    for i in range(2000):
         a = input("action: ")
+        try:
+            a = int(a)
+        except:
+            print("Invalid action")
+            continue
         result = test_envs.step([int(a)])
-        print(result)
+        print(result[1:])
+        print(result[0].reshape(-1, 8))
         test_envs.render()
