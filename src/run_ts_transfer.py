@@ -224,7 +224,7 @@ def run_experiment():
                 # run the policy
                 for _ in range(500): # option step limit
                     with torch.no_grad():
-                        a = best_policy.forward(Batch(obs=obs, info=info)).act
+                        a = best_policy.forward(Batch(obs=obs, info=[{}])).act
                     obs, reward, term, trunc, info = test_envs.step(a.numpy())
 
                     next_node = info[0]['dfa_state']
@@ -256,7 +256,7 @@ def run_experiment():
                     violation_count += 1
                 elif trunc[0]:
                     FAIL_STATUS = "Truncated by ENV"
-                elif term and not success:
+                elif FAIL_STATUS == "" and term and not success:
                     FAIL_STATUS = "ENV Dead end"
                     violation_count += 1
                 elif FAIL_STATUS == "" and info[0]['dfa_state'] != task_dfa.terminal[0]:

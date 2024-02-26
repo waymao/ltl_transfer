@@ -169,12 +169,11 @@ if __name__ == "__main__":
             test_envs.render()
         for i in range(1500):
             with torch.no_grad():
-                a = policy.forward(Batch(obs=obs, info=info)).act
+                a = policy.forward(Batch(obs=obs, info=[{}])).act
             obs, reward, term, trunc, info = test_envs.step(a.numpy())
             if args.render:
                 test_envs.render()
                 state = test_envs.get_env_attr("curr_state", 0)[0]
-                print(state)
                 input("Press Enter When Ready...")
             if term or trunc:
                 true_prop = info[0]['true_props']

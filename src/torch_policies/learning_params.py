@@ -12,12 +12,12 @@ class LearningParameters:
     train_freq: int = 1
     batch_size: int = 32
     learning_starts: int = 5000
-    gamma: int = 0.9
+    gamma: float = 0.9
     max_timesteps_per_episode: int = 1000
 
     # DQN
-    exploration_fraction: int = 0.2
-    exploration_final_eps: int = 0.02
+    exploration_fraction: float = 0.2
+    exploration_final_eps: float = 0.02
     
 
     # SAC related
