@@ -68,6 +68,7 @@ def sample_individual_formulas(props):
                     always_not_formula = ("and", ("not", prop_not), always_not_formula)
         formula = ("and", ("until", "True", prop), ("always", always_not_formula))
         formulas.append(formula)
+        formulas.append(("until", "True", prop))
     return formulas
 
 
