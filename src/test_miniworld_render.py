@@ -56,5 +56,6 @@ if __name__ == "__main__":
             continue
         result = test_envs.step([int(a)])
         print(result[1:])
+        print(result[0].shape)
         print(result[0].reshape(-1, 8))
         test_envs.render()

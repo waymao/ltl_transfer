@@ -86,11 +86,11 @@ def run_experiment():
     # tester
     task_loader = TaskLoader(args)
     tasks = task_loader.transfer_tasks
-    tasks = [
-        ("and", ("until", "True", "e"), ("until", "True", "c")),
-        ("until", "True", ("and", "e", ("until", "True", "c"))),
-        ("and", ("until", ("not", "c"), "e"), ("until", "True", "c"))
-    ]
+    # tasks = [
+    #     ("and", ("until", "True", "e"), ("until", "True", "c")),
+    #     ("until", "True", ("and", "e", ("until", "True", "c"))),
+    #     ("and", ("until", ("not", "c"), "e"), ("until", "True", "c"))
+    # ]
     
     # load the proper lp
     with open(os.path.join(task_loader.get_save_path(), "learning_params.pkl"), "rb") as f:

@@ -26,7 +26,7 @@ def generate_envs(
     if not parallel:
         test_envs = DummyVectorEnv(
             [lambda: get_game(name=game_name, params=GameParams(
-                map_fpath=f"../experiments/maps/map_{map_id}.txt",
+                map_fpath=f"../experiments/maps/map_{map_id}.txt" if map_id >= 0 else None,
                 ltl_task=("until", "True", "a"),
                 # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
                 prob=prob
@@ -36,7 +36,7 @@ def generate_envs(
         )
         train_envs = DummyVectorEnv(
             [lambda: get_game(name=game_name, params=GameParams(
-                map_fpath=f"../experiments/maps/map_{map_id}.txt",
+                map_fpath=f"../experiments/maps/map_{map_id}.txt" if map_id >= 0 else None,
                 ltl_task=("until", "True", "a"),
                 # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
                 prob=prob
@@ -47,7 +47,7 @@ def generate_envs(
     else:
         test_envs = ShmemVectorEnv(
             [lambda: get_game(name=game_name, params=GameParams(
-                map_fpath=f"../experiments/maps/map_{map_id}.txt",
+                map_fpath=f"../experiments/maps/map_{map_id}.txt" if map_id >= 0 else None,
                 ltl_task=("until", "True", "a"),
                 # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
                 prob=prob
@@ -56,7 +56,7 @@ def generate_envs(
         )
         train_envs = ShmemVectorEnv(
             [lambda: get_game(name=game_name, params=GameParams(
-                map_fpath=f"../experiments/maps/map_{map_id}.txt",
+                map_fpath=f"../experiments/maps/map_{map_id}.txt" if map_id >= 0 else None,
                 ltl_task=("until", "True", "a"),
                 # ltl_task=("until", "True", ("and", "a", ("until", "True", "b"))),
                 prob=prob

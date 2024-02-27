@@ -6,11 +6,12 @@ from ltl.dfa import DFA
 
 from torch_policies.learning_params import LearningParameters, get_learning_parameters
 from tianshou.policy import BasePolicy, DiscreteSACPolicy
-from tianshou.policy import PPOPolicy, DiscreteSACPolicy, TD3Policy
+from tianshou.policy import PPOPolicy
 from ltl.ltl_utils import convert_ltl
 
 from classifiers import Classifier, RadiusMatcher, KNNMatcher, NNClassifier
 from tianshou.utils.net.discrete import Actor, Critic
+from tianshou.utils.net.common import ActorCritic
 from torch_policies.network import get_whole_CNN
 from torch.optim import Adam
 import torch
@@ -32,6 +33,7 @@ class TianshouPolicyBank:
         self.classifiers: List[Optional[Classifier]] = []
         self.policy2id: Mapping[Union[tuple, str], int] = {}
         self.dfas: List[DFA] = []
+        self.algo = "dsac"
     
     def add_LTL_policy(self, 
                 ltl: Union[tuple, str], 
@@ -58,10 +60,16 @@ class TianshouPolicyBank:
     def save_ckpt(self, path):
         os.makedirs(os.path.join(path, "policies"), exist_ok=True)
         for ltl, id in self.policy2id.items():
-            save_individual_policy(path, id, ltl, self.policies[id])
+            if self.algo == "ppo":
+                save_ppo_policy(path, id, ltl, self.policies[id])
+            else:
+                save_individual_policy(path, id, ltl, self.policies[id])
     
     def save_individual_policy(self, path, policy_id):
-        save_individual_policy(path, policy_id, self.policy_ltls[policy_id], self.policies[policy_id])
+        if self.algo == "ppo":
+            save_ppo_policy(path, policy_id, self.policy_ltls[policy_id], self.policies[policy_id])
+        else:
+            save_individual_policy(path, policy_id, self.policy_ltls[policy_id], self.policies[policy_id])
     
     def get_all_policies(self):
         return {ltl: self.policies[id] for ltl, id in self.policy2id.items()}
@@ -99,6 +107,29 @@ def create_discrete_sac_policy(
         critic2, critic2_optim,
         alpha=learning_params.alpha,
         gamma=learning_params.gamma,
+        # TODO add more
+    ).to(device)
+    return policy
+
+def create_ppo_policy(
+    num_actions: int, 
+    num_features: int, 
+    hidden_layers: List[int] = [256, 256, 256],
+    learning_params: LearningParameters = get_learning_parameters("dsac", "miniworld_no_vis"), 
+    device="cpu"
+) -> DiscreteSACPolicy:
+    preprocess_net = DummyPreProcess(dim=num_features)
+    actor = Actor(preprocess_net, num_actions, hidden_layers, device=device)
+    critic1 = Critic(preprocess_net, hidden_sizes=hidden_layers, last_size=num_actions, device=device)
+    ac = ActorCritic(actor, critic1)
+    optim = Adam(ac.parameters(), lr=learning_params.lr)
+
+    policy = PPOPolicy(
+        actor, 
+        critic1, 
+        optim=optim,
+        dist_fn=torch.distributions.Categorical,
+        # discount_factor=learning_params.gamma,
         # TODO add more
     ).to(device)
     return policy
@@ -192,6 +223,35 @@ def load_ts_policy_bank(
     return policy_bank
 
 
+
+def load_ppo_policy(
+    policy_bank_path: str,
+    policy_id: int,
+    num_actions: int,
+    num_features: int,
+    hidden_layers: List[int] = [256, 256, 256],
+    learning_params: LearningParameters = get_learning_parameters("dsac", "miniworld_no_vis"),
+    eval_mode=False,
+    device="cpu"
+) -> Tuple[BasePolicy, str]:
+    policy = create_discrete_sac_policy(
+            num_actions=num_actions, 
+            num_features=num_features, 
+            hidden_layers=hidden_layers,
+            learning_params=learning_params, 
+            device=device
+        )
+    save_data = torch.load(os.path.join(policy_bank_path, "policies", str(policy_id) + "_ckpt.pth"))
+    policy.load_state_dict(save_data['policy'])
+    policy.actor_optim.load_state_dict(save_data['actor_optim'])
+    policy.critic1_optim.load_state_dict(save_data['critic1_optim'])
+    policy.critic2_optim.load_state_dict(save_data['critic2_optim'])
+    if eval_mode:
+        print(eval_mode)
+        policy.eval()
+    return policy, save_data['ltl']
+
+
 def load_individual_policy(
     policy_bank_path: str,
     policy_id: int,
@@ -218,6 +278,20 @@ def load_individual_policy(
         print(eval_mode)
         policy.eval()
     return policy, save_data['ltl']
+
+
+def save_ppo_policy(
+    policy_bank_path: str,
+    policy_id: int,
+    ltl: str,
+    policy: PPOPolicy,
+):
+    save_data = {
+        "ltl": ltl,
+        "policy": policy.state_dict(),
+        "actor_optim": policy.optim.state_dict(),
+    }
+    torch.save(save_data, os.path.join(policy_bank_path, "policies", str(policy_id) + "_ckpt.pth"))
 
 
 def save_individual_policy(
