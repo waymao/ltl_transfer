@@ -1,0 +1,6 @@
+0: ('and', ('until', 'True', 'a'), ('always', ('and', ('not', 'f'), ('and', ('not', 'e'), ('and', ('not', 'd'), ('and', ('not', 'c'), ('not', 'b')))))))
+1: ('and', ('until', 'True', 'b'), ('always', ('and', ('not', 'f'), ('and', ('not', 'e'), ('and', ('not', 'd'), ('and', ('not', 'c'), ('not', 'a')))))))
+2: ('and', ('until', 'True', 'c'), ('always', ('and', ('not', 'f'), ('and', ('not', 'e'), ('and', ('not', 'd'), ('and', ('not', 'b'), ('not', 'a')))))))
+3: ('and', ('until', 'True', 'd'), ('always', ('and', ('not', 'f'), ('and', ('not', 'e'), ('and', ('not', 'c'), ('and', ('not', 'b'), ('not', 'a')))))))
+4: ('and', ('until', 'True', 'e'), ('always', ('and', ('not', 'f'), ('and', ('not', 'd'), ('and', ('not', 'c'), ('and', ('not', 'b'), ('not', 'a')))))))
+5: ('and', ('until', 'True', 'f'), ('always', ('and', ('not', 'e'), ('and', ('not', 'd'), ('and', ('not', 'c'), ('and', ('not', 'b'), ('not', 'a')))))))
