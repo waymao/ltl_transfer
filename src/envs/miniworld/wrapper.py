@@ -6,7 +6,7 @@ from miniworld.miniworld import MiniWorldEnv
 
 from ltl.dfa import *
 from .params import GameParams
-from .constants import OBJ_REV_MAP, get_ent_str
+from .constants import OBJ_REV_MAP, get_ent_str, HIT_PROP_PARAMS
 
 
 class ProgressionTerminateWrapper(gym.Wrapper):
@@ -105,10 +105,13 @@ class MiniWorldLTLWrapper(gym.Wrapper):
         """
         Returns the string with the propositions that are True in this state
         """
-        test_pos = self.unwrapped.agent.pos + self.unwrapped.agent.dir_vec * 1.3 * self.unwrapped.agent.radius
-        ent = self.unwrapped.intersect(self.unwrapped.agent, test_pos, 1.3 * self.unwrapped.agent.radius)
-        # test_pos = self.unwrapped.agent.pos + self.unwrapped.agent.dir_vec * 1.5 * self.unwrapped.agent.radius
-        # ent = self.unwrapped.intersect(self.unwrapped.agent, test_pos, 1.2 * self.unwrapped.agent.radius)
+        test_pos = self.unwrapped.agent.pos + \
+            HIT_PROP_PARAMS['test_dist_scale'] * \
+            self.unwrapped.agent.dir_vec * self.unwrapped.agent.radius
+        ent = self.unwrapped.intersect(
+            self.unwrapped.agent, 
+            test_pos, HIT_PROP_PARAMS['test_radius_scale'] * self.unwrapped.agent.radius
+        )
         symbol = get_ent_str(ent)
         return symbol.replace("X", "")
 

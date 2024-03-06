@@ -48,6 +48,17 @@ DEFAULT_DETERM_GAME_PARAMS.set("turn_step", 15, 15, 15)
 # DEFAULT_DETERM_GAME_PARAMS.set("turn_step", 15, 15, 15)
 
 
+HIT_PROP_PARAMS = {
+    "test_dist_scale": 1.3,
+    "test_radius_scale": 1.3,
+}
+
+HIT_PROP_PARAMS2 = {
+    "test_dist_scale": 1.5,
+    "test_radius_scale": 1.2,
+}
+
+
 def get_ent_str(ent):
     if not isinstance(ent, Entity):
         return ""
