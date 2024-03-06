@@ -4,7 +4,7 @@ import json
 import os
 from ltl.dfa import DFA
 
-from torch_policies.learning_params import LearningParameters, get_learning_parameters
+from utils.learning_params import LearningParameters, get_learning_parameters
 from tianshou.policy import BasePolicy, DiscreteSACPolicy
 from tianshou.policy import PPOPolicy
 from ltl.ltl_utils import convert_ltl
@@ -12,7 +12,7 @@ from ltl.ltl_utils import convert_ltl
 from classifiers import Classifier, RadiusMatcher, KNNMatcher, NNClassifier
 from tianshou.utils.net.discrete import Actor, Critic
 from tianshou.utils.net.common import ActorCritic
-from torch_policies.network import get_whole_CNN
+from ts_utils.network import get_whole_CNN
 from torch.optim import Adam
 import torch
 from torch import nn

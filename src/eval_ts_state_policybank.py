@@ -2,7 +2,7 @@
 # %%
 import os
 from ltl.dfa import DFA
-from torch_policies.learning_params import LearningParameters, add_fields_to_parser, get_learning_parameters
+from utils.learning_params import LearningParameters, add_fields_to_parser, get_learning_parameters
 
 from ts_utils.ts_policy_bank import TianshouPolicyBank, load_ts_policy_bank
 from ts_utils.ts_argparse import add_parser_cmds

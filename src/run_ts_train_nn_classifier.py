@@ -3,7 +3,7 @@ import os
 import sys
 
 from classifiers.nn_classifier import NNClassifier
-from torch_policies.learning_params import LearningParameters, \
+from utils.learning_params import LearningParameters, \
     add_fields_to_parser, get_learning_parameters
 
 from ts_utils.ts_envs import generate_envs

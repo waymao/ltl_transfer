@@ -8,7 +8,7 @@ import gymnasium
 import networkx as nx
 import torch
 from ltl.dfa import DFA
-from torch_policies.learning_params import LearningParameters, \
+from utils.learning_params import LearningParameters, \
     add_fields_to_parser, get_learning_parameters
 from ts_utils.matcher import dfa2graph, get_training_edges, match_remove_edges
 from ts_utils.policy_switcher import PolicySwitcher

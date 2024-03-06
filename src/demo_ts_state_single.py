@@ -1,6 +1,6 @@
 import os
 from ltl.dfa import DFA
-from torch_policies.learning_params import LearningParameters, \
+from utils.learning_params import LearningParameters, \
     add_fields_to_parser, get_learning_parameters
 
 from ts_utils.ts_policy_bank import load_individual_policy
