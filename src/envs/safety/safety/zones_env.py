@@ -1,6 +1,7 @@
 import numpy as np
 import enum
 import gym
+import random
 
 from safety_gym.envs.engine import Engine
 
@@ -33,8 +34,7 @@ class ZonesEnv(Engine):
 
     For now we only support the 'point' robot.
     """
-    def __init__(self, zones:list, use_fixed_map:float, timeout:int, config=dict):
-        walled = True
+    def __init__(self, zones:list, use_fixed_map:float, timeout:int, config:dict, walled=True, map_seed=None):
         self.DEFAULT.update({
             'observe_zones': False,
             'zones_num': 0,  # Number of hazards in an environment
@@ -43,7 +43,6 @@ class ZonesEnv(Engine):
             'zones_keepout': 0.55,  # Radius of hazard keepout for placement
             'zones_size': 0.25,  # Radius of hazards
         })
-
         if (walled):
             world_extent = 2.5
             walls = [(i/10, j) for i in range(int(-world_extent * 10),int(world_extent * 10 + 1),1) for j in [-world_extent, world_extent]]
@@ -70,6 +69,7 @@ class ZonesEnv(Engine):
             zone.White   : [1, 1, 1, 1]
         }
         self.zone_rgbs = np.array([self._rgb[haz] for haz in self.zones])
+        self.map_seed = map_seed
 
         parent_config = {
             'robot_base': 'xmls/point.xml',
@@ -108,8 +108,7 @@ class ZonesEnv(Engine):
             self.placements.update(self.placements_dict_from_object('zone'))
 
     def build_world_config(self):
-        world_config = super().build_world_config()
-
+        world_config = super().build_world_config()        
         for i in range(self.zones_num):
             name = f'zone{i}'
             geom = {'name': name,
@@ -134,9 +133,7 @@ class ZonesEnv(Engine):
                 pos_in_type = list(np.array(self.zones_pos)[ind])
 
                 obs[f'zones_lidar_{zone_type}'] = self.obs_lidar(pos_in_type, GROUP_ZONE)
-
         return obs
-
 
     def render_lidars(self):
         offset = super().render_lidars()
@@ -152,13 +149,17 @@ class ZonesEnv(Engine):
 
         return offset
 
+    # NOTE: self.map_seed is only used for a fixed map during evaluation
+    # reset() will not affect the map at all. If we need a new map, create 
+    # a new env from scratch with different seed
     def seed(self, seed=None):
-        if (self.use_fixed_map): self._seed = seed
+        if self.use_fixed_map:
+            self._seed = self.map_seed if seed is None else None
 
 
 class LTLZonesEnv(ZonesEnv):
-    def __init__(self, zones:list, use_fixed_map:float, timeout:int, config={}):
-        super().__init__(zones=zones, use_fixed_map=use_fixed_map, timeout=timeout, config=config)
+    def __init__(self, zones:list, use_fixed_map:float, timeout:int, config={}, map_seed=None):
+        super().__init__(zones=zones, use_fixed_map=use_fixed_map, timeout=timeout, config=config, map_seed=map_seed)
 
     def get_propositions(self):
         return [str(i) for i in self.zone_types]
@@ -184,10 +185,10 @@ class ZonesEnv1Fixed(LTLZonesEnv):
         }
         super().__init__(zones=[zone.Red], use_fixed_map=True, timeout=1000, config=config)
 
-class ZonesEnv5(LTLZonesEnv):
-    def __init__(self):
-        super().__init__(zones=[zone.JetBlack, zone.JetBlack, zone.Red, zone.Red, zone.White, zone.White,  zone.Yellow, zone.Yellow], use_fixed_map=False, timeout=1000)
-
-class ZonesEnv5Fixed(LTLZonesEnv):
-    def __init__(self):
-        super().__init__(zones=[zone.JetBlack, zone.JetBlack, zone.Red, zone.Red, zone.White, zone.White,  zone.Yellow, zone.Yellow], use_fixed_map=True, timeout=1000)
+class ZonesEnv8(LTLZonesEnv):
+    def __init__(self, timeout=1000):
+        super().__init__(zones=[zone.JetBlack, zone.JetBlack, zone.Red, zone.Red, zone.White, zone.White,  zone.Yellow, zone.Yellow], use_fixed_map=True, timeout=timeout)
+        
+class ZonesEnv8Fixed(LTLZonesEnv):
+    def __init__(self, map_seed, timeout=1000):
+        super().__init__(zones=[zone.JetBlack, zone.JetBlack, zone.Red, zone.Red, zone.White, zone.White,  zone.Yellow, zone.Yellow], use_fixed_map=True, timeout=timeout, map_seed=map_seed)
