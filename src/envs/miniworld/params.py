@@ -13,6 +13,7 @@ class GameParams:
                  step_rew=0.0,
                  succ_rew=1.0,
                  fail_rew=0.0,
+                 max_edge_props=1,
         ):
         self.map_fpath = map_fpath
         self.prob = prob
@@ -25,3 +26,6 @@ class GameParams:
         self.step_rew = step_rew
         self.succ_rew = succ_rew
         self.fail_rew = fail_rew
+        
+        # edge-centric code
+        self.max_edge_props = max_edge_props

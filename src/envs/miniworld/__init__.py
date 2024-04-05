@@ -3,6 +3,7 @@ from .world import NavigateEnv
 from .world_no_vis import NavigateNoVisEnv, LidarNoVisEnv
 from .wrapper import MiniWorldLTLWrapper, ProgressionTerminateWrapper
 from .non_visual_wrapper import NonVisualWrapper, LidarWrapper
+from .wrapper_edge import MiniWorldEdgeCentricWrapper
 
 register(
     id="LTLTransfer-Navigate-v0",
@@ -12,5 +13,5 @@ register(
 __all__ = [
     'NavigateEnv', 'MiniWorldLTLWrapper', 
     'NonVisualWrapper', 'ProgressionTerminateWrapper', 'NavigateNoVisEnv',
-    'LidarWrapper', 'LidarNoVisEnv'
+    'LidarWrapper', 'LidarNoVisEnv', 'MiniWorldEdgeCentricWrapper'
 ]
