@@ -11,16 +11,19 @@ from .world import NavigateEnv
 
 class NavigateNoVisEnv(NavigateEnv):
     def __init__(self, *args, **kwargs):
+        # tmp max val so there's no complaints about the observation space
+        self.dist_max = self.angle_max = 10
+
         super().__init__(*args, **kwargs)
         num_objs = len([None for entity in self.unwrapped.entities if get_ent_str(entity) not in "AX"])
 
         dist_min = np.zeros(num_objs)
-        dist_max = np.ones(num_objs) * np.sqrt(self.unwrapped.size ** 2)
+        self.dist_max = np.ones(num_objs) * np.sqrt(self.unwrapped.size ** 2)
         angle_min = np.ones(num_objs) * -np.pi / 2
-        angle_max = np.ones(num_objs) * np.pi / 2
+        self.angle_max = np.ones(num_objs) * np.pi / 2
         self.observation_space = Box(
             low=np.stack([dist_min, angle_min], axis=1).reshape(-1),
-            high=np.stack([dist_max, angle_max], axis=1).reshape(-1),
+            high=np.stack([self.dist_max, self.angle_max], axis=1).reshape(-1),
         )
 
 
@@ -40,9 +43,11 @@ class NavigateNoVisEnv(NavigateEnv):
         x_list = np.array(x_list)
         y_list = np.array(y_list)
         dist = np.sqrt((x_list - agent_x) ** 2 + (y_list - agent_y) ** 2)
+        dist /= self.dist_max
         # angle starts from the right size, + is counter clockwise
         angles = np.arctan2(x_list - agent_x, -(y_list - agent_y)) - agent.dir # OpenGL has y axis flipped
         angles = np.mod(angles, 2*np.pi) - np.pi
+        angles /= self.angle_max
 
         return np.stack([dist, angles], axis=1).reshape(-1)
     
@@ -100,6 +105,7 @@ class LidarNoVisEnv(NavigateNoVisEnv):
             for item in zip(dist, angle):
                 bin_idx = (int(item[1] / slot_len + 0.5)) % self.num_bins
                 obs[i * self.num_bins + bin_idx] = min(obs[bin_idx], np.min(item[0]))
+        obs /= self.dist_max
         return obs
 
 
